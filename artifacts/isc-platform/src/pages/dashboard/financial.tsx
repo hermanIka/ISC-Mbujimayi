@@ -1,10 +1,18 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetFinancialAnalytics } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download } from "lucide-react";
 import { Link } from "@/lib/router";
+import { useTranslation } from "react-i18next";
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from "recharts";
 
 interface FinancialAnalyticsData {
   totalRevenue: string;
@@ -16,75 +24,260 @@ interface FinancialAnalyticsData {
   revenueTimeline: Array<{ date: string; amount: string; count: number }>;
 }
 
+const OPERATOR_COLORS: Record<string, string> = {
+  MTN_MONEY: "#FFCC00",
+  AIRTEL_MONEY: "#E4012A",
+  ORANGE_MONEY: "#FF6600",
+};
+
+const PIE_COLORS = ["hsl(var(--primary))", "#22c55e", "#f59e0b", "#6366f1"];
+
 export default function FinancialDashboard() {
-  const { data: rawAnalytics, isLoading } = useGetFinancialAnalytics();
+  const { t } = useTranslation();
+  const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
+  const { data: rawAnalytics, isLoading } = useGetFinancialAnalytics({ period });
   const analytics = rawAnalytics as unknown as FinancialAnalyticsData | undefined;
+
+  const kpis = [
+    {
+      label: t("financial.total_revenue"),
+      value: analytics?.totalRevenue ? `${Number(analytics.totalRevenue).toLocaleString("fr-CD")} CDF` : "0 CDF",
+      icon: DollarSign,
+      color: "text-green-600",
+    },
+    {
+      label: t("financial.pending_amount"),
+      value: analytics?.pendingAmount ? `${Number(analytics.pendingAmount).toLocaleString("fr-CD")} CDF` : "0 CDF",
+      icon: TrendingUp,
+      color: "text-yellow-600",
+    },
+    {
+      label: t("financial.confirmed_tx"),
+      value: analytics?.confirmedTransactions ?? 0,
+      icon: CreditCard,
+      color: "text-primary",
+    },
+    {
+      label: t("financial.failed_tx"),
+      value: analytics?.failedTransactions ?? 0,
+      icon: AlertCircle,
+      color: "text-red-500",
+    },
+  ];
+
+  const timelineData = (analytics?.revenueTimeline ?? []).map((d) => ({
+    date: d.date,
+    montant: Number(d.amount),
+    transactions: d.count,
+  }));
+
+  const operatorData = (analytics?.revenueByOperator ?? []).map((o) => ({
+    name: o.operator,
+    montant: Number(o.amount),
+    transactions: o.transactionCount,
+    fill: OPERATOR_COLORS[o.operator] ?? "hsl(var(--primary))",
+  }));
+
+  const typeData = (analytics?.revenueByType ?? []).map((r, i) => ({
+    name: t(`payments.type_${r.type.toLowerCase().replace(/_fee$/, "")}` as Parameters<typeof t>[0]) as string || r.type,
+    value: Number(r.amount),
+    count: r.count,
+    fill: PIE_COLORS[i % PIE_COLORS.length],
+  }));
+
+  const handleExport = () => {
+    if (!analytics) return;
+    const rows = [
+      ["Opérateur", "Montant (CDF)", "Transactions"],
+      ...(analytics.revenueByOperator ?? []).map((r) => [r.operator, r.amount, String(r.transactionCount)]),
+    ];
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rapport-financier-${period}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <AppLayout>
-      <div className="p-8 space-y-8">
-        <h1 className="text-3xl font-bold tracking-tight">Service Financier</h1>
+      <div className="p-8 space-y-8 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{t("financial.title")}</h1>
+            <p className="text-muted-foreground">{t("financial.subtitle")}</p>
+          </div>
+          <div className="flex gap-2 items-center">
+            <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">{t("financial.period_day")}</SelectItem>
+                <SelectItem value="week">{t("financial.period_week")}</SelectItem>
+                <SelectItem value="month">{t("financial.period_month")}</SelectItem>
+                <SelectItem value="year">{t("financial.period_year")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={!analytics}>
+              <Download className="mr-1.5 h-4 w-4" />
+              {t("financial.export")}
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/payments">{t("financial.manage_payments")}</Link>
+            </Button>
+          </div>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenu Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+          {kpis.map(({ label, value, icon: Icon, color }) => (
+            <Card key={label}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{label}</CardTitle>
+                <Icon className={`h-4 w-4 ${color}`} />
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-28" />
+                ) : (
+                  <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>{t("financial.revenue_timeline")}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-64 w-full" />
+              ) : timelineData.length === 0 ? (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  {t("financial.no_data")}
+                </div>
               ) : (
-                <div className="text-2xl font-bold">{analytics?.totalRevenue ?? "0"} CDF</div>
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={timelineData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="date" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString("fr-CD")} CDF`, t("financial.revenue")]} />
+                    <Area
+                      type="monotone"
+                      dataKey="montant"
+                      name={t("financial.revenue")}
+                      stroke="hsl(var(--primary))"
+                      fill="url(#colorRevenue)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               )}
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Montant en attente</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+              <CardTitle>{t("financial.revenue_by_type")}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-64 w-full" />
+              ) : typeData.length === 0 ? (
+                <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+                  {t("financial.no_data")}
+                </div>
               ) : (
-                <div className="text-2xl font-bold">{analytics?.pendingAmount ?? "0"} CDF</div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Paiements confirmés</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{analytics?.confirmedTransactions ?? 0}</div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Paiements échoués</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{analytics?.failedTransactions ?? 0}</div>
+                <div className="space-y-4">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <PieChart>
+                      <Pie
+                        data={typeData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {typeData.map((entry, i) => (
+                          <Cell key={i} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v: number) => [`${v.toLocaleString("fr-CD")} CDF`]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-1.5">
+                    {typeData.map((d) => (
+                      <div key={d.name} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2.5 w-2.5 rounded-full" style={{ background: d.fill }} />
+                          <span className="truncate max-w-[120px]">{d.name}</span>
+                        </div>
+                        <span className="font-medium">{d.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        <div className="flex gap-4">
-          <Button asChild>
-            <Link href="/payments">Gérer les paiements</Link>
-          </Button>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("financial.revenue_by_operator")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : operatorData.length === 0 ? (
+              <div className="h-48 flex items-center justify-center text-muted-foreground">
+                {t("financial.no_data")}
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={operatorData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="name" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip formatter={(v: number) => [`${v.toLocaleString("fr-CD")} CDF`]} />
+                    <Bar dataKey="montant" name={t("financial.revenue")}>
+                      {operatorData.map((o, i) => (
+                        <Cell key={i} fill={o.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="space-y-3">
+                  {operatorData.map((o) => (
+                    <div key={o.name} className="flex items-center gap-3 p-3 rounded-lg border">
+                      <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: o.fill }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{o.name}</p>
+                        <p className="text-xs text-muted-foreground">{o.transactions} {t("financial.transactions")}</p>
+                      </div>
+                      <p className="font-bold text-sm">{Number(o.montant).toLocaleString("fr-CD")} CDF</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );
