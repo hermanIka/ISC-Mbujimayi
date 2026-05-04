@@ -2194,10 +2194,10 @@ components:
           type: string
         type:
           type: string
-          enum: [INSCRIPTION, MINERVAL, EXAM_FEES, OTHER]
+          enum: [INSCRIPTION_FEE, COURSE_FEE, EXAM_FEE, OTHER]
         operator:
           type: string
-          enum: [MTN, AIRTEL, ORANGE]
+          enum: [MTN_MONEY, AIRTEL_MONEY, ORANGE_MONEY]
         phoneNumber:
           type: string
         status:
@@ -2241,10 +2241,10 @@ components:
           type: string
         type:
           type: string
-          enum: [INSCRIPTION, MINERVAL, EXAM_FEES, OTHER]
+          enum: [INSCRIPTION_FEE, COURSE_FEE, EXAM_FEE, OTHER]
         operator:
           type: string
-          enum: [MTN, AIRTEL, ORANGE]
+          enum: [MTN_MONEY, AIRTEL_MONEY, ORANGE_MONEY]
         phoneNumber:
           type: string
       required: [studentId, amount, type, operator, phoneNumber]

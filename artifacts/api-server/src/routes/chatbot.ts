@@ -141,7 +141,12 @@ router.get("/chatbot/history", async (req, res): Promise<void> => {
   const params = GetChatHistoryQueryParams.safeParse(req.query);
   const sessionId = params.data?.sessionId;
 
-  if (sessionId && isAuthSession(sessionId)) {
+  if (!sessionId) {
+    res.status(400).json({ error: "sessionId is required" });
+    return;
+  }
+
+  if (isAuthSession(sessionId)) {
     const callerUser = await getCallerDbUser(req);
     const expectedUserId = extractUserIdFromSession(sessionId);
     if (!callerUser || callerUser.clerkId !== expectedUserId) {
@@ -153,8 +158,8 @@ router.get("/chatbot/history", async (req, res): Promise<void> => {
   const messages = await db
     .select()
     .from(chatMessagesTable)
-    .where(sessionId ? eq(chatMessagesTable.sessionId, sessionId) : undefined)
-    .limit(100);
+    .where(eq(chatMessagesTable.sessionId, sessionId))
+    .limit(50);
 
   res.json(messages);
 });

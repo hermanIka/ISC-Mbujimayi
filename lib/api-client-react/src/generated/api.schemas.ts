@@ -441,9 +441,9 @@ export interface ProgressResult {
 export type PaymentType = (typeof PaymentType)[keyof typeof PaymentType];
 
 export const PaymentType = {
-  INSCRIPTION: "INSCRIPTION",
-  MINERVAL: "MINERVAL",
-  EXAM_FEES: "EXAM_FEES",
+  INSCRIPTION_FEE: "INSCRIPTION_FEE",
+  COURSE_FEE: "COURSE_FEE",
+  EXAM_FEE: "EXAM_FEE",
   OTHER: "OTHER",
 } as const;
 
@@ -451,9 +451,9 @@ export type PaymentOperator =
   (typeof PaymentOperator)[keyof typeof PaymentOperator];
 
 export const PaymentOperator = {
-  MTN: "MTN",
-  AIRTEL: "AIRTEL",
-  ORANGE: "ORANGE",
+  MTN_MONEY: "MTN_MONEY",
+  AIRTEL_MONEY: "AIRTEL_MONEY",
+  ORANGE_MONEY: "ORANGE_MONEY",
 } as const;
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
@@ -494,9 +494,9 @@ export type InitiatePaymentBodyType =
   (typeof InitiatePaymentBodyType)[keyof typeof InitiatePaymentBodyType];
 
 export const InitiatePaymentBodyType = {
-  INSCRIPTION: "INSCRIPTION",
-  MINERVAL: "MINERVAL",
-  EXAM_FEES: "EXAM_FEES",
+  INSCRIPTION_FEE: "INSCRIPTION_FEE",
+  COURSE_FEE: "COURSE_FEE",
+  EXAM_FEE: "EXAM_FEE",
   OTHER: "OTHER",
 } as const;
 
@@ -504,9 +504,9 @@ export type InitiatePaymentBodyOperator =
   (typeof InitiatePaymentBodyOperator)[keyof typeof InitiatePaymentBodyOperator];
 
 export const InitiatePaymentBodyOperator = {
-  MTN: "MTN",
-  AIRTEL: "AIRTEL",
-  ORANGE: "ORANGE",
+  MTN_MONEY: "MTN_MONEY",
+  AIRTEL_MONEY: "AIRTEL_MONEY",
+  ORANGE_MONEY: "ORANGE_MONEY",
 } as const;
 
 export interface InitiatePaymentBody {
