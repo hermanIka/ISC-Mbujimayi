@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetFinancialAnalytics, useListPayments } from "@workspace/api-client-react";
-import type { Payment } from "@workspace/api-client-react";
+import type { Payment, ListPaymentsStatus } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt, Loader2 } from "lucide-react";
+import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/react";
@@ -57,6 +57,8 @@ async function downloadApiPdf(url: string, filename: string, getToken: () => Pro
   URL.revokeObjectURL(objectUrl);
 }
 
+const PAGE_SIZE = 20;
+
 export default function FinancialDashboard() {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -64,8 +66,21 @@ export default function FinancialDashboard() {
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
   const { data: rawAnalytics, isLoading } = useGetFinancialAnalytics({ period });
   const analytics = rawAnalytics as unknown as FinancialAnalyticsData | undefined;
-  const { data: paymentsRaw, isLoading: paymentsLoading } = useListPayments({ pageSize: 50 } as Parameters<typeof useListPayments>[0]);
-  const payments: Payment[] = (paymentsRaw as { payments?: Payment[] })?.payments ?? [];
+
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | ListPaymentsStatus>("ALL");
+
+  const listPaymentsParams = {
+    page: paymentsPage,
+    pageSize: PAGE_SIZE,
+    ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
+  };
+  const { data: paymentsRaw, isLoading: paymentsLoading } = useListPayments(listPaymentsParams as Parameters<typeof useListPayments>[0]);
+  const paymentsResponse = paymentsRaw as { payments?: Payment[]; total?: number; totalPages?: number; page?: number } | undefined;
+  const payments: Payment[] = paymentsResponse?.payments ?? [];
+  const totalPages = paymentsResponse?.totalPages ?? 1;
+  const totalCount = paymentsResponse?.total ?? 0;
+
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
   const kpis = [
@@ -325,10 +340,34 @@ export default function FinancialDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              {t("financial.payment_records")}
-            </CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                {t("financial.payment_records")}
+                {totalCount > 0 && (
+                  <span className="text-sm font-normal text-muted-foreground ml-1">({totalCount})</span>
+                )}
+              </CardTitle>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v as "ALL" | ListPaymentsStatus);
+                  setPaymentsPage(1);
+                }}
+              >
+                <SelectTrigger className="w-40" data-testid="payments-status-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t("payments.filter_all_statuses")}</SelectItem>
+                  <SelectItem value="CONFIRMED">{t("payments.status.confirmed")}</SelectItem>
+                  <SelectItem value="PENDING">{t("payments.status.pending")}</SelectItem>
+                  <SelectItem value="FAILED">{t("payments.status.failed")}</SelectItem>
+                  <SelectItem value="INITIATED">{t("payments.status.initiated")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("payments.status.cancelled")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {paymentsLoading ? (
@@ -341,55 +380,87 @@ export default function FinancialDashboard() {
                 <p>{t("payments.no_transactions")}</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("payments.col_reference")}</TableHead>
-                    <TableHead>{t("payments.col_type")}</TableHead>
-                    <TableHead>{t("payments.col_operator")}</TableHead>
-                    <TableHead>{t("payments.col_amount")}</TableHead>
-                    <TableHead>{t("payments.col_status")}</TableHead>
-                    <TableHead>{t("payments.col_receipt")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.map((payment: Payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-mono text-xs">{payment.reference || payment.id.slice(0, 8) + "…"}</TableCell>
-                      <TableCell className="text-sm">
-                        {t(`payments.type_${payment.type.toLowerCase().replace(/_fee$/, "")}` as Parameters<typeof t>[0]) as string || payment.type}
-                      </TableCell>
-                      <TableCell className="text-sm">{payment.operator}</TableCell>
-                      <TableCell className="font-medium text-sm">
-                        {Number(payment.amount).toLocaleString("fr-CD")} {payment.currency}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={STATUS_COLORS[payment.status] ?? ""}>
-                          {t(`payments.status.${payment.status.toLowerCase()}` as Parameters<typeof t>[0]) as string || payment.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {payment.status === "CONFIRMED" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t("payments.download_receipt")}
-                            onClick={() => handleDownloadReceipt(payment)}
-                            disabled={downloadingIds.has(payment.id)}
-                            data-testid={`btn-download-receipt-fin-${payment.id}`}
-                          >
-                            {downloadingIds.has(payment.id) ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-green-600" />
-                            ) : (
-                              <Receipt className="h-4 w-4 text-green-600" />
-                            )}
-                          </Button>
-                        )}
-                      </TableCell>
+              <div className="space-y-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("payments.col_reference")}</TableHead>
+                      <TableHead>{t("payments.col_type")}</TableHead>
+                      <TableHead>{t("payments.col_operator")}</TableHead>
+                      <TableHead>{t("payments.col_amount")}</TableHead>
+                      <TableHead>{t("payments.col_status")}</TableHead>
+                      <TableHead>{t("payments.col_receipt")}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {payments.map((payment: Payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="font-mono text-xs">{payment.reference || payment.id.slice(0, 8) + "…"}</TableCell>
+                        <TableCell className="text-sm">
+                          {t(`payments.type_${payment.type.toLowerCase().replace(/_fee$/, "")}` as Parameters<typeof t>[0]) as string || payment.type}
+                        </TableCell>
+                        <TableCell className="text-sm">{payment.operator}</TableCell>
+                        <TableCell className="font-medium text-sm">
+                          {Number(payment.amount).toLocaleString("fr-CD")} {payment.currency}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={STATUS_COLORS[payment.status] ?? ""}>
+                            {t(`payments.status.${payment.status.toLowerCase()}` as Parameters<typeof t>[0]) as string || payment.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {payment.status === "CONFIRMED" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={t("payments.download_receipt")}
+                              onClick={() => handleDownloadReceipt(payment)}
+                              disabled={downloadingIds.has(payment.id)}
+                              data-testid={`btn-download-receipt-fin-${payment.id}`}
+                            >
+                              {downloadingIds.has(payment.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                              ) : (
+                                <Receipt className="h-4 w-4 text-green-600" />
+                              )}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      {t("common.page")} {paymentsPage} / {totalPages}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPaymentsPage((p) => Math.max(1, p - 1))}
+                        disabled={paymentsPage <= 1 || paymentsLoading}
+                        data-testid="payments-prev-page"
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        {t("common.previous")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPaymentsPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={paymentsPage >= totalPages || paymentsLoading}
+                        data-testid="payments-next-page"
+                      >
+                        {t("common.next")}
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
