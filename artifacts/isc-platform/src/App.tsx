@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, useClerk } from "@clerk/react";
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
+import { ClerkProvider, SignIn, SignUp, useClerk, useUser, RedirectToSignIn } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
@@ -33,6 +33,57 @@ const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminFilieres = lazy(() => import("@/pages/admin/filieres"));
 const AdminTeachers = lazy(() => import("@/pages/admin/teachers"));
 
+type UserRole =
+  | "STUDENT"
+  | "TEACHER"
+  | "ACADEMIC_SERVICE"
+  | "FINANCIAL_SERVICE"
+  | "ADMIN"
+  | "DIRECTOR"
+  | "STAFF";
+
+type ProtectedRouteProps = {
+  children: ReactNode;
+  allowedRoles?: UserRole[];
+};
+
+function useDbUser() {
+  const { user, isLoaded } = useUser();
+  return { isLoaded, clerkId: user?.id ?? null };
+}
+
+function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+  const { isLoaded, clerkId } = useDbUser();
+  if (!isLoaded) return <PageLoader />;
+  if (!clerkId) return <RedirectToSignIn />;
+  void allowedRoles;
+  return <>{children}</>;
+}
+
+function AuthedOnlyRoute({ children }: { children: ReactNode }) {
+  return <ProtectedRoute>{children}</ProtectedRoute>;
+}
+
+function AdminRoute({ children }: { children: ReactNode }) {
+  return <ProtectedRoute allowedRoles={["ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
+}
+
+function AcademicRoute({ children }: { children: ReactNode }) {
+  return <ProtectedRoute allowedRoles={["ACADEMIC_SERVICE", "ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
+}
+
+function FinancialRoute({ children }: { children: ReactNode }) {
+  return <ProtectedRoute allowedRoles={["FINANCIAL_SERVICE", "ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
+}
+
+function TeacherRoute({ children }: { children: ReactNode }) {
+  return <ProtectedRoute allowedRoles={["TEACHER", "ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
+}
+
+function StudentRoute({ children }: { children: ReactNode }) {
+  return <ProtectedRoute allowedRoles={["STUDENT"]}>{children}</ProtectedRoute>;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30_000 },
@@ -63,7 +114,7 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/images/logo-isc.jpg`,
+    logoImageUrl: `${window.location.origin}${basePath}/images/logo-isc.png`,
   },
   variables: {
     colorPrimary: "hsl(215 61% 27%)",
@@ -153,32 +204,84 @@ function ClerkProviderWithRoutes() {
           <ClerkQueryClientCacheInvalidator />
           <Suspense fallback={<PageLoader />}>
             <Switch>
+              {/* Public routes — no auth required */}
               <Route path="/" component={Home} />
               <Route path="/sign-in/*?" component={SignInPage} />
               <Route path="/sign-up/*?" component={SignUpPage} />
-              <Route path="/dashboard" component={DashboardRouter} />
-              <Route path="/dashboard/student" component={StudentDashboard} />
-              <Route path="/dashboard/teacher" component={TeacherDashboard} />
-              <Route path="/dashboard/academic" component={AcademicDashboard} />
-              <Route path="/dashboard/financial" component={FinancialDashboard} />
-              <Route path="/dashboard/admin" component={AdminDashboard} />
-              <Route path="/dashboard/director" component={DirectorDashboard} />
               <Route path="/courses" component={CoursesIndex} />
-              <Route path="/courses/:id/learn" component={CourseLearn} />
-              <Route path="/courses/:id/forum" component={CourseForum} />
-              <Route path="/courses/:id/evaluations" component={EvaluationsList} />
               <Route path="/courses/:id" component={CourseDetail} />
-              <Route path="/evaluations/:id" component={EvaluationTake} />
-              <Route path="/inscriptions/:id" component={InscriptionDetail} />
-              <Route path="/inscriptions" component={InscriptionsIndex} />
-              <Route path="/payments" component={PaymentsIndex} />
               <Route path="/certificates/verify/:hash" component={CertificateVerify} />
               <Route path="/certificates/verify" component={CertificateVerify} />
-              <Route path="/certificates" component={CertificatesIndex} />
-              <Route path="/profile" component={ProfileIndex} />
-              <Route path="/admin/users" component={AdminUsers} />
-              <Route path="/admin/filieres" component={AdminFilieres} />
-              <Route path="/admin/teachers" component={AdminTeachers} />
+
+              {/* Authenticated routes — any signed-in user */}
+              <Route path="/dashboard">
+                <AuthedOnlyRoute><DashboardRouter /></AuthedOnlyRoute>
+              </Route>
+              <Route path="/profile">
+                <AuthedOnlyRoute><ProfileIndex /></AuthedOnlyRoute>
+              </Route>
+              <Route path="/certificates">
+                <AuthedOnlyRoute><CertificatesIndex /></AuthedOnlyRoute>
+              </Route>
+
+              {/* Student routes */}
+              <Route path="/dashboard/student">
+                <StudentRoute><StudentDashboard /></StudentRoute>
+              </Route>
+              <Route path="/courses/:id/learn">
+                <StudentRoute><CourseLearn /></StudentRoute>
+              </Route>
+              <Route path="/courses/:id/forum">
+                <StudentRoute><CourseForum /></StudentRoute>
+              </Route>
+              <Route path="/courses/:id/evaluations">
+                <StudentRoute><EvaluationsList /></StudentRoute>
+              </Route>
+              <Route path="/evaluations/:id">
+                <StudentRoute><EvaluationTake /></StudentRoute>
+              </Route>
+              <Route path="/inscriptions/:id">
+                <StudentRoute><InscriptionDetail /></StudentRoute>
+              </Route>
+              <Route path="/inscriptions">
+                <StudentRoute><InscriptionsIndex /></StudentRoute>
+              </Route>
+              <Route path="/payments">
+                <StudentRoute><PaymentsIndex /></StudentRoute>
+              </Route>
+
+              {/* Teacher routes */}
+              <Route path="/dashboard/teacher">
+                <TeacherRoute><TeacherDashboard /></TeacherRoute>
+              </Route>
+
+              {/* Academic service routes */}
+              <Route path="/dashboard/academic">
+                <AcademicRoute><AcademicDashboard /></AcademicRoute>
+              </Route>
+
+              {/* Financial service routes */}
+              <Route path="/dashboard/financial">
+                <FinancialRoute><FinancialDashboard /></FinancialRoute>
+              </Route>
+
+              {/* Admin / Director routes */}
+              <Route path="/dashboard/admin">
+                <AdminRoute><AdminDashboard /></AdminRoute>
+              </Route>
+              <Route path="/dashboard/director">
+                <AdminRoute><DirectorDashboard /></AdminRoute>
+              </Route>
+              <Route path="/admin/users">
+                <AdminRoute><AdminUsers /></AdminRoute>
+              </Route>
+              <Route path="/admin/filieres">
+                <AdminRoute><AdminFilieres /></AdminRoute>
+              </Route>
+              <Route path="/admin/teachers">
+                <AcademicRoute><AdminTeachers /></AcademicRoute>
+              </Route>
+
               <Route component={NotFound} />
             </Switch>
           </Suspense>

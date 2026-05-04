@@ -51,6 +51,7 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
+      security: []
       responses:
         "200":
           description: Healthy
@@ -501,6 +502,7 @@ paths:
       operationId: listCourses
       tags: [courses]
       summary: List courses
+      security: []
       parameters:
         - name: page
           in: query
@@ -563,6 +565,7 @@ paths:
       operationId: getCourseById
       tags: [courses]
       summary: Get course by ID with modules
+      security: []
       parameters:
         - name: id
           in: path
@@ -1000,6 +1003,7 @@ paths:
       operationId: verifyCertificate
       tags: [certificates]
       summary: Verify certificate by hash (public)
+      security: []
       parameters:
         - name: hash
           in: path

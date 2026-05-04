@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, count, and } from "drizzle-orm";
 import { db, studentsTable, filieresTable, enrollmentsTable, paymentsTable, certificatesTable } from "@workspace/db";
+import { requireAuth, requireAcademic } from "../middlewares/auth";
 import {
   ListStudentsQueryParams,
   CreateStudentBody,
@@ -27,7 +28,7 @@ async function studentWithFiliere(student: any) {
   };
 }
 
-router.get("/students", async (req, res): Promise<void> => {
+router.get("/students", requireAuth, async (req, res): Promise<void> => {
   const params = ListStudentsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -61,7 +62,7 @@ router.get("/students", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/students", async (req, res): Promise<void> => {
+router.post("/students", requireAcademic, async (req, res): Promise<void> => {
   const parsed = CreateStudentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -108,7 +109,7 @@ router.get("/students/:id", async (req, res): Promise<void> => {
   });
 });
 
-router.put("/students/:id", async (req, res): Promise<void> => {
+router.put("/students/:id", requireAcademic, async (req, res): Promise<void> => {
   const params = UpdateStudentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

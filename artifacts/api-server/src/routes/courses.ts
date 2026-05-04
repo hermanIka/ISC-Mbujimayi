@@ -116,7 +116,7 @@ router.get("/courses/:id", async (req, res): Promise<void> => {
   res.json({ ...enriched, modules: modulesWithChapters });
 });
 
-router.put("/courses/:id", async (req, res): Promise<void> => {
+router.put("/courses/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = UpdateCourseParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -139,7 +139,7 @@ router.put("/courses/:id", async (req, res): Promise<void> => {
   res.json(await enrichCourse(course));
 });
 
-router.delete("/courses/:id", async (req, res): Promise<void> => {
+router.delete("/courses/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = DeleteCourseParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -168,7 +168,7 @@ router.get("/courses/:courseId/modules", async (req, res): Promise<void> => {
   res.json(withCounts);
 });
 
-router.post("/courses/:courseId/modules", async (req, res): Promise<void> => {
+router.post("/courses/:courseId/modules", requireTeacher, async (req, res): Promise<void> => {
   const params = CreateModuleParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -186,7 +186,7 @@ router.post("/courses/:courseId/modules", async (req, res): Promise<void> => {
   res.status(201).json({ ...mod, chapterCount: 0 });
 });
 
-router.put("/modules/:id", async (req, res): Promise<void> => {
+router.put("/modules/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = UpdateModuleParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -210,7 +210,7 @@ router.put("/modules/:id", async (req, res): Promise<void> => {
   res.json({ ...mod, chapterCount: Number(row?.count ?? 0) });
 });
 
-router.delete("/modules/:id", async (req, res): Promise<void> => {
+router.delete("/modules/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = DeleteModuleParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -233,7 +233,7 @@ router.get("/modules/:moduleId/chapters", async (req, res): Promise<void> => {
   res.json(chapters);
 });
 
-router.post("/modules/:moduleId/chapters", async (req, res): Promise<void> => {
+router.post("/modules/:moduleId/chapters", requireTeacher, async (req, res): Promise<void> => {
   const params = CreateChapterParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -251,7 +251,7 @@ router.post("/modules/:moduleId/chapters", async (req, res): Promise<void> => {
   res.status(201).json(chapter);
 });
 
-router.put("/chapters/:id", async (req, res): Promise<void> => {
+router.put("/chapters/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = UpdateChapterParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -274,7 +274,7 @@ router.put("/chapters/:id", async (req, res): Promise<void> => {
   res.json(chapter);
 });
 
-router.delete("/chapters/:id", async (req, res): Promise<void> => {
+router.delete("/chapters/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = DeleteChapterParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

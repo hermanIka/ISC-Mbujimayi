@@ -121,12 +121,20 @@ router.get("/analytics/academic", requireAcademic, async (_req, res): Promise<vo
     approvedInscriptions: byStatus.approved,
     rejectedInscriptions: byStatus.rejected,
     enrollmentsByFiliere: Object.entries(byFiliereMap).map(([filiereId, data]) => ({ filiereId, ...data })),
-    weeklyRegistrations: [
-      { week: "Semaine 1", count: Math.floor(Math.random() * 20 + 5) },
-      { week: "Semaine 2", count: Math.floor(Math.random() * 20 + 5) },
-      { week: "Semaine 3", count: Math.floor(Math.random() * 20 + 5) },
-      { week: "Semaine 4", count: Math.floor(Math.random() * 20 + 5) },
-    ],
+    weeklyRegistrations: (() => {
+      const now = new Date();
+      return [1, 2, 3, 4].map((weekNum) => {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - (4 - weekNum) * 7);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 7);
+        const weeklyCount = inscriptions.filter((i) => {
+          const d = new Date(i.createdAt);
+          return d >= weekStart && d < weekEnd;
+        }).length;
+        return { week: `Semaine ${weekNum}`, count: weeklyCount };
+      });
+    })(),
   });
 });
 

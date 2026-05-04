@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
 import { db, teachersTable, coursesTable, filieresTable } from "@workspace/db";
+import { requireAcademic } from "../middlewares/auth";
 import {
   CreateTeacherBody,
   GetTeacherByIdParams,
@@ -43,7 +44,7 @@ router.get("/teachers", async (_req, res): Promise<void> => {
   res.json(enriched);
 });
 
-router.post("/teachers", async (req, res): Promise<void> => {
+router.post("/teachers", requireAcademic, async (req, res): Promise<void> => {
   const parsed = CreateTeacherBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

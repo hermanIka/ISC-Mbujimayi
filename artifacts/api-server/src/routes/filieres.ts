@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
 import { db, filieresTable, studentsTable, coursesTable } from "@workspace/db";
+import { requireAdmin, requireAcademic } from "../middlewares/auth";
 import {
   CreateFiliereBody,
   GetFiliereByIdParams,
@@ -39,7 +40,7 @@ router.get("/filieres", async (_req, res): Promise<void> => {
   res.json(filieres);
 });
 
-router.post("/filieres", async (req, res): Promise<void> => {
+router.post("/filieres", requireAdmin, async (req, res): Promise<void> => {
   const parsed = CreateFiliereBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -81,7 +82,7 @@ router.get("/filieres/:id", async (req, res): Promise<void> => {
   });
 });
 
-router.put("/filieres/:id", async (req, res): Promise<void> => {
+router.put("/filieres/:id", requireAdmin, async (req, res): Promise<void> => {
   const params = UpdateFiliereParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -104,7 +105,7 @@ router.put("/filieres/:id", async (req, res): Promise<void> => {
   res.json({ ...filiere, studentCount: 0, courseCount: 0 });
 });
 
-router.delete("/filieres/:id", async (req, res): Promise<void> => {
+router.delete("/filieres/:id", requireAdmin, async (req, res): Promise<void> => {
   const params = DeleteFiliereParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
