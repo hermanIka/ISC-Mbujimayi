@@ -5,11 +5,9 @@ import { coursesTable } from "./courses";
 import { studentsTable } from "./students";
 
 export const evaluationTypeEnum = pgEnum("evaluation_type", [
-  "QCM",
-  "TRUE_FALSE",
-  "SHORT_ANSWER",
-  "ESSAY",
-  "MIXED",
+  "QUIZ",
+  "ASSIGNMENT",
+  "EXAM",
 ]);
 
 export const evaluationsTable = pgTable(

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetEvaluationById, useSubmitEvaluation, getGetEvaluationByIdQueryKey } from "@workspace/api-client-react";
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation } from "@/lib/router";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";

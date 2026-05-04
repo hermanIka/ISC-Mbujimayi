@@ -3,7 +3,7 @@ import { ClerkProvider, SignIn, SignUp, useClerk, RedirectToSignIn, useAuth } fr
 import { useGetCurrentUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
-import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -201,7 +201,7 @@ function PageLoader() {
 }
 
 function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   return (
     <ClerkProvider
@@ -210,94 +210,49 @@ function ClerkProviderWithRoutes() {
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+      routerPush={(to) => navigate(stripBase(to))}
+      routerReplace={(to) => navigate(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ClerkQueryClientCacheInvalidator />
           <Suspense fallback={<PageLoader />}>
-            <Switch>
-              {/* Public routes — no auth required */}
-              <Route path="/" component={Home} />
-              <Route path="/sign-in/*?" component={SignInPage} />
-              <Route path="/sign-up/*?" component={SignUpPage} />
-              <Route path="/courses" component={CoursesIndex} />
-              <Route path="/courses/:id" component={CourseDetail} />
-              <Route path="/certificates/verify/:hash" component={CertificateVerify} />
-              <Route path="/certificates/verify" component={CertificateVerify} />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/sign-in/*" element={<SignInPage />} />
+              <Route path="/sign-up/*" element={<SignUpPage />} />
+              <Route path="/courses" element={<CoursesIndex />} />
+              <Route path="/courses/:id" element={<CourseDetail />} />
+              <Route path="/certificates/verify/:hash" element={<CertificateVerify />} />
+              <Route path="/certificates/verify" element={<CertificateVerify />} />
 
-              {/* Authenticated routes — any signed-in user */}
-              <Route path="/dashboard">
-                <AuthedOnlyRoute><DashboardRouter /></AuthedOnlyRoute>
-              </Route>
-              <Route path="/profile">
-                <AuthedOnlyRoute><ProfileIndex /></AuthedOnlyRoute>
-              </Route>
-              <Route path="/certificates">
-                <AuthedOnlyRoute><CertificatesIndex /></AuthedOnlyRoute>
-              </Route>
+              <Route path="/dashboard" element={<AuthedOnlyRoute><DashboardRouter /></AuthedOnlyRoute>} />
+              <Route path="/profile" element={<AuthedOnlyRoute><ProfileIndex /></AuthedOnlyRoute>} />
+              <Route path="/certificates" element={<AuthedOnlyRoute><CertificatesIndex /></AuthedOnlyRoute>} />
 
-              {/* Student routes */}
-              <Route path="/dashboard/student">
-                <StudentRoute><StudentDashboard /></StudentRoute>
-              </Route>
-              <Route path="/courses/:id/learn">
-                <StudentRoute><CourseLearn /></StudentRoute>
-              </Route>
-              <Route path="/courses/:id/forum">
-                <StudentRoute><CourseForum /></StudentRoute>
-              </Route>
-              <Route path="/courses/:id/evaluations">
-                <StudentRoute><EvaluationsList /></StudentRoute>
-              </Route>
-              <Route path="/evaluations/:id">
-                <StudentRoute><EvaluationTake /></StudentRoute>
-              </Route>
-              <Route path="/inscriptions/:id">
-                <StudentRoute><InscriptionDetail /></StudentRoute>
-              </Route>
-              <Route path="/inscriptions">
-                <StudentRoute><InscriptionsIndex /></StudentRoute>
-              </Route>
-              <Route path="/payments">
-                <StudentRoute><PaymentsIndex /></StudentRoute>
-              </Route>
+              <Route path="/dashboard/student" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+              <Route path="/courses/:id/learn" element={<StudentRoute><CourseLearn /></StudentRoute>} />
+              <Route path="/courses/:id/forum" element={<StudentRoute><CourseForum /></StudentRoute>} />
+              <Route path="/courses/:id/evaluations" element={<StudentRoute><EvaluationsList /></StudentRoute>} />
+              <Route path="/evaluations/:id" element={<StudentRoute><EvaluationTake /></StudentRoute>} />
+              <Route path="/inscriptions/:id" element={<StudentRoute><InscriptionDetail /></StudentRoute>} />
+              <Route path="/inscriptions" element={<StudentRoute><InscriptionsIndex /></StudentRoute>} />
+              <Route path="/payments" element={<StudentRoute><PaymentsIndex /></StudentRoute>} />
 
-              {/* Teacher routes */}
-              <Route path="/dashboard/teacher">
-                <TeacherRoute><TeacherDashboard /></TeacherRoute>
-              </Route>
+              <Route path="/dashboard/teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />
 
-              {/* Academic service routes */}
-              <Route path="/dashboard/academic">
-                <AcademicRoute><AcademicDashboard /></AcademicRoute>
-              </Route>
+              <Route path="/dashboard/academic" element={<AcademicRoute><AcademicDashboard /></AcademicRoute>} />
 
-              {/* Financial service routes */}
-              <Route path="/dashboard/financial">
-                <FinancialRoute><FinancialDashboard /></FinancialRoute>
-              </Route>
+              <Route path="/dashboard/financial" element={<FinancialRoute><FinancialDashboard /></FinancialRoute>} />
 
-              {/* Admin / Director routes */}
-              <Route path="/dashboard/admin">
-                <AdminRoute><AdminDashboard /></AdminRoute>
-              </Route>
-              <Route path="/dashboard/director">
-                <AdminRoute><DirectorDashboard /></AdminRoute>
-              </Route>
-              <Route path="/admin/users">
-                <AdminRoute><AdminUsers /></AdminRoute>
-              </Route>
-              <Route path="/admin/filieres">
-                <AdminRoute><AdminFilieres /></AdminRoute>
-              </Route>
-              <Route path="/admin/teachers">
-                <AcademicRoute><AdminTeachers /></AcademicRoute>
-              </Route>
+              <Route path="/dashboard/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="/dashboard/director" element={<AdminRoute><DirectorDashboard /></AdminRoute>} />
+              <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+              <Route path="/admin/filieres" element={<AdminRoute><AdminFilieres /></AdminRoute>} />
+              <Route path="/admin/teachers" element={<AcademicRoute><AdminTeachers /></AcademicRoute>} />
 
-              <Route component={NotFound} />
-            </Switch>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </Suspense>
           <Toaster />
         </TooltipProvider>
@@ -308,9 +263,9 @@ function ClerkProviderWithRoutes() {
 
 function App() {
   return (
-    <WouterRouter base={basePath}>
+    <BrowserRouter basename={basePath}>
       <ClerkProviderWithRoutes />
-    </WouterRouter>
+    </BrowserRouter>
   );
 }
 

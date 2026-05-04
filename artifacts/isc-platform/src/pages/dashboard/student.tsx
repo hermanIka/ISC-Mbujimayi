@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, CreditCard, GraduationCap, CheckSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "wouter";
+import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 
 interface StudentAnalyticsData {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link } from "@/lib/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useGetCourseById,

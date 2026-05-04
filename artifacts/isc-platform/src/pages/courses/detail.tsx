@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetCourseById, useListModules, useCreateEnrollment, getGetCourseByIdQueryKey, getListModulesQueryKey } from "@workspace/api-client-react";
-import { useRoute, Link, useLocation } from "wouter";
+import { useRoute, Link, useLocation } from "@/lib/router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

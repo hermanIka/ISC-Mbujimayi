@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Award, Download, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
-import { Link } from "wouter";
+import { Link } from "@/lib/router";
 
 export default function CertificatesPage() {
   const { data, isLoading } = useListCertificates();

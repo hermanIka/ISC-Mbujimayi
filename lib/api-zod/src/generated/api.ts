@@ -1281,8 +1281,8 @@ export const ListPaymentsResponse = zod.object({
       studentId: zod.string(),
       amount: zod.string(),
       currency: zod.string(),
-      type: zod.enum(["INSCRIPTION", "MINERVAL", "EXAM_FEES", "OTHER"]),
-      operator: zod.enum(["MTN", "AIRTEL", "ORANGE"]),
+      type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
+      operator: zod.enum(["ORANGE_MONEY", "AIRTEL_MONEY", "MPESA"]),
       phoneNumber: zod.string(),
       status: zod.enum([
         "INITIATED",
@@ -1309,8 +1309,8 @@ export const ListPaymentsResponse = zod.object({
 export const InitiatePaymentBody = zod.object({
   studentId: zod.string(),
   amount: zod.string(),
-  type: zod.enum(["INSCRIPTION", "MINERVAL", "EXAM_FEES", "OTHER"]),
-  operator: zod.enum(["MTN", "AIRTEL", "ORANGE"]),
+  type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
+  operator: zod.enum(["ORANGE_MONEY", "AIRTEL_MONEY", "MPESA"]),
   phoneNumber: zod.string(),
 });
 
@@ -1318,7 +1318,7 @@ export const InitiatePaymentBody = zod.object({
  * @summary Handle mobile money operator callback
  */
 export const PaymentCallbackParams = zod.object({
-  operator: zod.enum(["mtn", "airtel", "orange"]),
+  operator: zod.enum(["orange_money", "airtel_money", "mpesa"]),
 });
 
 export const PaymentCallbackBody = zod.object({
@@ -1339,8 +1339,8 @@ export const GetPaymentByIdResponse = zod.object({
   studentId: zod.string(),
   amount: zod.string(),
   currency: zod.string(),
-  type: zod.enum(["INSCRIPTION", "MINERVAL", "EXAM_FEES", "OTHER"]),
-  operator: zod.enum(["MTN", "AIRTEL", "ORANGE"]),
+  type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
+  operator: zod.enum(["ORANGE_MONEY", "AIRTEL_MONEY", "MPESA"]),
   phoneNumber: zod.string(),
   status: zod.enum([
     "INITIATED",
@@ -1544,7 +1544,7 @@ export const ListEvaluationsResponseItem = zod.object({
   id: zod.string(),
   courseId: zod.string(),
   title: zod.string(),
-  type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
+  type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
   duration: zod.number(),
   passMark: zod.number(),
   questionCount: zod.number(),
@@ -1561,7 +1561,7 @@ export const CreateEvaluationParams = zod.object({
 
 export const CreateEvaluationBody = zod.object({
   title: zod.string(),
-  type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
+  type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
   duration: zod.number(),
   passMark: zod.number().optional(),
 });
@@ -1578,7 +1578,7 @@ export const GetEvaluationByIdResponse = zod
     id: zod.string(),
     courseId: zod.string(),
     title: zod.string(),
-    type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
+    type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
     duration: zod.number(),
     passMark: zod.number(),
     questionCount: zod.number(),
@@ -1623,7 +1623,7 @@ export const UpdateEvaluationResponse = zod.object({
   id: zod.string(),
   courseId: zod.string(),
   title: zod.string(),
-  type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
+  type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
   duration: zod.number(),
   passMark: zod.number(),
   questionCount: zod.number(),

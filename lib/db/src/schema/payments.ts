@@ -11,12 +11,16 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "CANCELLED",
 ]);
 export const paymentTypeEnum = pgEnum("payment_type", [
-  "INSCRIPTION",
-  "MINERVAL",
-  "EXAM_FEES",
+  "INSCRIPTION_FEE",
+  "COURSE_FEE",
+  "EXAM_FEE",
   "OTHER",
 ]);
-export const mobileOperatorEnum = pgEnum("mobile_operator", ["MTN", "AIRTEL", "ORANGE"]);
+export const mobileOperatorEnum = pgEnum("mobile_operator", [
+  "ORANGE_MONEY",
+  "AIRTEL_MONEY",
+  "MPESA",
+]);
 
 export const paymentsTable = pgTable(
   "payments",

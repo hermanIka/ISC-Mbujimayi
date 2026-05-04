@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link } from "@/lib/router";
 
 export default function Home() {
   return (

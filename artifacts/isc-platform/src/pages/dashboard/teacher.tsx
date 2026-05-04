@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BookOpen, Star, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link } from "@/lib/router";
 
 interface TeacherAnalyticsData {
   totalCourses: number;

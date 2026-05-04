@@ -76,6 +76,13 @@
   },
   "dependencies": {
     "@clerk/react": "^6.5.0",
-    "@clerk/themes": "^2.4.57"
+    "@clerk/themes": "^2.4.57",
+    "i18next": "^26.0.8",
+    "jspdf": "^4.2.1",
+    "pdfjs-dist": "^5.7.284",
+    "react-i18next": "^17.0.6",
+    "react-player": "^3.4.0",
+    "react-router-dom": "^7.14.2",
+    "zustand": "^5.0.12"
   }
 }

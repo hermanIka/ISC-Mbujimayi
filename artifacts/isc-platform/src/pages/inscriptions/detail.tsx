@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetInscriptionById, getGetInscriptionByIdQueryKey } from "@workspace/api-client-react";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link } from "@/lib/router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

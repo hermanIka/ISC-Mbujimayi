@@ -166,11 +166,11 @@ async function seed() {
   console.log("✓ Inscriptions seeded");
 
   const paymentData: InsertPayment[] = [
-    { id: nanoid(), studentId: students[0].id, reference: "ISC-001-ABCD", amount: "75000", currency: "CDF", type: "INSCRIPTION", operator: "MTN", phoneNumber: "+243812345678", status: "CONFIRMED", operatorRef: "MTN001" },
-    { id: nanoid(), studentId: students[0].id, reference: "ISC-002-EFGH", amount: "150000", currency: "CDF", type: "MINERVAL", operator: "AIRTEL", phoneNumber: "+243812345678", status: "CONFIRMED", operatorRef: "AIR001" },
-    { id: nanoid(), studentId: students[1].id, reference: "ISC-003-IJKL", amount: "75000", currency: "CDF", type: "INSCRIPTION", operator: "ORANGE", phoneNumber: "+243823456789", status: "INITIATED", operatorRef: null },
-    { id: nanoid(), studentId: students[2].id, reference: "ISC-004-MNOP", amount: "150000", currency: "CDF", type: "MINERVAL", operator: "MTN", phoneNumber: "+243834567890", status: "CONFIRMED", operatorRef: "MTN002" },
-    { id: nanoid(), studentId: students[3].id, reference: "ISC-005-QRST", amount: "25000", currency: "CDF", type: "EXAM_FEES", operator: "AIRTEL", phoneNumber: "+243845678901", status: "PENDING", operatorRef: null },
+    { id: nanoid(), studentId: students[0].id, reference: "ISC-001-ABCD", amount: "75000", currency: "CDF", type: "INSCRIPTION_FEE", operator: "ORANGE_MONEY", phoneNumber: "+243812345678", status: "CONFIRMED", operatorRef: "MTN001" },
+    { id: nanoid(), studentId: students[0].id, reference: "ISC-002-EFGH", amount: "150000", currency: "CDF", type: "COURSE_FEE", operator: "AIRTEL_MONEY", phoneNumber: "+243812345678", status: "CONFIRMED", operatorRef: "AIR001" },
+    { id: nanoid(), studentId: students[1].id, reference: "ISC-003-IJKL", amount: "75000", currency: "CDF", type: "INSCRIPTION_FEE", operator: "MPESA", phoneNumber: "+243823456789", status: "INITIATED", operatorRef: null },
+    { id: nanoid(), studentId: students[2].id, reference: "ISC-004-MNOP", amount: "150000", currency: "CDF", type: "COURSE_FEE", operator: "ORANGE_MONEY", phoneNumber: "+243834567890", status: "CONFIRMED", operatorRef: "MTN002" },
+    { id: nanoid(), studentId: students[3].id, reference: "ISC-005-QRST", amount: "25000", currency: "CDF", type: "EXAM_FEE", operator: "AIRTEL_MONEY", phoneNumber: "+243845678901", status: "PENDING", operatorRef: null },
   ];
   for (const p of paymentData) {
     try { await db.insert(paymentsTable).values(p).onConflictDoNothing(); } catch {}

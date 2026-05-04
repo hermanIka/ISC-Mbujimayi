@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "@/lib/router";
 import { Show, useClerk, useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

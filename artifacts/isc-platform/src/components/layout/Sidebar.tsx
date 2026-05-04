@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from "@/lib/router";
 import { cn } from "@/lib/utils";
 import { BookOpen, GraduationCap, LayoutDashboard, Settings, Users, CreditCard, FileText, CheckSquare, BarChart } from "lucide-react";
 import { useGetCurrentUser } from "@workspace/api-client-react";
