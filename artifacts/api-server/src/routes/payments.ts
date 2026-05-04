@@ -107,6 +107,19 @@ router.get("/payments/:id", requireAuth, async (req, res): Promise<void> => {
     res.status(404).json({ error: "Payment not found" });
     return;
   }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent || payment.studentId !== callerStudent.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+  }
   res.json({ ...payment, amount: payment.amount?.toString() ?? "0" });
 });
 

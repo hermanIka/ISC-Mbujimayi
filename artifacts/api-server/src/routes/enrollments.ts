@@ -144,6 +144,19 @@ router.get("/enrollments/:id", requireAuth, async (req, res): Promise<void> => {
     res.status(404).json({ error: "Enrollment not found" });
     return;
   }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent || enrollment.studentId !== callerStudent.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+  }
   const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, enrollment.courseId));
   const progressPercent = await calculateProgress(enrollment.id);
   const chapterProgress = await db
@@ -170,6 +183,24 @@ router.post("/chapters/:chapterId/progress", requireAuth, async (req, res): Prom
     return;
   }
   const { enrollmentId, completed, watchedSeconds } = parsed.data;
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const [targetEnrollment] = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.id, enrollmentId));
+  if (!targetEnrollment) {
+    res.status(404).json({ error: "Enrollment not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent || targetEnrollment.studentId !== callerStudent.id) {
+      res.status(403).json({ error: "Access denied: enrollment does not belong to you" });
+      return;
+    }
+  }
   const existing = await db
     .select()
     .from(chapterProgressTable)

@@ -183,10 +183,10 @@ router.get("/evaluations/:id/results", async (req, res): Promise<void> => {
     .select()
     .from(evaluationResultsTable)
     .where(eq(evaluationResultsTable.evaluationId, params.data.id));
-  const formatted = results.map(r => {
-    const ev = evaluationsTable;
-    return { ...r, passed: r.maxScore > 0 ? (r.score / r.maxScore) * 100 >= 50 : false };
-  });
+  const formatted = results.map(r => ({
+    ...r,
+    passed: r.maxScore > 0 ? (r.score / r.maxScore) * 100 >= 50 : false,
+  }));
   res.json(formatted);
 });
 

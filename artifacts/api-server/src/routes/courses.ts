@@ -132,15 +132,29 @@ router.put("/courses/:id", requireTeacher, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [existing] = await db.select().from(coursesTable).where(eq(coursesTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Course not found" });
+    return;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isAdmin = ["ADMIN", "DIRECTOR"].includes(callerUser.role);
+  if (!isAdmin) {
+    const [callerTeacher] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+    if (!callerTeacher || existing.teacherId !== callerTeacher.id) {
+      res.status(403).json({ error: "Access denied: you do not own this course" });
+      return;
+    }
+  }
   const [course] = await db
     .update(coursesTable)
     .set(parsed.data)
     .where(eq(coursesTable.id, params.data.id))
     .returning();
-  if (!course) {
-    res.status(404).json({ error: "Course not found" });
-    return;
-  }
   res.json(await enrichCourse(course));
 });
 
@@ -149,6 +163,24 @@ router.delete("/courses/:id", requireTeacher, async (req, res): Promise<void> =>
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
+  }
+  const [existing] = await db.select().from(coursesTable).where(eq(coursesTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Course not found" });
+    return;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isAdmin = ["ADMIN", "DIRECTOR"].includes(callerUser.role);
+  if (!isAdmin) {
+    const [callerTeacher] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+    if (!callerTeacher || existing.teacherId !== callerTeacher.id) {
+      res.status(403).json({ error: "Access denied: you do not own this course" });
+      return;
+    }
   }
   await db.delete(coursesTable).where(eq(coursesTable.id, params.data.id));
   res.sendStatus(204);
