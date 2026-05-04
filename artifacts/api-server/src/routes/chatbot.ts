@@ -84,15 +84,18 @@ router.post("/chatbot/message", async (req, res): Promise<void> => {
     }
   }
 
+  const isEscalationControl = message.startsWith("__escalate__:");
+  const cleanedMessage = isEscalationControl ? message.slice("__escalate__:".length).trim() : message;
+
   await db.insert(chatMessagesTable).values({
     id: nanoid(),
     role: "user",
-    content: message,
+    content: cleanedMessage,
     usedAI: false,
     sessionId,
   });
 
-  const faqAnswer = findFAQAnswer(message);
+  const faqAnswer = isEscalationControl ? null : findFAQAnswer(message);
 
   let reply: string;
   let usedAI = false;
@@ -101,11 +104,10 @@ router.post("/chatbot/message", async (req, res): Promise<void> => {
   if (faqAnswer) {
     reply = faqAnswer;
   } else {
-    const isEscalationConfirm = /\b(oui|yes|transmettre|escalate|escalader|confirmer?|ok)\b/i.test(message);
-    const isPendingEscalation = message.startsWith("__escalate__:");
+    const isEscalationConfirm = /\b(oui|yes|transmettre|escalate|escalader|confirmer?|ok)\b/i.test(cleanedMessage);
 
-    if (isPendingEscalation || isEscalationConfirm) {
-      const actualMessage = isPendingEscalation ? message.slice("__escalate__:".length).trim() : message;
+    if (isEscalationControl || isEscalationConfirm) {
+      const actualMessage = cleanedMessage;
       const history = await db
         .select()
         .from(chatMessagesTable)

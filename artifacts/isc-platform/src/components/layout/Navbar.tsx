@@ -82,10 +82,10 @@ export function Navbar() {
                   <p className="text-xs font-semibold text-primary mt-1">{dbUser?.role}</p>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/profile">Profil</Link>
+                  <Link href="/profile">{t("nav.profile")}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => signOut()}>
-                  Déconnexion
+                  {t("nav.sign_out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

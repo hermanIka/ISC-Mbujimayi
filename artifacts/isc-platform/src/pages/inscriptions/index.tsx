@@ -49,9 +49,9 @@ export default function InscriptionsPage() {
   const [phone, setPhone] = useState("");
   const [filiereId, setFiliereId] = useState("");
   const [docs, setDocs] = useState<DocEntry[]>([
-    { type: "NATIONAL_ID", label: "Carte Nationale d'Identité", file: null },
-    { type: "DIPLOMA", label: "Diplôme d'État ou relevé de notes", file: null },
-    { type: "PHOTO", label: "Photo d'identité (format passeport)", file: null },
+    { type: "NATIONAL_ID", label: t("inscriptions.doc_national_id"), file: null },
+    { type: "DIPLOMA", label: t("inscriptions.doc_diploma"), file: null },
+    { type: "PHOTO", label: t("inscriptions.doc_photo"), file: null },
   ]);
 
   const getStatusColor = (status: string) => {
@@ -199,20 +199,20 @@ export default function InscriptionsPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Prénom *</Label>
-                  <Input placeholder="Prénom" value={firstName} onChange={(e) => setFirstName(e.target.value)} data-testid="input-inscription-firstname" />
+                  <Label>{t("inscriptions.first_name")} *</Label>
+                  <Input placeholder={t("inscriptions.first_name")} value={firstName} onChange={(e) => setFirstName(e.target.value)} data-testid="input-inscription-firstname" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Nom *</Label>
-                  <Input placeholder="Nom de famille" value={lastName} onChange={(e) => setLastName(e.target.value)} data-testid="input-inscription-lastname" />
+                  <Label>{t("inscriptions.last_name")} *</Label>
+                  <Input placeholder={t("inscriptions.last_name_placeholder")} value={lastName} onChange={(e) => setLastName(e.target.value)} data-testid="input-inscription-lastname" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Email *</Label>
+                <Label>{t("inscriptions.email")} *</Label>
                 <Input type="email" placeholder="votre@email.com" value={email} onChange={(e) => setEmail(e.target.value)} data-testid="input-inscription-email" />
               </div>
               <div className="space-y-2">
-                <Label>Téléphone</Label>
+                <Label>{t("inscriptions.phone")}</Label>
                 <Input placeholder="+243..." value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
             </div>
@@ -221,10 +221,10 @@ export default function InscriptionsPage() {
           {currentStep === 1 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Filière souhaitée *</Label>
+                <Label>{t("inscriptions.desired_filiere")} *</Label>
                 <Select value={filiereId} onValueChange={setFiliereId}>
                   <SelectTrigger data-testid="select-inscription-filiere">
-                    <SelectValue placeholder="Choisir une filière" />
+                    <SelectValue placeholder={t("inscriptions.choose_filiere")} />
                   </SelectTrigger>
                   <SelectContent>
                     {filieres.map((f: Filiere) => (
@@ -236,7 +236,7 @@ export default function InscriptionsPage() {
               {filiereId && (
                 <div className="p-4 bg-primary/5 rounded-lg text-sm space-y-1">
                   <p className="font-semibold">{filieres.find((f) => f.id === filiereId)?.name}</p>
-                  <p className="text-muted-foreground">Durée : 3 ans — Diplôme d'État reconnu</p>
+                  <p className="text-muted-foreground">{t("inscriptions.filiere_duration")}</p>
                 </div>
               )}
             </div>
@@ -244,17 +244,17 @@ export default function InscriptionsPage() {
 
           {currentStep === 2 && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Téléchargez les documents requis (formats acceptés : PDF, JPG, PNG).</p>
+              <p className="text-sm text-muted-foreground">{t("inscriptions.docs_instruction")}</p>
               {docs.map((doc, index) => (
                 <div key={doc.type} className="border rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium">{doc.label}</Label>
-                    {doc.file && <Badge className="bg-green-500/10 text-green-700 text-xs">Ajouté</Badge>}
+                    {doc.file && <Badge className="bg-green-500/10 text-green-700 text-xs">{t("inscriptions.added")}</Badge>}
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md text-sm hover:bg-muted/50 transition-colors">
                       <Upload className="h-4 w-4" />
-                      {doc.file ? doc.file.name : "Choisir un fichier"}
+                      {doc.file ? doc.file.name : t("inscriptions.choose_file")}
                     </div>
                     <input
                       type="file"
@@ -273,17 +273,17 @@ export default function InscriptionsPage() {
             <div className="space-y-4">
               <div className="bg-muted/30 rounded-lg p-4 space-y-3 text-sm">
                 <div className="grid grid-cols-2 gap-2">
-                  <span className="text-muted-foreground">Prénom :</span><span className="font-medium">{firstName}</span>
-                  <span className="text-muted-foreground">Nom :</span><span className="font-medium">{lastName}</span>
-                  <span className="text-muted-foreground">Email :</span><span className="font-medium">{email}</span>
-                  {phone && <><span className="text-muted-foreground">Téléphone :</span><span className="font-medium">{phone}</span></>}
-                  <span className="text-muted-foreground">Filière :</span>
+                  <span className="text-muted-foreground">{t("inscriptions.first_name")} :</span><span className="font-medium">{firstName}</span>
+                  <span className="text-muted-foreground">{t("inscriptions.last_name")} :</span><span className="font-medium">{lastName}</span>
+                  <span className="text-muted-foreground">{t("inscriptions.email")} :</span><span className="font-medium">{email}</span>
+                  {phone && <><span className="text-muted-foreground">{t("inscriptions.phone")} :</span><span className="font-medium">{phone}</span></>}
+                  <span className="text-muted-foreground">{t("inscriptions.filiere")} :</span>
                   <span className="font-medium">{filieres.find((f) => f.id === filiereId)?.name ?? "—"}</span>
-                  <span className="text-muted-foreground">Documents :</span>
-                  <span className="font-medium">{docs.filter((d) => d.file).length}/{docs.length} ajoutés</span>
+                  <span className="text-muted-foreground">{t("inscriptions.documents")} :</span>
+                  <span className="font-medium">{docs.filter((d) => d.file).length}/{docs.length} {t("inscriptions.added_count")}</span>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">En soumettant ce dossier, vous confirmez l'exactitude des informations fournies. Le service académique traitera votre demande dans un délai de 5 à 10 jours ouvrables.</p>
+              <p className="text-xs text-muted-foreground">{t("inscriptions.review_disclaimer")}</p>
             </div>
           )}
 
@@ -309,7 +309,7 @@ export default function InscriptionsPage() {
                 disabled={createInscription.isPending}
                 data-testid="button-inscription-submit"
               >
-                {createInscription.isPending ? "Envoi..." : t("common.submit")}
+                {createInscription.isPending ? t("inscriptions.sending") : t("common.submit")}
               </Button>
             )}
           </div>
