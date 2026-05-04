@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or, and } from "drizzle-orm";
+import { eq, ilike, or, and, count } from "drizzle-orm";
 import { db, usersTable, roleEnum } from "@workspace/db";
 import { getAuth, clerkClient } from "@clerk/express";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
@@ -94,13 +94,14 @@ router.get("/users", requireAdmin, async (req, res): Promise<void> => {
   ].filter((c): c is NonNullable<typeof c> => c != null);
   const offset = (page - 1) * pageSize;
   const whereClause = conditions.length === 0 ? undefined : and(...conditions);
+  const [totalRow] = await db.select({ count: count() }).from(usersTable).where(whereClause);
+  const total = Number(totalRow?.count ?? 0);
   const users = await db
     .select()
     .from(usersTable)
     .where(whereClause)
     .limit(pageSize)
     .offset(offset);
-  const total = users.length;
   res.json(
     ListUsersResponse.parse({
       users,

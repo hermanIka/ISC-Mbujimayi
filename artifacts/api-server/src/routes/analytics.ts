@@ -53,11 +53,12 @@ router.get("/analytics/student", requireAuth, async (req, res): Promise<void> =>
     }
   }
 
+  const { and: andOp } = await import("drizzle-orm");
   const [certRow] = await db.select({ count: count() }).from(certificatesTable).where(eq(certificatesTable.studentId, callerStudent.id));
-  const [pendingRow] = await db.select({ count: count() }).from(paymentsTable).where(eq(paymentsTable.studentId, callerStudent.id));
-  const [confirmedRow] = await db.select({ count: count() }).from(paymentsTable).where(eq(paymentsTable.studentId, callerStudent.id));
-  const confirmedPayments = await db.select().from(paymentsTable).where(eq(paymentsTable.studentId, callerStudent.id));
-  const totalPaid = confirmedPayments.filter(p => p.status === "CONFIRMED").reduce((acc, p) => acc + Number(p.amount ?? 0), 0);
+  const [pendingRow] = await db.select({ count: count() }).from(paymentsTable).where(andOp(eq(paymentsTable.studentId, callerStudent.id), eq(paymentsTable.status, "INITIATED")));
+  const [confirmedRow] = await db.select({ count: count() }).from(paymentsTable).where(andOp(eq(paymentsTable.studentId, callerStudent.id), eq(paymentsTable.status, "CONFIRMED")));
+  const confirmedPayments = await db.select().from(paymentsTable).where(andOp(eq(paymentsTable.studentId, callerStudent.id), eq(paymentsTable.status, "CONFIRMED")));
+  const totalPaid = confirmedPayments.reduce((acc, p) => acc + Number(p.amount ?? 0), 0);
 
   res.json({
     enrolledCourses: enrolled,

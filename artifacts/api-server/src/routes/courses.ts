@@ -26,6 +26,36 @@ import { nanoid } from "nanoid";
 
 const router: IRouter = Router();
 
+async function getCallerTeacherId(req: import("express").Request): Promise<string | null> {
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) return null;
+  if (["ADMIN", "DIRECTOR"].includes(callerUser.role)) return "BYPASS";
+  const [t] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+  return t?.id ?? null;
+}
+
+async function assertCourseOwner(req: import("express").Request, courseId: string, res: import("express").Response): Promise<boolean> {
+  const tid = await getCallerTeacherId(req);
+  if (!tid) { res.status(401).json({ error: "User not found" }); return false; }
+  if (tid === "BYPASS") return true;
+  const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, courseId));
+  if (!course) { res.status(404).json({ error: "Course not found" }); return false; }
+  if (course.teacherId !== tid) { res.status(403).json({ error: "Access denied: you do not own this course" }); return false; }
+  return true;
+}
+
+async function assertModuleOwner(req: import("express").Request, moduleId: string, res: import("express").Response): Promise<boolean> {
+  const [mod] = await db.select().from(modulesTable).where(eq(modulesTable.id, moduleId));
+  if (!mod) { res.status(404).json({ error: "Module not found" }); return false; }
+  return assertCourseOwner(req, mod.courseId, res);
+}
+
+async function assertChapterOwner(req: import("express").Request, chapterId: string, res: import("express").Response): Promise<boolean> {
+  const [chapter] = await db.select().from(chaptersTable).where(eq(chaptersTable.id, chapterId));
+  if (!chapter) { res.status(404).json({ error: "Chapter not found" }); return false; }
+  return assertModuleOwner(req, chapter.moduleId, res);
+}
+
 async function enrichTeacher(teacherId: string) {
   const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, teacherId));
   if (!teacher) return null;
@@ -70,7 +100,7 @@ router.get("/courses", async (req, res): Promise<void> => {
     .where(whereClause)
     .limit(pageSize)
     .offset((page - 1) * pageSize);
-  const [totalRow] = await db.select({ count: count() }).from(coursesTable);
+  const [totalRow] = await db.select({ count: count() }).from(coursesTable).where(whereClause);
   const total = Number(totalRow?.count ?? 0);
   const enriched = await Promise.all(courses.map(enrichCourse));
   res.json({ courses: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
@@ -211,6 +241,7 @@ router.post("/courses/:courseId/modules", requireTeacher, async (req, res): Prom
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!await assertCourseOwner(req, params.data.courseId, res)) return;
   const parsed = CreateModuleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -229,6 +260,7 @@ router.put("/modules/:id", requireTeacher, async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!await assertModuleOwner(req, params.data.id, res)) return;
   const parsed = UpdateModuleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -253,6 +285,7 @@ router.delete("/modules/:id", requireTeacher, async (req, res): Promise<void> =>
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!await assertModuleOwner(req, params.data.id, res)) return;
   await db.delete(modulesTable).where(eq(modulesTable.id, params.data.id));
   res.sendStatus(204);
 });
@@ -276,6 +309,7 @@ router.post("/modules/:moduleId/chapters", requireTeacher, async (req, res): Pro
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!await assertModuleOwner(req, params.data.moduleId, res)) return;
   const parsed = CreateChapterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -294,6 +328,7 @@ router.put("/chapters/:id", requireTeacher, async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!await assertChapterOwner(req, params.data.id, res)) return;
   const parsed = UpdateChapterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -317,6 +352,7 @@ router.delete("/chapters/:id", requireTeacher, async (req, res): Promise<void> =
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!await assertChapterOwner(req, params.data.id, res)) return;
   await db.delete(chaptersTable).where(eq(chaptersTable.id, params.data.id));
   res.sendStatus(204);
 });

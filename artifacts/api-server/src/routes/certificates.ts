@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { db, certificatesTable, coursesTable, teachersTable, filieresTable, studentsTable, enrollmentsTable, modulesTable, type Course } from "@workspace/db";
 import { GetCertificateByIdParams, VerifyCertificateParams } from "@workspace/api-zod";
-import { count } from "drizzle-orm";
+import { requireAuth, getCallerDbUser } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -24,8 +24,24 @@ async function enrichCourse(course: Course) {
   };
 }
 
-router.get("/certificates", async (_req, res): Promise<void> => {
-  const certs = await db.select().from(certificatesTable);
+router.get("/certificates", requireAuth, async (req, res): Promise<void> => {
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  let certs;
+  if (isStaff) {
+    certs = await db.select().from(certificatesTable);
+  } else {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent) {
+      res.json([]);
+      return;
+    }
+    certs = await db.select().from(certificatesTable).where(eq(certificatesTable.studentId, callerStudent.id));
+  }
   const enriched = await Promise.all(
     certs.map(async (cert) => {
       const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, cert.courseId));
@@ -57,7 +73,7 @@ router.get("/certificates/verify/:hash", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/certificates/:id", async (req, res): Promise<void> => {
+router.get("/certificates/:id", requireAuth, async (req, res): Promise<void> => {
   const params = GetCertificateByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -67,6 +83,19 @@ router.get("/certificates/:id", async (req, res): Promise<void> => {
   if (!cert) {
     res.status(404).json({ error: "Certificate not found" });
     return;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent || cert.studentId !== callerStudent.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
   }
   const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, cert.courseId));
   res.json({ ...cert, course: course ? await enrichCourse(course) : null });

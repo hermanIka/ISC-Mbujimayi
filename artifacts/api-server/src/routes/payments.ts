@@ -112,7 +112,7 @@ router.get("/payments/:id", requireAuth, async (req, res): Promise<void> => {
     res.status(401).json({ error: "User not found" });
     return;
   }
-  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
   if (!isStaff) {
     const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
     if (!callerStudent || payment.studentId !== callerStudent.id) {
