@@ -9,6 +9,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Home from "@/pages/home";
+import About from "@/pages/about";
+import Programs from "@/pages/programs";
+import Contact from "@/pages/contact";
 import DashboardRouter from "@/pages/dashboard/index";
 import NotFound from "@/pages/not-found";
 
@@ -219,6 +222,9 @@ function ClerkProviderWithRoutes() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/programs" element={<Programs />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/sign-in/*" element={<SignInPage />} />
               <Route path="/sign-up/*" element={<SignUpPage />} />
               <Route path="/courses" element={<CoursesIndex />} />

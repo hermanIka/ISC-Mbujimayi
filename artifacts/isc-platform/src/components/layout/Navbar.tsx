@@ -22,6 +22,15 @@ export function Navbar() {
           <Link href="/courses" className="text-sm font-medium transition-colors hover:text-primary">
             Catalogue
           </Link>
+          <Link href="/programs" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
+            Filières
+          </Link>
+          <Link href="/about" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
+            À propos
+          </Link>
+          <Link href="/contact" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
+            Contact
+          </Link>
           <Show when="signed-out">
             <Link href="/sign-in" className="text-sm font-medium transition-colors hover:text-primary">
               Connexion

@@ -21,6 +21,19 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  INSCRIPTION_FEE: "Frais d'inscription",
+  COURSE_FEE: "Minerval",
+  EXAM_FEE: "Frais d'examens",
+  OTHER: "Autre",
+};
+
+const PAYMENT_OPERATOR_LABELS: Record<string, string> = {
+  ORANGE_MONEY: "Orange Money",
+  AIRTEL_MONEY: "Airtel Money",
+  MPESA: "M-Pesa",
+};
+
 export default function PaymentsPage() {
   const { data, isLoading } = useListPayments();
   const { data: currentUser } = useGetCurrentUser({
@@ -32,8 +45,8 @@ export default function PaymentsPage() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState<InitiatePaymentBodyType>("MINERVAL");
-  const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("ORANGE");
+  const [type, setType] = useState<InitiatePaymentBodyType>("INSCRIPTION_FEE");
+  const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("ORANGE_MONEY");
   const [phoneNumber, setPhoneNumber] = useState("");
 
   const getStatusColor = (status: string) => {
@@ -42,6 +55,16 @@ export default function PaymentsPage() {
       case "FAILED": return "bg-red-500/10 text-red-700 border-red-200";
       case "CANCELLED": return "bg-gray-500/10 text-gray-700 border-gray-200";
       default: return "bg-yellow-500/10 text-yellow-700 border-yellow-200";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "CONFIRMED": return "Confirmé";
+      case "FAILED": return "Échoué";
+      case "CANCELLED": return "Annulé";
+      case "PENDING": return "En attente";
+      default: return "Initié";
     }
   };
 
@@ -101,9 +124,9 @@ export default function PaymentsPage() {
                       <SelectValue placeholder="Sélectionner le type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="INSCRIPTION">Frais d'inscription</SelectItem>
-                      <SelectItem value="MINERVAL">Minerval</SelectItem>
-                      <SelectItem value="EXAM_FEES">Frais d'examens</SelectItem>
+                      <SelectItem value="INSCRIPTION_FEE">Frais d'inscription</SelectItem>
+                      <SelectItem value="COURSE_FEE">Minerval</SelectItem>
+                      <SelectItem value="EXAM_FEE">Frais d'examens</SelectItem>
                       <SelectItem value="OTHER">Autre</SelectItem>
                     </SelectContent>
                   </Select>
@@ -115,9 +138,9 @@ export default function PaymentsPage() {
                       <SelectValue placeholder="Sélectionner l'opérateur" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ORANGE">Orange Money</SelectItem>
-                      <SelectItem value="AIRTEL">Airtel Money</SelectItem>
-                      <SelectItem value="MTN">M-Pesa / MTN</SelectItem>
+                      <SelectItem value="ORANGE_MONEY">Orange Money</SelectItem>
+                      <SelectItem value="AIRTEL_MONEY">Airtel Money</SelectItem>
+                      <SelectItem value="MPESA">M-Pesa</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -184,10 +207,10 @@ export default function PaymentsPage() {
                   {data.payments.map((payment: Payment) => (
                     <TableRow key={payment.id} data-testid={`row-payment-${payment.id}`}>
                       <TableCell className="font-mono text-xs">{payment.reference || "N/A"}</TableCell>
-                      <TableCell>{payment.type}</TableCell>
-                      <TableCell>{payment.operator}</TableCell>
+                      <TableCell>{PAYMENT_TYPE_LABELS[payment.type] ?? payment.type}</TableCell>
+                      <TableCell>{PAYMENT_OPERATOR_LABELS[payment.operator] ?? payment.operator}</TableCell>
                       <TableCell className="font-medium">
-                        {payment.amount} {payment.currency}
+                        {Number(payment.amount).toLocaleString("fr-CD")} {payment.currency}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -195,7 +218,7 @@ export default function PaymentsPage() {
                           variant="outline"
                           data-testid={`status-payment-${payment.id}`}
                         >
-                          {payment.status}
+                          {getStatusLabel(payment.status)}
                         </Badge>
                       </TableCell>
                     </TableRow>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   useSendChatMessage,
@@ -9,7 +9,7 @@ import {
   getGetChatHistoryQueryKey,
 } from "@workspace/api-client-react";
 import type { ChatMessage } from "@workspace/api-client-react";
-import { useAuth } from "@clerk/react";
+import { useAuth, useUser } from "@clerk/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -48,27 +48,26 @@ export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [guestMessages, setGuestMessages] = useState<GuestMessage[]>([]);
-  const sessionIdRef = useRef<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!isSignedIn) {
-      sessionIdRef.current = getGuestSessionId();
       setGuestMessages(loadGuestHistory());
-    } else {
-      sessionIdRef.current = Math.random().toString(36).substring(2, 10);
     }
   }, [isSignedIn]);
 
-  const sessionId = sessionIdRef.current || "init";
+  const sessionId = isSignedIn && clerkUser?.id
+    ? `user-${clerkUser.id}`
+    : getGuestSessionId();
 
   const { data: apiHistory, isLoading } = useGetChatHistory(
     { sessionId },
     {
       query: {
-        enabled: isOpen && !!isSignedIn && !!sessionId && sessionId !== "init",
+        enabled: isOpen && !!isSignedIn && !!clerkUser?.id,
         queryKey: getGetChatHistoryQueryKey({ sessionId }),
       },
     }
@@ -108,7 +107,7 @@ export function ChatbotWidget() {
 
       try {
         const response = await sendMessage.mutateAsync({
-          data: { message: currentMessage, sessionId: sessionIdRef.current },
+          data: { message: currentMessage, sessionId },
         });
         const assistantMsg: GuestMessage = {
           id: (Date.now() + 1).toString(),
@@ -185,8 +184,8 @@ export function ChatbotWidget() {
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            <div className="space-y-4">
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4" ref={scrollRef}>
               {isSignedIn && isLoading ? (
                 <div className="text-center text-sm text-muted-foreground">Chargement...</div>
               ) : displayMessages.length === 0 ? (
