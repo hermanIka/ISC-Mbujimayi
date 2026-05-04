@@ -1,13 +1,18 @@
 {
   "nav": {
+    "brand": "ISC Mbujimayi",
+    "home": "Accueil",
     "catalogue": "Catalogue",
+    "courses": "Cours",
     "filieres": "Filières",
     "news": "Actualités",
     "about": "À propos",
     "contact": "Contact",
     "login": "Connexion",
+    "sign_in": "Se connecter",
     "register": "S'inscrire",
-    "dashboard": "Tableau de bord"
+    "dashboard": "Tableau de bord",
+    "programs": "Programmes"
   },
   "home": {
     "hero_title": "L'Excellence Académique à l'Ère du Numérique",
@@ -178,6 +183,54 @@
   "offline": {
     "title": "Hors ligne",
     "subtitle": "Vous n'êtes pas connecté à Internet. Veuillez vérifier votre connexion.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "message": "Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées.",
+    "restored": "Connexion rétablie !"
+  },
+  "register": {
+    "step_role": "Rôle",
+    "step_info": "Informations",
+    "step_program": "Programme",
+    "step_account": "Compte",
+    "step_label": "Étape {{step}} sur {{total}}",
+    "choose_role": "Quel est votre profil ?",
+    "choose_role_desc": "Sélectionnez votre rôle pour personnaliser votre expérience.",
+    "role_student": "Étudiant",
+    "role_student_desc": "Accédez aux cours, soumettez vos devoirs et suivez votre progression.",
+    "role_teacher": "Enseignant",
+    "role_teacher_desc": "Créez des cours, évaluez les étudiants et gérez votre matière.",
+    "role_staff": "Personnel administratif",
+    "role_staff_desc": "Gérez les inscriptions, les dossiers et les opérations de l'ISC.",
+    "role_visitor": "Visiteur / Parent",
+    "role_visitor_desc": "Consultez les programmes et les actualités de l'institution.",
+    "personal_info": "Vos informations personnelles",
+    "personal_info_desc": "Ces informations seront utilisées pour votre profil étudiant.",
+    "first_name": "Prénom",
+    "first_name_placeholder": "Votre prénom",
+    "last_name": "Nom de famille",
+    "last_name_placeholder": "Votre nom",
+    "phone": "Numéro de téléphone (optionnel)",
+    "choose_program": "Choisissez votre filière",
+    "choose_program_desc": "Sélectionnez la filière dans laquelle vous souhaitez vous inscrire.",
+    "years": "ans",
+    "back": "Retour",
+    "next": "Suivant",
+    "have_account": "Déjà inscrit ?",
+    "create_account_title": "Créez votre compte ISC",
+    "create_account_subtitle": "Bonjour {{name}} ! Créez maintenant votre compte pour accéder à la plateforme."
+  },
+  "footer": {
+    "tagline": "Plateforme digitale de l'Institut Supérieur de Commerce de Mbujimayi — formant les professionnels de demain.",
+    "nav_title": "Navigation",
+    "programs_title": "Nos filières",
+    "contact_title": "Contact",
+    "program_compta": "Comptabilité",
+    "program_mktg": "Marketing",
+    "program_info": "Informatique de Gestion",
+    "program_grh": "Gestion des RH",
+    "program_fisc": "Fiscalité",
+    "copyright": "© {{year}} ISC Mbujimayi. Tous droits réservés.",
+    "about_link": "À propos",
+    "contact_link": "Contact"
   }
 }

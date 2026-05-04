@@ -13,10 +13,13 @@ import About from "@/pages/about";
 import Programs from "@/pages/programs";
 import Contact from "@/pages/contact";
 import News from "@/pages/news";
+import RegisterPage from "@/pages/register";
 import DashboardRouter from "@/pages/dashboard/index";
 import NotFound from "@/pages/not-found";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const StudentDashboard = lazy(() => import("@/pages/dashboard/student"));
 const TeacherDashboard = lazy(() => import("@/pages/dashboard/teacher"));
@@ -222,6 +225,8 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ClerkQueryClientCacheInvalidator />
+          <OfflineBanner />
+          <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -231,6 +236,7 @@ function ClerkProviderWithRoutes() {
               <Route path="/news" element={<News />} />
               <Route path="/sign-in/*" element={<SignInPage />} />
               <Route path="/sign-up/*" element={<SignUpPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="/courses" element={<CoursesIndex />} />
               <Route path="/courses/:id" element={<CourseDetail />} />
               <Route path="/certificates/verify/:hash" element={<CertificateVerify />} />
@@ -264,6 +270,7 @@ function ClerkProviderWithRoutes() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
           <Toaster />
           <PwaInstallPrompt />
           <ChatbotWidget />

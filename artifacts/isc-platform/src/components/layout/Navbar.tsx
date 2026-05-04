@@ -59,7 +59,7 @@ export function Navbar() {
               {t("nav.login")}
             </Link>
             <Button asChild>
-              <Link href="/sign-up">{t("nav.register")}</Link>
+              <Link href="/register">{t("nav.register")}</Link>
             </Button>
           </Show>
           <Show when="signed-in">

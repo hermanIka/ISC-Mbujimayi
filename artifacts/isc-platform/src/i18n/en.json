@@ -1,13 +1,18 @@
 {
   "nav": {
+    "brand": "ISC Mbujimayi",
+    "home": "Home",
     "catalogue": "Catalogue",
+    "courses": "Courses",
     "filieres": "Programs",
     "news": "News",
     "about": "About",
     "contact": "Contact",
     "login": "Sign In",
+    "sign_in": "Sign In",
     "register": "Sign Up",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "programs": "Programs"
   },
   "home": {
     "hero_title": "Academic Excellence in the Digital Age",
@@ -178,6 +183,54 @@
   "offline": {
     "title": "Offline",
     "subtitle": "You are not connected to the Internet. Please check your connection.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "message": "You are offline. Some features may be limited.",
+    "restored": "Connection restored!"
+  },
+  "register": {
+    "step_role": "Role",
+    "step_info": "Information",
+    "step_program": "Program",
+    "step_account": "Account",
+    "step_label": "Step {{step}} of {{total}}",
+    "choose_role": "What is your profile?",
+    "choose_role_desc": "Select your role to personalize your experience.",
+    "role_student": "Student",
+    "role_student_desc": "Access courses, submit assignments and track your progress.",
+    "role_teacher": "Teacher",
+    "role_teacher_desc": "Create courses, assess students and manage your subject.",
+    "role_staff": "Administrative Staff",
+    "role_staff_desc": "Manage registrations, files and ISC operations.",
+    "role_visitor": "Visitor / Parent",
+    "role_visitor_desc": "Browse programs and news from the institution.",
+    "personal_info": "Your personal information",
+    "personal_info_desc": "This information will be used for your student profile.",
+    "first_name": "First name",
+    "first_name_placeholder": "Your first name",
+    "last_name": "Last name",
+    "last_name_placeholder": "Your last name",
+    "phone": "Phone number (optional)",
+    "choose_program": "Choose your program",
+    "choose_program_desc": "Select the program you wish to enroll in.",
+    "years": "years",
+    "back": "Back",
+    "next": "Next",
+    "have_account": "Already registered?",
+    "create_account_title": "Create your ISC account",
+    "create_account_subtitle": "Hello {{name}}! Create your account now to access the platform."
+  },
+  "footer": {
+    "tagline": "Digital platform of the Institut Supérieur de Commerce de Mbujimayi — training tomorrow's professionals.",
+    "nav_title": "Navigation",
+    "programs_title": "Our programs",
+    "contact_title": "Contact",
+    "program_compta": "Accounting",
+    "program_mktg": "Marketing",
+    "program_info": "Information Management",
+    "program_grh": "Human Resources Management",
+    "program_fisc": "Taxation",
+    "copyright": "© {{year}} ISC Mbujimayi. All rights reserved.",
+    "about_link": "About",
+    "contact_link": "Contact"
   }
 }
