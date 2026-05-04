@@ -63,8 +63,16 @@ Each role has a dedicated dashboard route:
 6. **Courses** — Catalogue with modules & chapters (VIDEO/PDF/TEXT)
 7. **Enrollments & Progress** — Chapter progress tracking, certificate auto-generation
 8. **Evaluations** — Quiz/assignment creation, answer submission, grading
-9. **Payments** — Mobile money (Orange Money, Airtel Money, M-Pesa)
+9. **Payments** — Mobile money (MTN, Airtel, Orange) with async simulation + PDF receipts (`GET /payments/:id/receipt`)
 10. **Forum & Chatbot** — Per-course discussion forum, FAQ chatbot
+
+## Backend Services
+
+- **Mobile Money Mock** — `src/lib/mobileMoneyService.ts`: Async simulation triggered on `POST /payments/initiate`. 90% success rate, 2–8 sec delay. Updates payment status to CONFIRMED/FAILED in DB.
+- **PDF Service** — `src/lib/pdfService.ts`: Generates branded PDFs using pdfkit. Two functions:
+  - `generatePaymentReceiptPDF(data, res)` — for `GET /payments/:id/receipt`
+  - `generateCertificatePDF(data, res)` — for `GET /certificates/:id/download`
+- **Swagger UI** — Served at `/api/docs` (swagger-ui-express). Full OpenAPI 3.0 spec in `src/swagger.ts`.
 
 ## Key Commands
 
@@ -111,12 +119,12 @@ pnpm --filter @workspace/isc-platform run dev
 
 ## Seeded Data (Dev)
 
-- 5 filieres (Commerce, Finance, Informatique, Marketing, Comptabilité)
-- 7+ users across all roles
-- 3 teachers, 5 students
-- 4 published courses + 1 draft
-- 6 modules, 8 chapters
-- 5 inscriptions, 5 payments
+Run: `pnpm --filter @workspace/api-server run seed`
+
+- 5 filieres: Comptabilité, Marketing, Informatique de Gestion, GRH, Fiscalité
+- 4 staff users (admin, directeur, finance, scolarité) + 5 teachers + 5 students
+- 5 courses (4 published, 1 draft), 6 modules, 8 chapters
+- 5 inscriptions (various statuses), 5 payments (3 CONFIRMED, 1 INITIATED, 1 PENDING)
 
 ## Important Notes
 

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
-import { db, paymentsTable, paymentStatusEnum } from "@workspace/db";
+import { db, paymentsTable, paymentStatusEnum, studentsTable, filieresTable } from "@workspace/db";
 import {
   ListPaymentsQueryParams,
   InitiatePaymentBody,
@@ -9,8 +9,9 @@ import {
   PaymentCallbackParams,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
-import { requireAuth, requireFinancial, getCallerDbUser } from "../middlewares/auth";
-import { studentsTable } from "@workspace/db";
+import { requireAuth, getCallerDbUser } from "../middlewares/auth";
+import { simulateMobileMoneyPayment } from "../lib/mobileMoneyService";
+import { generatePaymentReceiptPDF } from "../lib/pdfService";
 
 const router: IRouter = Router();
 
@@ -81,6 +82,9 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
       amount: parsed.data.amount,
     })
     .returning();
+
+  simulateMobileMoneyPayment(payment.id, payment.operator ?? "MTN_MONEY");
+
   res.status(201).json({ ...payment, amount: payment.amount?.toString() ?? "0" });
 });
 
@@ -110,6 +114,61 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
     .where(eq(paymentsTable.reference, parsed.data.reference))
     .returning();
   res.json({ success: true, payment: payment ? { ...payment, amount: payment.amount?.toString() ?? "0" } : null });
+});
+
+router.get("/payments/:id/receipt", requireAuth, async (req, res): Promise<void> => {
+  const params = GetPaymentByIdParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [payment] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, params.data.id));
+  if (!payment) {
+    res.status(404).json({ error: "Payment not found" });
+    return;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent || payment.studentId !== callerStudent.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+  }
+  if (payment.status !== "CONFIRMED") {
+    res.status(400).json({ error: "Receipt is only available for confirmed payments" });
+    return;
+  }
+  const [student] = payment.studentId
+    ? await db.select().from(studentsTable).where(eq(studentsTable.id, payment.studentId))
+    : [undefined];
+  let filiereName: string | null = null;
+  if (student?.filiereId) {
+    const [filiere] = await db.select().from(filieresTable).where(eq(filieresTable.id, student.filiereId));
+    filiereName = filiere?.name ?? null;
+  }
+  generatePaymentReceiptPDF(
+    {
+      reference: payment.reference,
+      amount: payment.amount?.toString() ?? "0",
+      currency: payment.currency ?? "CDF",
+      type: payment.type ?? "OTHER",
+      operator: payment.operator ?? "MTN_MONEY",
+      phoneNumber: payment.phoneNumber ?? null,
+      operatorRef: payment.operatorRef ?? null,
+      status: payment.status,
+      createdAt: payment.createdAt ?? null,
+      studentName: student ? `${student.firstName} ${student.lastName}` : "N/A",
+      numEtudiant: student?.numEtudiant ?? "N/A",
+      filiereName,
+    },
+    res,
+  );
 });
 
 router.get("/payments/:id", requireAuth, async (req, res): Promise<void> => {

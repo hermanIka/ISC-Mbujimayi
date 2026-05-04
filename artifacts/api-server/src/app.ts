@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
+import swaggerUi from "swagger-ui-express";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -10,6 +11,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { swaggerSpec } from "./swagger";
 
 const app: Express = express();
 
@@ -47,6 +49,11 @@ app.use(
     ),
   })),
 );
+
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: "ISC Mbujimayi API Docs",
+  customCss: ".swagger-ui .topbar { background-color: #1a3a6b; } .swagger-ui .topbar-wrapper .link span { display: none; } .swagger-ui .topbar-wrapper::after { content: 'ISC Mbujimayi Platform API'; color: white; font-size: 1.2em; font-weight: bold; }",
+}));
 
 app.use("/api", router);
 

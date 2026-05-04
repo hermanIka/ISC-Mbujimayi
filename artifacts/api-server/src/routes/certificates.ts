@@ -3,6 +3,7 @@ import { eq, count } from "drizzle-orm";
 import { db, certificatesTable, coursesTable, teachersTable, filieresTable, studentsTable, enrollmentsTable, modulesTable, type Course } from "@workspace/db";
 import { GetCertificateByIdParams, VerifyCertificateParams } from "@workspace/api-zod";
 import { requireAuth, getCallerDbUser } from "../middlewares/auth";
+import { generateCertificatePDF } from "../lib/pdfService";
 
 const router: IRouter = Router();
 
@@ -71,6 +72,58 @@ router.get("/certificates/verify/:hash", async (req, res): Promise<void> => {
     studentName: student ? `${student.firstName} ${student.lastName}` : null,
     courseName: course?.title ?? null,
   });
+});
+
+router.get("/certificates/:id/download", requireAuth, async (req, res): Promise<void> => {
+  const params = GetCertificateByIdParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [cert] = await db.select().from(certificatesTable).where(eq(certificatesTable.id, params.data.id));
+  if (!cert) {
+    res.status(404).json({ error: "Certificate not found" });
+    return;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent || cert.studentId !== callerStudent.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+  }
+  const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, cert.studentId));
+  const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, cert.courseId));
+  let teacherName = "N/A";
+  let filiereName: string | null = null;
+  if (course) {
+    const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, course.teacherId));
+    if (teacher) teacherName = `${teacher.firstName} ${teacher.lastName}`;
+    if (course.filiereId) {
+      const [filiere] = await db.select().from(filieresTable).where(eq(filieresTable.id, course.filiereId));
+      filiereName = filiere?.name ?? null;
+    }
+  }
+
+  generateCertificatePDF(
+    {
+      hash: cert.hash,
+      issuedAt: cert.issuedAt ?? null,
+      studentName: student ? `${student.firstName} ${student.lastName}` : "N/A",
+      numEtudiant: student?.numEtudiant ?? "N/A",
+      courseTitle: course?.title ?? "N/A",
+      teacherName,
+      filiereName,
+      score: null,
+    },
+    res,
+  );
 });
 
 router.get("/certificates/:id", requireAuth, async (req, res): Promise<void> => {
