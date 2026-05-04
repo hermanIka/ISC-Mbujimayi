@@ -51,14 +51,16 @@ router.get("/students", requireAcademic, async (req, res): Promise<void> => {
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .limit(pageSize)
     .offset((page - 1) * pageSize);
-  const total = await db.select({ count: count() }).from(studentsTable);
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const [totalRow] = await db.select({ count: count() }).from(studentsTable).where(whereClause);
+  const total = Number(totalRow?.count ?? 0);
   const enriched = await Promise.all(students.map(studentWithFiliere));
   res.json({
     students: enriched,
-    total: Number(total[0]?.count ?? 0),
+    total,
     page,
     pageSize,
-    totalPages: Math.ceil(Number(total[0]?.count ?? 0) / pageSize),
+    totalPages: Math.ceil(total / pageSize),
   });
 });
 
