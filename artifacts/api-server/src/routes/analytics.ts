@@ -14,12 +14,22 @@ import {
   modulesTable,
   chaptersTable,
 } from "@workspace/db";
-import { requireAuth, requireAcademic, requireFinancial, requireRole } from "../middlewares/auth";
+import { requireAuth, requireAcademic, requireFinancial, requireRole, getCallerDbUser } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/analytics/student", requireAuth, async (_req, res): Promise<void> => {
-  const enrollments = await db.select().from(enrollmentsTable).limit(100);
+router.get("/analytics/student", requireAuth, async (req, res): Promise<void> => {
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+  if (!callerStudent) {
+    res.json({ enrolledCourses: 0, completedCourses: 0, inProgressCourses: 0, certificates: 0, pendingPayments: 0, confirmedPayments: 0, totalAmountPaid: "0.00", upcomingEvaluations: 0, averageScore: null, courseProgress: [] });
+    return;
+  }
+  const enrollments = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.studentId, callerStudent.id));
   const enrolled = enrollments.length;
   let completed = 0;
   let inProgress = 0;
@@ -43,11 +53,11 @@ router.get("/analytics/student", requireAuth, async (_req, res): Promise<void> =
     }
   }
 
-  const [certRow] = await db.select({ count: count() }).from(certificatesTable);
-  const [pendingRow] = await db.select({ count: count() }).from(paymentsTable).where(eq(paymentsTable.status, "INITIATED"));
-  const [confirmedRow] = await db.select({ count: count() }).from(paymentsTable).where(eq(paymentsTable.status, "CONFIRMED"));
-  const confirmedPayments = await db.select().from(paymentsTable).where(eq(paymentsTable.status, "CONFIRMED"));
-  const totalPaid = confirmedPayments.reduce((acc, p) => acc + Number(p.amount ?? 0), 0);
+  const [certRow] = await db.select({ count: count() }).from(certificatesTable).where(eq(certificatesTable.studentId, callerStudent.id));
+  const [pendingRow] = await db.select({ count: count() }).from(paymentsTable).where(eq(paymentsTable.studentId, callerStudent.id));
+  const [confirmedRow] = await db.select({ count: count() }).from(paymentsTable).where(eq(paymentsTable.studentId, callerStudent.id));
+  const confirmedPayments = await db.select().from(paymentsTable).where(eq(paymentsTable.studentId, callerStudent.id));
+  const totalPaid = confirmedPayments.filter(p => p.status === "CONFIRMED").reduce((acc, p) => acc + Number(p.amount ?? 0), 0);
 
   res.json({
     enrolledCourses: enrolled,

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, count, and } from "drizzle-orm";
 import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, courseStatusEnum, type Course } from "@workspace/db";
-import { requireAuth, requireTeacher } from "../middlewares/auth";
+import { requireAuth, requireTeacher, getCallerDbUser } from "../middlewares/auth";
 import {
   ListCoursesQueryParams,
   CreateCourseBody,
@@ -82,14 +82,19 @@ router.post("/courses", requireTeacher, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const teachers = await db.select().from(teachersTable).limit(1);
-  if (!teachers[0]) {
-    res.status(400).json({ error: "No teacher found. Create a teacher first." });
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const [callerTeacher] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+  if (!callerTeacher) {
+    res.status(403).json({ error: "No teacher profile found for this user" });
     return;
   }
   const [course] = await db
     .insert(coursesTable)
-    .values({ id: nanoid(), teacherId: teachers[0].id, ...parsed.data })
+    .values({ id: nanoid(), teacherId: callerTeacher.id, ...parsed.data })
     .returning();
   res.status(201).json(await enrichCourse(course));
 });

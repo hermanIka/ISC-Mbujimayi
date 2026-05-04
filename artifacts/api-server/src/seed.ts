@@ -49,6 +49,8 @@ async function seed() {
     { id: nanoid(), clerkId: "seed_teacher_001", email: "prof.mukendi@isc-mbujimayi.ac.cd", firstName: "Patrick", lastName: "Mukendi", role: "TEACHER" as const, isActive: true },
     { id: nanoid(), clerkId: "seed_teacher_002", email: "prof.tshiamala@isc-mbujimayi.ac.cd", firstName: "Cécile", lastName: "Tshiamala", role: "TEACHER" as const, isActive: true },
     { id: nanoid(), clerkId: "seed_teacher_003", email: "prof.kazadi@isc-mbujimayi.ac.cd", firstName: "Théodore", lastName: "Kazadi", role: "TEACHER" as const, isActive: true },
+    { id: nanoid(), clerkId: "seed_teacher_004", email: "prof.kabamba@isc-mbujimayi.ac.cd", firstName: "Joseph", lastName: "Kabamba", role: "TEACHER" as const, isActive: true },
+    { id: nanoid(), clerkId: "seed_teacher_005", email: "prof.ntumba@isc-mbujimayi.ac.cd", firstName: "Henriette", lastName: "Ntumba", role: "TEACHER" as const, isActive: true },
   ];
   for (const u of teacherUsers) {
     try { await db.insert(usersTable).values(u).onConflictDoNothing(); } catch {}
@@ -59,6 +61,8 @@ async function seed() {
     { id: nanoid(), userId: teacherUsers[0].id, code: "PROF001", firstName: "Patrick", lastName: "Mukendi", specialty: "Gestion Commerciale & Marketing", grade: "Professeur Associé" },
     { id: nanoid(), userId: teacherUsers[1].id, code: "PROF002", firstName: "Cécile", lastName: "Tshiamala", specialty: "Informatique de Gestion & Bases de Données", grade: "Chargé de Cours" },
     { id: nanoid(), userId: teacherUsers[2].id, code: "PROF003", firstName: "Théodore", lastName: "Kazadi", specialty: "Comptabilité & Finance", grade: "Professeur Ordinaire" },
+    { id: nanoid(), userId: teacherUsers[3].id, code: "PROF004", firstName: "Joseph", lastName: "Kabamba", specialty: "Management & Leadership", grade: "Chargé de Cours" },
+    { id: nanoid(), userId: teacherUsers[4].id, code: "PROF005", firstName: "Henriette", lastName: "Ntumba", specialty: "Secrétariat & Bureautique", grade: "Assistant" },
   ];
   for (const t of teachers) {
     try { await db.insert(teachersTable).values(t).onConflictDoNothing(); } catch {}

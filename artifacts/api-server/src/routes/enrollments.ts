@@ -70,8 +70,23 @@ router.get("/enrollments", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const { page = 1, pageSize = 20 } = params.data;
-  const enrollments = await db.select().from(enrollmentsTable).limit(pageSize).offset((page - 1) * pageSize);
-  const [totalRow] = await db.select({ count: count() }).from(enrollmentsTable);
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  let whereClause: ReturnType<typeof eq> | undefined;
+  if (!isStaff) {
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!student) {
+      res.json({ enrollments: [], total: 0, page, pageSize, totalPages: 0 });
+      return;
+    }
+    whereClause = eq(enrollmentsTable.studentId, student.id);
+  }
+  const enrollments = await db.select().from(enrollmentsTable).where(whereClause).limit(pageSize).offset((page - 1) * pageSize);
+  const [totalRow] = await db.select({ count: count() }).from(enrollmentsTable).where(whereClause);
   const total = Number(totalRow?.count ?? 0);
   const enriched = await Promise.all(
     enrollments.map(async (e) => {
@@ -196,10 +211,11 @@ router.post("/chapters/:chapterId/progress", requireAuth, async (req, res): Prom
       .from(enrollmentsTable)
       .where(eq(enrollmentsTable.id, enrollmentId));
     if (enrollment) {
+      const { and: andOp } = await import("drizzle-orm");
       const existing = await db
         .select()
         .from(certificatesTable)
-        .where(eq(certificatesTable.courseId, enrollment.courseId));
+        .where(andOp(eq(certificatesTable.studentId, enrollment.studentId), eq(certificatesTable.courseId, enrollment.courseId)));
       if (!existing[0]) {
         const hash = crypto
           .createHash("sha256")
