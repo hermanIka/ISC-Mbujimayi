@@ -10,89 +10,88 @@ import { fr, enUS } from "date-fns/locale";
 
 interface Article {
   id: number;
-  title: string;
-  summary: string;
-  content: string;
-  category: string;
+  titleKey: string;
+  summaryKey: string;
+  contentKey: string;
+  categoryKey: string;
   publishedAt: Date;
-  image?: string;
 }
 
 const ARTICLES: Article[] = [
   {
     id: 1,
-    title: "Ouverture des inscriptions académiques 2024-2025",
-    summary: "L'ISC Mbujimayi annonce l'ouverture officielle des inscriptions pour l'année académique 2024-2025. Les dossiers peuvent être déposés en ligne ou au secrétariat.",
-    content: "",
-    category: "Inscriptions",
+    titleKey: "news.article_1_title",
+    summaryKey: "news.article_1_summary",
+    contentKey: "news.article_1_content",
+    categoryKey: "news.cat_registrations",
     publishedAt: new Date("2024-09-01"),
   },
   {
     id: 2,
-    title: "Calendrier des examens du premier semestre",
-    summary: "Le calendrier des examens de fin du premier semestre est maintenant disponible. Consultez votre tableau de bord pour voir les dates correspondant à votre filière.",
-    content: "",
-    category: "Examens",
+    titleKey: "news.article_2_title",
+    summaryKey: "news.article_2_summary",
+    contentKey: "news.article_2_content",
+    categoryKey: "news.cat_exams",
     publishedAt: new Date("2024-11-15"),
   },
   {
     id: 3,
-    title: "Conférence sur l'entrepreneuriat — Invitation",
-    summary: "L'ISC Mbujimayi organise une conférence internationale sur l'entrepreneuriat et l'innovation économique en RDC. Inscription gratuite pour les étudiants.",
-    content: "",
-    category: "Événements",
+    titleKey: "news.article_3_title",
+    summaryKey: "news.article_3_summary",
+    contentKey: "news.article_3_content",
+    categoryKey: "news.cat_events",
     publishedAt: new Date("2024-10-20"),
   },
   {
     id: 4,
-    title: "Lancement de la plateforme e-learning ISC",
-    summary: "La plateforme digitale de l'ISC Mbujimayi est officiellement lancée. Accédez à vos cours, évaluations et ressources pédagogiques en ligne, 24h/24.",
-    content: "",
-    category: "Numérique",
+    titleKey: "news.article_4_title",
+    summaryKey: "news.article_4_summary",
+    contentKey: "news.article_4_content",
+    categoryKey: "news.cat_digital",
     publishedAt: new Date("2024-09-15"),
   },
   {
     id: 5,
-    title: "Résultats du concours d'excellence académique",
-    summary: "Les lauréats du concours d'excellence académique 2023-2024 ont été récompensés lors d'une cérémonie officielle. Félicitations aux étudiants distingués!",
-    content: "",
-    category: "Distinctions",
+    titleKey: "news.article_5_title",
+    summaryKey: "news.article_5_summary",
+    contentKey: "news.article_5_content",
+    categoryKey: "news.cat_awards",
     publishedAt: new Date("2024-08-30"),
   },
   {
     id: 6,
-    title: "Nouveaux partenariats avec des entreprises locales",
-    summary: "L'ISC Mbujimayi signe des conventions de partenariat avec plusieurs entreprises de la région pour favoriser l'insertion professionnelle de ses diplômés.",
-    content: "",
-    category: "Partenariats",
+    titleKey: "news.article_6_title",
+    summaryKey: "news.article_6_summary",
+    contentKey: "news.article_6_content",
+    categoryKey: "news.cat_partnerships",
     publishedAt: new Date("2024-07-10"),
   },
   {
     id: 7,
-    title: "Semaine culturelle ISC Mbujimayi 2024",
-    summary: "La semaine culturelle annuelle se tiendra du 18 au 22 novembre. Au programme: expositions, débats, concours artistiques et soirée de gala.",
-    content: "",
-    category: "Événements",
+    titleKey: "news.article_7_title",
+    summaryKey: "news.article_7_summary",
+    contentKey: "news.article_7_content",
+    categoryKey: "news.cat_events",
     publishedAt: new Date("2024-11-01"),
   },
   {
     id: 8,
-    title: "Mise à jour du règlement intérieur 2024",
-    summary: "Le règlement intérieur de l'ISC Mbujimayi a été mis à jour pour l'année académique 2024-2025. Tous les étudiants sont invités à en prendre connaissance.",
-    content: "",
-    category: "Administratif",
+    titleKey: "news.article_8_title",
+    summaryKey: "news.article_8_summary",
+    contentKey: "news.article_8_content",
+    categoryKey: "news.cat_admin",
     publishedAt: new Date("2024-09-05"),
   },
 ];
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Inscriptions: "bg-blue-100 text-blue-700",
-  Examens: "bg-red-100 text-red-700",
-  Événements: "bg-purple-100 text-purple-700",
-  Numérique: "bg-cyan-100 text-cyan-700",
-  Distinctions: "bg-yellow-100 text-yellow-700",
-  Partenariats: "bg-green-100 text-green-700",
-  Administratif: "bg-gray-100 text-gray-700",
+const CATEGORY_CLASS: Record<string, string> = {
+  "news.cat_registrations": "bg-blue-100 text-blue-700",
+  "news.cat_exams": "bg-red-100 text-red-700",
+  "news.cat_events": "bg-purple-100 text-purple-700",
+  "news.cat_digital": "bg-cyan-100 text-cyan-700",
+  "news.cat_awards": "bg-yellow-100 text-yellow-700",
+  "news.cat_partnerships": "bg-green-100 text-green-700",
+  "news.cat_admin": "bg-gray-100 text-gray-700",
 };
 
 const PAGE_SIZE = 4;
@@ -125,11 +124,11 @@ export default function NewsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1 flex-1">
                     <div className="flex flex-wrap gap-2 mb-2">
-                      <Badge className={`text-xs border-0 ${CATEGORY_COLORS[article.category] ?? "bg-gray-100 text-gray-700"}`}>
-                        {article.category}
+                      <Badge className={`text-xs border-0 ${CATEGORY_CLASS[article.categoryKey] ?? "bg-gray-100 text-gray-700"}`}>
+                        {t(article.categoryKey as Parameters<typeof t>[0])}
                       </Badge>
                     </div>
-                    <CardTitle className="text-xl leading-tight">{article.title}</CardTitle>
+                    <CardTitle className="text-xl leading-tight">{t(article.titleKey as Parameters<typeof t>[0])}</CardTitle>
                     <CardDescription className="flex items-center gap-1 text-xs">
                       <Calendar className="h-3.5 w-3.5" />
                       {t("news.published_on")} {format(article.publishedAt, "d MMMM yyyy", { locale })}
@@ -139,8 +138,13 @@ export default function NewsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {article.summary}
+                  {t(article.summaryKey as Parameters<typeof t>[0])}
                 </p>
+                {expandedId === article.id && (
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-3 pt-3 border-t">
+                    {t(article.contentKey as Parameters<typeof t>[0])}
+                  </p>
+                )}
               </CardContent>
               <CardFooter>
                 <Button
@@ -149,7 +153,7 @@ export default function NewsPage() {
                   onClick={() => setExpandedId(expandedId === article.id ? null : article.id)}
                   data-testid={`button-read-more-${article.id}`}
                 >
-                  {expandedId === article.id ? "Réduire" : t("news.read_more")}
+                  {expandedId === article.id ? t("news.collapse") : t("news.read_more")}
                 </Button>
               </CardFooter>
             </Card>

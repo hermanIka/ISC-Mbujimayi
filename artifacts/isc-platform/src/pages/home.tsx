@@ -53,30 +53,6 @@ function AnimatedStat({ value, suffix, label }: { value: number; suffix: string;
   );
 }
 
-const TESTIMONIALS = [
-  {
-    name: "Marie Tshala",
-    program: "Comptabilité",
-    year: "2023",
-    text: "La plateforme ISC a complètement transformé ma façon d'apprendre. J'accède à mes cours n'importe où et je suis mes progrès en temps réel.",
-    rating: 5,
-  },
-  {
-    name: "Jean-Pierre Mukendi",
-    program: "Informatique de Gestion",
-    year: "2022",
-    text: "Les évaluations en ligne sont très pratiques. J'ai obtenu mon certificat de fin de cours en quelques semaines. Excellente expérience!",
-    rating: 5,
-  },
-  {
-    name: "Grace Kabamba",
-    program: "Marketing",
-    year: "2023",
-    text: "L'ISC Mbujimayi m'a préparée pour le monde professionnel. Les enseignants sont compétents et la plateforme digitale est très intuitive.",
-    rating: 5,
-  },
-];
-
 export default function Home() {
   const { t } = useTranslation();
   const { data: coursesData, isLoading: coursesLoading } = useListCourses({ status: "PUBLISHED", pageSize: 3 });
@@ -84,6 +60,30 @@ export default function Home() {
 
   const courses = coursesData?.courses || [];
   const filieres = filieresData || [];
+
+  const TESTIMONIALS = [
+    {
+      name: "Marie Tshala",
+      programKey: "home.testimonial_program_compta",
+      year: "2023",
+      textKey: "home.testimonial_1_text",
+      rating: 5,
+    },
+    {
+      name: "Jean-Pierre Mukendi",
+      programKey: "home.testimonial_program_info",
+      year: "2022",
+      textKey: "home.testimonial_2_text",
+      rating: 5,
+    },
+    {
+      name: "Grace Kabamba",
+      programKey: "home.testimonial_program_mktg",
+      year: "2023",
+      textKey: "home.testimonial_3_text",
+      rating: 5,
+    },
+  ];
 
   return (
     <AppLayout>
@@ -150,7 +150,7 @@ export default function Home() {
                     <CardTitle>{f.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">Formation professionnelle de 3 ans reconnue par l'État.</p>
+                    <p className="text-sm text-muted-foreground">{t("home.program_default_desc")}</p>
                   </CardContent>
                 </Card>
               ))
@@ -167,7 +167,7 @@ export default function Home() {
                   <CardContent>
                     <p className="text-sm text-muted-foreground line-clamp-2">{filiere.description}</p>
                     <div className="flex justify-between items-center mt-4 text-xs text-muted-foreground font-medium">
-                      <span>{filiere.duration} ans</span>
+                      <span>{filiere.duration} {t("home.years")}</span>
                       <span className="flex items-center gap-1"><Users className="h-3 w-3"/> {filiere.studentCount} {t("programs.students")}</span>
                     </div>
                   </CardContent>
@@ -218,7 +218,7 @@ export default function Home() {
                       <Badge variant="outline">{course.filiere?.code}</Badge>
                     </div>
                     <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-                    <CardDescription>Par {course.teacher?.firstName} {course.teacher?.lastName}</CardDescription>
+                    <CardDescription>{t("home.by_teacher")} {course.teacher?.firstName} {course.teacher?.lastName}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground line-clamp-2">{course.description}</p>
@@ -248,10 +248,10 @@ export default function Home() {
                       <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-sm text-muted-foreground italic">"{testimonial.text}"</p>
+                  <p className="text-sm text-muted-foreground italic">"{t(testimonial.textKey as Parameters<typeof t>[0])}"</p>
                   <div>
                     <p className="font-semibold text-sm">{testimonial.name}</p>
-                    <p className="text-xs text-muted-foreground">{testimonial.program} · Promotion {testimonial.year}</p>
+                    <p className="text-xs text-muted-foreground">{t(testimonial.programKey as Parameters<typeof t>[0])} · {t("home.promotion")} {testimonial.year}</p>
                   </div>
                 </CardContent>
               </Card>

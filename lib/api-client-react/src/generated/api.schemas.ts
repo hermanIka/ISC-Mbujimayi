@@ -441,9 +441,9 @@ export interface ProgressResult {
 export type PaymentType = (typeof PaymentType)[keyof typeof PaymentType];
 
 export const PaymentType = {
-  INSCRIPTION_FEE: "INSCRIPTION_FEE",
-  COURSE_FEE: "COURSE_FEE",
-  EXAM_FEE: "EXAM_FEE",
+  INSCRIPTION: "INSCRIPTION",
+  MINERVAL: "MINERVAL",
+  EXAM_FEES: "EXAM_FEES",
   OTHER: "OTHER",
 } as const;
 
@@ -451,9 +451,9 @@ export type PaymentOperator =
   (typeof PaymentOperator)[keyof typeof PaymentOperator];
 
 export const PaymentOperator = {
-  ORANGE_MONEY: "ORANGE_MONEY",
-  AIRTEL_MONEY: "AIRTEL_MONEY",
-  MTN_MONEY: "MTN_MONEY",
+  MTN: "MTN",
+  AIRTEL: "AIRTEL",
+  ORANGE: "ORANGE",
 } as const;
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
@@ -494,9 +494,9 @@ export type InitiatePaymentBodyType =
   (typeof InitiatePaymentBodyType)[keyof typeof InitiatePaymentBodyType];
 
 export const InitiatePaymentBodyType = {
-  INSCRIPTION_FEE: "INSCRIPTION_FEE",
-  COURSE_FEE: "COURSE_FEE",
-  EXAM_FEE: "EXAM_FEE",
+  INSCRIPTION: "INSCRIPTION",
+  MINERVAL: "MINERVAL",
+  EXAM_FEES: "EXAM_FEES",
   OTHER: "OTHER",
 } as const;
 
@@ -504,9 +504,9 @@ export type InitiatePaymentBodyOperator =
   (typeof InitiatePaymentBodyOperator)[keyof typeof InitiatePaymentBodyOperator];
 
 export const InitiatePaymentBodyOperator = {
-  ORANGE_MONEY: "ORANGE_MONEY",
-  AIRTEL_MONEY: "AIRTEL_MONEY",
-  MTN_MONEY: "MTN_MONEY",
+  MTN: "MTN",
+  AIRTEL: "AIRTEL",
+  ORANGE: "ORANGE",
 } as const;
 
 export interface InitiatePaymentBody {
@@ -673,6 +673,8 @@ export interface ChatResponse {
   reply: string;
   usedAI: boolean;
   sessionId: string;
+  escalated?: boolean;
+  needsEscalationConfirm?: boolean;
 }
 
 export type ChatMessageRole =
@@ -797,6 +799,18 @@ export interface DirectorAnalytics {
   enrollmentsByFiliere: FiliereEnrollmentStat[];
 }
 
+/**
+ * Clerk event payload
+ */
+export type HandleClerkWebhookBodyData = { [key: string]: unknown };
+
+export type HandleClerkWebhookBody = {
+  /** Clerk event type (e.g. user.created, user.updated) */
+  type: string;
+  /** Clerk event payload */
+  data: HandleClerkWebhookBodyData;
+};
+
 export type ListUsersParams = {
   page?: number;
   pageSize?: number;
@@ -892,3 +906,8 @@ export const GetFinancialAnalyticsPeriod = {
   month: "month",
   year: "year",
 } as const;
+
+export interface Error {
+  message: string;
+  code?: string;
+}

@@ -3,43 +3,43 @@ import { Card, CardContent } from "@/components/ui/card";
 import { GraduationCap, BookOpen, Users, Award, MapPin, Phone, Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-const ORG_CHART = {
-  label: "Direction Générale",
+interface OrgNode {
+  labelKey: string;
+  children?: OrgNode[];
+}
+
+const ORG_CHART: OrgNode = {
+  labelKey: "about.org_general_direction",
   children: [
     {
-      label: "Direction Académique",
+      labelKey: "about.org_academic_direction",
       children: [
-        { label: "Département Comptabilité" },
-        { label: "Département Marketing" },
-        { label: "Département Informatique" },
-        { label: "Département GRH" },
-        { label: "Département Fiscalité" },
+        { labelKey: "about.org_dept_compta" },
+        { labelKey: "about.org_dept_mktg" },
+        { labelKey: "about.org_dept_info" },
+        { labelKey: "about.org_dept_grh" },
+        { labelKey: "about.org_dept_fisc" },
       ],
     },
     {
-      label: "Direction Financière",
+      labelKey: "about.org_financial_direction",
       children: [
-        { label: "Comptabilité Générale" },
-        { label: "Frais Académiques" },
+        { labelKey: "about.org_general_accounting" },
+        { labelKey: "about.org_academic_fees" },
       ],
     },
     {
-      label: "Administration",
+      labelKey: "about.org_administration",
       children: [
-        { label: "Secrétariat" },
-        { label: "Bibliothèque" },
-        { label: "Informatique" },
+        { labelKey: "about.org_secretariat" },
+        { labelKey: "about.org_library" },
+        { labelKey: "about.org_it" },
       ],
     },
   ],
 };
 
-interface OrgNode {
-  label: string;
-  children?: OrgNode[];
-}
-
-function OrgBox({ node, isRoot = false }: { node: OrgNode; isRoot?: boolean }) {
+function OrgBox({ node, isRoot = false, t }: { node: OrgNode; isRoot?: boolean; t: (key: string) => string }) {
   return (
     <div className="flex flex-col items-center">
       <div
@@ -49,7 +49,7 @@ function OrgBox({ node, isRoot = false }: { node: OrgNode; isRoot?: boolean }) {
             : "bg-card text-foreground border-border"
           }`}
       >
-        {node.label}
+        {t(node.labelKey)}
       </div>
       {node.children && node.children.length > 0 && (
         <div className="flex flex-col items-center mt-0">
@@ -62,7 +62,7 @@ function OrgBox({ node, isRoot = false }: { node: OrgNode; isRoot?: boolean }) {
             {node.children.map((child, idx) => (
               <div key={idx} className="flex flex-col items-center">
                 <div className="w-px h-4 bg-border" />
-                <OrgBox node={child} />
+                <OrgBox node={child} t={t} />
               </div>
             ))}
           </div>
@@ -164,7 +164,7 @@ export default function AboutPage() {
           <p className="text-muted-foreground text-sm">{t("about.org_chart_subtitle")}</p>
           <div className="overflow-x-auto py-4">
             <div className="flex justify-center min-w-max">
-              <OrgBox node={ORG_CHART} isRoot />
+              <OrgBox node={ORG_CHART} isRoot t={(key) => t(key as Parameters<typeof t>[0])} />
             </div>
           </div>
         </section>
@@ -178,8 +178,8 @@ export default function AboutPage() {
                 <div>
                   <p className="font-medium">{t("about.address_label")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Avenue Bakwa Dianga, Mbujimayi,<br />
-                    Kasaï-Oriental, RDC
+                    {t("contact.address_line1")}, {t("contact.address_line2")},<br />
+                    {t("contact.address_line3")}
                   </p>
                 </div>
               </CardContent>

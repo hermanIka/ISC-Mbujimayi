@@ -105,12 +105,12 @@ export default function InscriptionsPage() {
           })),
         },
       });
-      toast({ title: "Inscription soumise", description: "Votre dossier est en cours de traitement." });
+      toast({ title: t("inscriptions.submitted"), description: t("inscriptions.submitted_desc") });
       setIsOpen(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: getListInscriptionsQueryKey() });
     } catch {
-      toast({ title: t("common.error"), description: "Impossible de soumettre votre inscription.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("inscriptions.submit_error"), variant: "destructive" });
     }
   };
 
@@ -156,9 +156,9 @@ export default function InscriptionsPage() {
               <Card key={inscription.id}>
                 <CardContent className="p-6 flex items-center justify-between">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-lg">Dossier d'inscription académique</h3>
+                    <h3 className="font-semibold text-lg">{t("inscriptions.academic_file")}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Soumis le {inscription.createdAt ? format(new Date(inscription.createdAt), "dd/MM/yyyy", { locale: fr }) : "N/A"}
+                      {t("inscriptions.submitted_on")} {inscription.createdAt ? format(new Date(inscription.createdAt), "dd/MM/yyyy", { locale: fr }) : "N/A"}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">

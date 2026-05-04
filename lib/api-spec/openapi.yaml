@@ -2536,6 +2536,10 @@ components:
           type: boolean
         sessionId:
           type: string
+        escalated:
+          type: boolean
+        needsEscalationConfirm:
+          type: boolean
       required: [reply, usedAI, sessionId]
 
     ChatMessage:

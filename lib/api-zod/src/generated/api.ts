@@ -8,6 +8,46 @@
 import * as zod from "zod";
 
 /**
+ * Called after Clerk authentication to ensure the user record exists in the
+local database. Creates the record with role VISITOR on first sign-in.
+Subsequent calls return the existing record.
+
+ * @summary Sync Clerk-authenticated user to local database
+ */
+export const SyncAuthUserResponse = zod.object({
+  id: zod.string(),
+  clerkId: zod.string(),
+  email: zod.string(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  role: zod.enum([
+    "VISITOR",
+    "STUDENT",
+    "TEACHER",
+    "ACADEMIC_SERVICE",
+    "FINANCIAL_SERVICE",
+    "ADMIN",
+    "DIRECTOR",
+  ]),
+  isActive: zod.boolean(),
+  avatarUrl: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * Receives Svix-signed Clerk webhook events (user.created, user.updated,
+user.deleted, session.created). Verifies the Svix signature before processing.
+
+ * @summary Clerk webhook endpoint
+ */
+export const HandleClerkWebhookBody = zod.object({
+  type: zod
+    .string()
+    .describe("Clerk event type (e.g. user.created, user.updated)"),
+  data: zod.object({}).passthrough().describe("Clerk event payload"),
+});
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -304,7 +344,6 @@ export const ListStudentsResponse = zod.object({
  * @summary Create student profile
  */
 export const CreateStudentBody = zod.object({
-  userId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
   phone: zod.string().optional(),
@@ -419,7 +458,6 @@ export const ListTeachersResponse = zod.array(ListTeachersResponseItem);
  * @summary Create teacher profile
  */
 export const CreateTeacherBody = zod.object({
-  userId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
   specialty: zod.string().optional(),
@@ -1283,8 +1321,8 @@ export const ListPaymentsResponse = zod.object({
       studentId: zod.string(),
       amount: zod.string(),
       currency: zod.string(),
-      type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
-      operator: zod.enum(["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"]),
+      type: zod.enum(["INSCRIPTION", "MINERVAL", "EXAM_FEES", "OTHER"]),
+      operator: zod.enum(["MTN", "AIRTEL", "ORANGE"]),
       phoneNumber: zod.string(),
       status: zod.enum([
         "INITIATED",
@@ -1311,8 +1349,8 @@ export const ListPaymentsResponse = zod.object({
 export const InitiatePaymentBody = zod.object({
   studentId: zod.string(),
   amount: zod.string(),
-  type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
-  operator: zod.enum(["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"]),
+  type: zod.enum(["INSCRIPTION", "MINERVAL", "EXAM_FEES", "OTHER"]),
+  operator: zod.enum(["MTN", "AIRTEL", "ORANGE"]),
   phoneNumber: zod.string(),
 });
 
@@ -1320,7 +1358,7 @@ export const InitiatePaymentBody = zod.object({
  * @summary Handle mobile money operator callback
  */
 export const PaymentCallbackParams = zod.object({
-  operator: zod.enum(["orange_money", "airtel_money", "mpesa"]),
+  operator: zod.enum(["mtn", "airtel", "orange"]),
 });
 
 export const PaymentCallbackBody = zod.object({
@@ -1341,8 +1379,8 @@ export const GetPaymentByIdResponse = zod.object({
   studentId: zod.string(),
   amount: zod.string(),
   currency: zod.string(),
-  type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
-  operator: zod.enum(["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"]),
+  type: zod.enum(["INSCRIPTION", "MINERVAL", "EXAM_FEES", "OTHER"]),
+  operator: zod.enum(["MTN", "AIRTEL", "ORANGE"]),
   phoneNumber: zod.string(),
   status: zod.enum([
     "INITIATED",
@@ -1546,7 +1584,7 @@ export const ListEvaluationsResponseItem = zod.object({
   id: zod.string(),
   courseId: zod.string(),
   title: zod.string(),
-  type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
+  type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
   duration: zod.number(),
   passMark: zod.number(),
   questionCount: zod.number(),
@@ -1563,7 +1601,7 @@ export const CreateEvaluationParams = zod.object({
 
 export const CreateEvaluationBody = zod.object({
   title: zod.string(),
-  type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
+  type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
   duration: zod.number(),
   passMark: zod.number().optional(),
 });
@@ -1580,7 +1618,7 @@ export const GetEvaluationByIdResponse = zod
     id: zod.string(),
     courseId: zod.string(),
     title: zod.string(),
-    type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
+    type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
     duration: zod.number(),
     passMark: zod.number(),
     questionCount: zod.number(),
@@ -1625,7 +1663,7 @@ export const UpdateEvaluationResponse = zod.object({
   id: zod.string(),
   courseId: zod.string(),
   title: zod.string(),
-  type: zod.enum(["QUIZ", "ASSIGNMENT", "EXAM"]),
+  type: zod.enum(["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"]),
   duration: zod.number(),
   passMark: zod.number(),
   questionCount: zod.number(),
@@ -1894,6 +1932,8 @@ export const SendChatMessageResponse = zod.object({
   reply: zod.string(),
   usedAI: zod.boolean(),
   sessionId: zod.string(),
+  escalated: zod.boolean().optional(),
+  needsEscalationConfirm: zod.boolean().optional(),
 });
 
 /**

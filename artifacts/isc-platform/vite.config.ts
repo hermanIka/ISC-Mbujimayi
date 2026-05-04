@@ -27,6 +27,9 @@ if (!basePath) {
   );
 }
 
+const base = basePath.endsWith("/") ? basePath : `${basePath}/`;
+const baseNoSlash = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -36,10 +39,11 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       devOptions: { enabled: false },
+      base: basePath,
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json}"],
-        navigateFallback: "/offline.html",
-        navigateFallbackDenylist: [/^\/api\//, /^\/sign-in/, /^\/sign-up/],
+        navigateFallback: `${baseNoSlash}/offline.html`,
+        navigateFallbackDenylist: [/\/api\//, /\/sign-in/, /\/sign-up/],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.destination === "document",
@@ -66,27 +70,20 @@ export default defineConfig({
         background_color: "#f5f7fa",
         display: "standalone",
         orientation: "portrait-primary",
-        start_url: "/",
+        start_url: `${baseNoSlash}/`,
+        scope: `${baseNoSlash}/`,
         lang: "fr",
         icons: [
-          { src: "/images/icon-72x72.png", sizes: "72x72", type: "image/png" },
-          { src: "/images/icon-96x96.png", sizes: "96x96", type: "image/png" },
-          { src: "/images/icon-128x128.png", sizes: "128x128", type: "image/png" },
-          { src: "/images/icon-144x144.png", sizes: "144x144", type: "image/png" },
-          { src: "/images/icon-152x152.png", sizes: "152x152", type: "image/png" },
-          { src: "/images/icon-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "/images/icon-384x384.png", sizes: "384x384", type: "image/png" },
-          { src: "/images/icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+          { src: `${baseNoSlash}/images/icon-72x72.png`, sizes: "72x72", type: "image/png" },
+          { src: `${baseNoSlash}/images/icon-96x96.png`, sizes: "96x96", type: "image/png" },
+          { src: `${baseNoSlash}/images/icon-128x128.png`, sizes: "128x128", type: "image/png" },
+          { src: `${baseNoSlash}/images/icon-144x144.png`, sizes: "144x144", type: "image/png" },
+          { src: `${baseNoSlash}/images/icon-152x152.png`, sizes: "152x152", type: "image/png" },
+          { src: `${baseNoSlash}/images/icon-192x192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: `${baseNoSlash}/images/icon-384x384.png`, sizes: "384x384", type: "image/png" },
+          { src: `${baseNoSlash}/images/icon-512x512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
         categories: ["education", "productivity"],
-        screenshots: [
-          {
-            src: "/opengraph.jpg",
-            sizes: "1200x630",
-            type: "image/jpeg",
-            label: "ISC Mbujimayi — Plateforme e-learning",
-          },
-        ],
       },
     }),
     ...(process.env.NODE_ENV !== "production" &&

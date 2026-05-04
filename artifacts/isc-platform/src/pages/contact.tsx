@@ -21,30 +21,30 @@ export default function ContactPage() {
   const contactInfo = [
     {
       icon: MapPin,
-      label: "Adresse",
-      lines: ["Avenue Bakwa Dianga", "Mbujimayi, Kasaï-Oriental", "République Démocratique du Congo"],
+      label: t("contact.address_label"),
+      lines: [t("contact.address_line1"), t("contact.address_line2"), t("contact.address_line3")],
     },
     {
       icon: Phone,
-      label: "Téléphone",
+      label: t("contact.phone_label"),
       lines: ["+243 99 000 0000", "+243 81 000 0000"],
     },
     {
       icon: Mail,
-      label: "Email",
+      label: t("contact.email_label"),
       lines: ["info@isc-mbujimayi.ac.cd", "scolarite@isc-mbujimayi.ac.cd"],
     },
     {
       icon: Clock,
-      label: "Horaires",
-      lines: ["Lundi – Vendredi : 7h30 – 17h00", "Samedi : 8h00 – 12h00"],
+      label: t("contact.hours_label"),
+      lines: [t("contact.hours_weekdays"), t("contact.hours_saturday")],
     },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !messageText) {
-      toast({ title: t("common.error"), description: "Veuillez remplir tous les champs obligatoires.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("contact.fill_required"), variant: "destructive" });
       return;
     }
     setSending(true);
@@ -67,7 +67,7 @@ export default function ContactPage() {
 
         <div className="grid gap-8 md:grid-cols-2">
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Informations de contact</h2>
+            <h2 className="text-xl font-semibold">{t("contact.contact_info_title")}</h2>
             <div className="space-y-4">
               {contactInfo.map((info) => (
                 <Card key={info.label}>
@@ -86,7 +86,7 @@ export default function ContactPage() {
               ))}
             </div>
             <div className="pt-2 space-y-2">
-              <p className="font-medium text-sm">Suivez-nous</p>
+              <p className="font-medium text-sm">{t("contact.follow_us")}</p>
               <div className="flex gap-3">
                 <Button variant="outline" size="icon" asChild>
                   <a href="#" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
@@ -112,7 +112,7 @@ export default function ContactPage() {
                   <Label htmlFor="name">{t("contact.name")} *</Label>
                   <Input
                     id="name"
-                    placeholder="Votre nom"
+                    placeholder={t("contact.name_placeholder")}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     data-testid="input-contact-name"
@@ -123,7 +123,7 @@ export default function ContactPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="votre@email.com"
+                    placeholder={t("contact.email_placeholder")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     data-testid="input-contact-email"
@@ -133,7 +133,7 @@ export default function ContactPage() {
                   <Label htmlFor="subject">{t("contact.subject")}</Label>
                   <Input
                     id="subject"
-                    placeholder="Objet de votre message"
+                    placeholder={t("contact.subject_placeholder")}
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                   />
@@ -142,7 +142,7 @@ export default function ContactPage() {
                   <Label htmlFor="message">{t("contact.message")} *</Label>
                   <Textarea
                     id="message"
-                    placeholder="Décrivez votre demande..."
+                    placeholder={t("contact.message_placeholder")}
                     className="min-h-[100px]"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
@@ -163,7 +163,7 @@ export default function ContactPage() {
         </div>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">Notre emplacement</h2>
+          <h2 className="text-xl font-semibold">{t("contact.location_title")}</h2>
           <div className="rounded-xl overflow-hidden border shadow-sm">
             <iframe
               title="ISC Mbujimayi — Google Maps"
@@ -177,7 +177,7 @@ export default function ContactPage() {
             />
           </div>
           <p className="text-xs text-muted-foreground text-right">
-            Carte © <a href="https://maps.google.com" className="underline" target="_blank" rel="noopener noreferrer">Google Maps</a>
+            {t("contact.map_credit")} <a href="https://maps.google.com" className="underline" target="_blank" rel="noopener noreferrer">Google Maps</a>
           </p>
         </section>
       </div>

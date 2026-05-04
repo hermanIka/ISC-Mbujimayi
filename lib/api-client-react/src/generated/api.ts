@@ -43,6 +43,7 @@ import type {
   Enrollment,
   EnrollmentDetail,
   EnrollmentListResponse,
+  Error,
   Evaluation,
   EvaluationDetail,
   EvaluationResult,
@@ -53,6 +54,7 @@ import type {
   GetChatHistoryParams,
   GetFinancialAnalyticsParams,
   GradeResultBody,
+  HandleClerkWebhookBody,
   HealthStatus,
   InitiatePaymentBody,
   Inscription,
@@ -98,6 +100,178 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * Called after Clerk authentication to ensure the user record exists in the
+local database. Creates the record with role VISITOR on first sign-in.
+Subsequent calls return the existing record.
+
+ * @summary Sync Clerk-authenticated user to local database
+ */
+export const getSyncAuthUserUrl = () => {
+  return `/api/auth/sync`;
+};
+
+export const syncAuthUser = async (options?: RequestInit): Promise<User> => {
+  return customFetch<User>(getSyncAuthUserUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getSyncAuthUserMutationOptions = <
+  TError = ErrorType<Error>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof syncAuthUser>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof syncAuthUser>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["syncAuthUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof syncAuthUser>>,
+    void
+  > = () => {
+    return syncAuthUser(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SyncAuthUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof syncAuthUser>>
+>;
+
+export type SyncAuthUserMutationError = ErrorType<Error>;
+
+/**
+ * @summary Sync Clerk-authenticated user to local database
+ */
+export const useSyncAuthUser = <
+  TError = ErrorType<Error>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof syncAuthUser>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof syncAuthUser>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getSyncAuthUserMutationOptions(options));
+};
+
+/**
+ * Receives Svix-signed Clerk webhook events (user.created, user.updated,
+user.deleted, session.created). Verifies the Svix signature before processing.
+
+ * @summary Clerk webhook endpoint
+ */
+export const getHandleClerkWebhookUrl = () => {
+  return `/api/auth/webhook`;
+};
+
+export const handleClerkWebhook = async (
+  handleClerkWebhookBody: HandleClerkWebhookBody,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getHandleClerkWebhookUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(handleClerkWebhookBody),
+  });
+};
+
+export const getHandleClerkWebhookMutationOptions = <
+  TError = ErrorType<Error>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof handleClerkWebhook>>,
+    TError,
+    { data: BodyType<HandleClerkWebhookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof handleClerkWebhook>>,
+  TError,
+  { data: BodyType<HandleClerkWebhookBody> },
+  TContext
+> => {
+  const mutationKey = ["handleClerkWebhook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof handleClerkWebhook>>,
+    { data: BodyType<HandleClerkWebhookBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return handleClerkWebhook(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type HandleClerkWebhookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof handleClerkWebhook>>
+>;
+export type HandleClerkWebhookMutationBody = BodyType<HandleClerkWebhookBody>;
+export type HandleClerkWebhookMutationError = ErrorType<Error>;
+
+/**
+ * @summary Clerk webhook endpoint
+ */
+export const useHandleClerkWebhook = <
+  TError = ErrorType<Error>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof handleClerkWebhook>>,
+    TError,
+    { data: BodyType<HandleClerkWebhookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof handleClerkWebhook>>,
+  TError,
+  { data: BodyType<HandleClerkWebhookBody> },
+  TContext
+> => {
+  return useMutation(getHandleClerkWebhookMutationOptions(options));
+};
 
 /**
  * @summary Health check
