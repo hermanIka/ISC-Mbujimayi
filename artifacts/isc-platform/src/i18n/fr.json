@@ -310,7 +310,12 @@
     "submit": "Soumettre",
     "close": "Fermer",
     "search": "Rechercher",
-    "back": "Retour"
+    "back": "Retour",
+    "saving": "Enregistrement...",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "confirm": "Confirmer",
+    "no_data": "Aucune donnée disponible."
   },
   "pwa": {
     "install_title": "Installer l'application",
@@ -522,6 +527,7 @@
     "share": "Partager",
     "verify": "Vérifier",
     "certificate_of_completion": "CERTIFICAT DE RÉUSSITE",
+    "cert_presented_to": "est décerné pour la réussite du cours :",
     "course_label": "Cours",
     "verified_text": "Certificat authentifié et délivré par ISC Mbujimayi",
     "download_started": "Téléchargement démarré",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "@/lib/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -101,17 +101,19 @@ export default function CourseEditPage() {
   const invCourse = () => queryClient.invalidateQueries({ queryKey: getGetCourseByIdQueryKey(courseId) });
   const invModules = () => queryClient.invalidateQueries({ queryKey: getListModulesQueryKey(courseId) });
 
-  if (!courseFormDirty && course) {
-    setCourseForm({
-      title: course.title ?? "",
-      description: course.description ?? "",
-      level: course.level ?? "BEGINNER",
-      status: course.status ?? "DRAFT",
-      thumbnail: course.thumbnail ?? "",
-      duration: course.duration != null ? String(course.duration) : "",
-    });
-    setCourseFormDirty(true);
-  }
+  useEffect(() => {
+    if (course && !courseFormDirty) {
+      setCourseForm({
+        title: course.title ?? "",
+        description: course.description ?? "",
+        level: course.level ?? "BEGINNER",
+        status: course.status ?? "DRAFT",
+        thumbnail: course.thumbnail ?? "",
+        duration: course.duration != null ? String(course.duration) : "",
+      });
+      setCourseFormDirty(true);
+    }
+  }, [course, courseFormDirty]);
 
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();

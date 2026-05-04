@@ -310,7 +310,12 @@
     "submit": "Submit",
     "close": "Close",
     "search": "Search",
-    "back": "Back"
+    "back": "Back",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "no_data": "No data available."
   },
   "pwa": {
     "install_title": "Install the app",
@@ -522,6 +527,7 @@
     "share": "Share",
     "verify": "Verify",
     "certificate_of_completion": "CERTIFICATE OF COMPLETION",
+    "cert_presented_to": "is awarded for the successful completion of:",
     "course_label": "Course",
     "verified_text": "Certificate authenticated and issued by ISC Mbujimayi",
     "download_started": "Download started",
