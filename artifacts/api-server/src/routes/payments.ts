@@ -71,7 +71,9 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
     resolvedStudentId = callerStudent.id;
   }
   const reference = `ISC-${Date.now()}-${nanoid(6).toUpperCase()}`;
-  const courseIdFromBody = typeof req.body.courseId === "string" ? req.body.courseId : undefined;
+  const rawCourseId: unknown = req.body.courseId;
+  const courseIdFromBody: string | undefined =
+    typeof rawCourseId === "string" && rawCourseId.trim().length > 0 ? rawCourseId.trim() : undefined;
   const metadata = courseIdFromBody ? JSON.stringify({ courseId: courseIdFromBody }) : null;
   const [payment] = await db
     .insert(paymentsTable)
@@ -115,6 +117,13 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const OPERATOR_CANONICAL: Record<string, string> = {
+    mtn: "MTN_MONEY",
+    airtel: "AIRTEL_MONEY",
+    orange: "ORANGE_MONEY",
+  };
+  const canonicalOperator = OPERATOR_CANONICAL[params.data.operator] ?? params.data.operator.toUpperCase();
+
   const status: typeof paymentStatusEnum.enumValues[number] = parsed.data.status === "SUCCESS" ? "CONFIRMED" : "FAILED";
   const [payment] = await db
     .update(paymentsTable)
@@ -129,7 +138,7 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
       amount: payment.amount?.toString() ?? "0",
       currency: payment.currency ?? "CDF",
       type: payment.type ?? "OTHER",
-      operator: payment.operator ?? params.data.operator,
+      operator: payment.operator ?? canonicalOperator,
       operatorRef: payment.operatorRef ?? null,
       phoneNumber: payment.phoneNumber ?? "",
       studentId: payment.studentId,

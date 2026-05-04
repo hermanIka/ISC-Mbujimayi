@@ -68,10 +68,11 @@ Each role has a dedicated dashboard route:
 
 ## Backend Services
 
-- **Mobile Money Mock** — `src/lib/mobileMoneyService.ts`: Async simulation triggered on `POST /payments/initiate`. 90% success rate, 2–8 sec delay. Updates payment status to CONFIRMED/FAILED in DB.
+- **Mobile Money Mock** — `src/lib/mobileMoneyService.ts`: Per-operator adapters (MTN/Airtel/Orange) with distinct delay ranges (2–4 sec) and operatorRef prefixes. 90% success rate. On CONFIRMED, calls `postPaymentService`.
+- **Post-Payment Service** — `src/lib/postPaymentService.ts`: Called by both async simulator and webhook callback on payment confirmation. Resolves student email from `usersTable` via `student.userId`. Logs full receipt email content to console (SMTP-ready). If `COURSE_FEE` + `courseId` in payment metadata, creates enrollment row in DB automatically.
 - **PDF Service** — `src/lib/pdfService.ts`: Generates branded PDFs using pdfkit. Two functions:
   - `generatePaymentReceiptPDF(data, res)` — for `GET /payments/:id/receipt`
-  - `generateCertificatePDF(data, res)` — for `GET /certificates/:id/download`
+  - `generateCertificatePDF(data, res)` — for `GET /certificates/:id/download` (A4 landscape, gold border, QR code)
 - **Swagger UI** — Served at `/api/docs` (swagger-ui-express). Full OpenAPI 3.0 spec in `src/swagger.ts`.
 
 ## Key Commands
@@ -122,9 +123,11 @@ pnpm --filter @workspace/isc-platform run dev
 Run: `pnpm --filter @workspace/api-server run seed`
 
 - 5 filieres: Comptabilité, Marketing, Informatique de Gestion, GRH, Fiscalité
-- 4 staff users (admin, directeur, finance, scolarité) + 5 teachers + 5 students
-- 5 courses (4 published, 1 draft), 6 modules, 8 chapters
-- 5 inscriptions (various statuses), 5 payments (3 CONFIRMED, 1 INITIATED, 1 PENDING)
+- 4 staff users + 7 teachers + 20 students (across all filières)
+- 15 courses (3 per filière, mix PUBLISHED/DRAFT), 13 modules, 16 chapters
+- 12 inscriptions (all statuses: APPROVED, PENDING, UNDER_REVIEW, REJECTED)
+- 8 enrollments (students linked to courses)
+- 36 payments spanning 6 months — all 3 operators, all types (INSCRIPTION_FEE, COURSE_FEE, EXAM_FEE), all statuses
 
 ## Important Notes
 
