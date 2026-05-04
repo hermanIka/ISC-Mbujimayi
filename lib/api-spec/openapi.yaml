@@ -44,8 +44,67 @@ tags:
     description: AI chatbot
   - name: analytics
     description: Dashboard analytics
+  - name: auth
+    description: Authentication and session management (Clerk-backed)
 
 paths:
+  # Auth
+  /auth/sync:
+    post:
+      operationId: syncAuthUser
+      tags: [auth]
+      summary: Sync Clerk-authenticated user to local database
+      description: |
+        Called after Clerk authentication to ensure the user record exists in the
+        local database. Creates the record with role VISITOR on first sign-in.
+        Subsequent calls return the existing record.
+      responses:
+        "200":
+          description: User synced successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/webhook:
+    post:
+      operationId: handleClerkWebhook
+      tags: [auth]
+      summary: Clerk webhook endpoint
+      description: |
+        Receives Svix-signed Clerk webhook events (user.created, user.updated,
+        user.deleted, session.created). Verifies the Svix signature before processing.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, data]
+              properties:
+                type:
+                  type: string
+                  description: Clerk event type (e.g. user.created, user.updated)
+                data:
+                  type: object
+                  description: Clerk event payload
+      responses:
+        "200":
+          description: Webhook processed
+        "400":
+          description: Invalid signature or payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /healthz:
     get:
       operationId: healthCheck

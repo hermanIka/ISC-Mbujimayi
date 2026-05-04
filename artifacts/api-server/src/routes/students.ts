@@ -83,7 +83,7 @@ router.post("/students", requireAcademic, async (req, res): Promise<void> => {
   res.status(201).json(await studentWithFiliere(student));
 });
 
-router.get("/students/:id", async (req, res): Promise<void> => {
+router.get("/students/:id", requireAcademic, async (req, res): Promise<void> => {
   const params = GetStudentByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

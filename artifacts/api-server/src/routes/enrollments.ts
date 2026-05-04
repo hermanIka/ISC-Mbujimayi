@@ -62,7 +62,7 @@ async function calculateProgress(enrollmentId: string) {
   return Math.round((completedCount / totalChapters) * 100);
 }
 
-router.get("/enrollments", async (req, res): Promise<void> => {
+router.get("/enrollments", requireAuth, async (req, res): Promise<void> => {
   const params = ListEnrollmentsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -105,7 +105,7 @@ router.post("/enrollments", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.get("/enrollments/:id", async (req, res): Promise<void> => {
+router.get("/enrollments/:id", requireAuth, async (req, res): Promise<void> => {
   const params = GetEnrollmentByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

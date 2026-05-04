@@ -1,4 +1,9 @@
-import { db, usersTable, filieresTable, studentsTable, teachersTable, coursesTable, modulesTable, chaptersTable, inscriptionsTable, paymentsTable } from "@workspace/db";
+import {
+  db, usersTable, filieresTable, studentsTable, teachersTable,
+  coursesTable, modulesTable, chaptersTable, inscriptionsTable, paymentsTable,
+  type InsertStudent, type InsertCourse, type InsertChapter,
+  type InsertInscription, type InsertPayment,
+} from "@workspace/db";
 import { nanoid } from "nanoid";
 
 async function seed() {
@@ -72,47 +77,47 @@ async function seed() {
   }
 
   const filieres = await db.select().from(filieresTable);
-  const students = [
-    { id: nanoid(), userId: studentUsers[0].id, numEtudiant: "ISC24001", firstName: "Emmanuel", lastName: "Kalenga", phone: "+243812345678", filiereId: filieres[0]?.id },
-    { id: nanoid(), userId: studentUsers[1].id, numEtudiant: "ISC24002", firstName: "Thérèse", lastName: "Mbuyi", phone: "+243823456789", filiereId: filieres[1]?.id },
-    { id: nanoid(), userId: studentUsers[2].id, numEtudiant: "ISC24003", firstName: "Albert", lastName: "Tshiongo", phone: "+243834567890", filiereId: filieres[2]?.id },
-    { id: nanoid(), userId: studentUsers[3].id, numEtudiant: "ISC24004", firstName: "Claudine", lastName: "Kaseba", phone: "+243845678901", filiereId: filieres[0]?.id },
-    { id: nanoid(), userId: studentUsers[4].id, numEtudiant: "ISC24005", firstName: "Gabriel", lastName: "Kabongo", phone: "+243856789012", filiereId: filieres[1]?.id },
+  const students: InsertStudent[] = [
+    { id: nanoid(), userId: studentUsers[0].id, numEtudiant: "ISC24001", firstName: "Emmanuel", lastName: "Kalenga", phone: "+243812345678", filiereId: filieres[0]?.id ?? null },
+    { id: nanoid(), userId: studentUsers[1].id, numEtudiant: "ISC24002", firstName: "Thérèse", lastName: "Mbuyi", phone: "+243823456789", filiereId: filieres[1]?.id ?? null },
+    { id: nanoid(), userId: studentUsers[2].id, numEtudiant: "ISC24003", firstName: "Albert", lastName: "Tshiongo", phone: "+243834567890", filiereId: filieres[2]?.id ?? null },
+    { id: nanoid(), userId: studentUsers[3].id, numEtudiant: "ISC24004", firstName: "Claudine", lastName: "Kaseba", phone: "+243845678901", filiereId: filieres[0]?.id ?? null },
+    { id: nanoid(), userId: studentUsers[4].id, numEtudiant: "ISC24005", firstName: "Gabriel", lastName: "Kabongo", phone: "+243856789012", filiereId: filieres[1]?.id ?? null },
   ];
   for (const s of students) {
-    try { await db.insert(studentsTable).values(s as any).onConflictDoNothing(); } catch {}
+    try { await db.insert(studentsTable).values(s).onConflictDoNothing(); } catch {}
   }
   console.log("✓ Students seeded");
 
-  const courses = [
+  const courses: InsertCourse[] = [
     {
-      id: nanoid(), teacherId: teachers[0].id, filiereId: filieres[0]?.id, title: "Gestion Commerciale Avancée",
+      id: nanoid(), teacherId: teachers[0].id, filiereId: filieres[0]?.id ?? null, title: "Gestion Commerciale Avancée",
       description: "Ce cours couvre les stratégies commerciales modernes, la gestion de la relation client et les techniques de vente avancées.",
-      status: "PUBLISHED" as const, level: "L2", duration: 60,
+      status: "PUBLISHED", level: "L2", duration: 60,
     },
     {
-      id: nanoid(), teacherId: teachers[1].id, filiereId: filieres[1]?.id, title: "Bases de Données et SQL",
+      id: nanoid(), teacherId: teachers[1].id, filiereId: filieres[1]?.id ?? null, title: "Bases de Données et SQL",
       description: "Introduction complète aux bases de données relationnelles, SQL et aux systèmes de gestion de bases de données modernes.",
-      status: "PUBLISHED" as const, level: "L1", duration: 45,
+      status: "PUBLISHED", level: "L1", duration: 45,
     },
     {
-      id: nanoid(), teacherId: teachers[2].id, filiereId: filieres[2]?.id, title: "Comptabilité Générale",
+      id: nanoid(), teacherId: teachers[2].id, filiereId: filieres[2]?.id ?? null, title: "Comptabilité Générale",
       description: "Principes fondamentaux de la comptabilité générale, plan comptable OHADA et élaboration des états financiers.",
-      status: "PUBLISHED" as const, level: "L1", duration: 80,
+      status: "PUBLISHED", level: "L1", duration: 80,
     },
     {
-      id: nanoid(), teacherId: teachers[0].id, filiereId: filieres[3]?.id, title: "Marketing Digital",
+      id: nanoid(), teacherId: teachers[0].id, filiereId: filieres[3]?.id ?? null, title: "Marketing Digital",
       description: "Stratégies de marketing digital pour les entreprises modernes: réseaux sociaux, SEO, publicité en ligne.",
-      status: "PUBLISHED" as const, level: "L2", duration: 40,
+      status: "PUBLISHED", level: "L2", duration: 40,
     },
     {
-      id: nanoid(), teacherId: teachers[1].id, filiereId: filieres[1]?.id, title: "Développement Web",
+      id: nanoid(), teacherId: teachers[1].id, filiereId: filieres[1]?.id ?? null, title: "Développement Web",
       description: "Introduction au développement web moderne avec HTML, CSS et JavaScript pour les applications de gestion.",
-      status: "DRAFT" as const, level: "L2", duration: 50,
+      status: "DRAFT", level: "L2", duration: 50,
     },
   ];
   for (const c of courses) {
-    try { await db.insert(coursesTable).values(c as any).onConflictDoNothing(); } catch {}
+    try { await db.insert(coursesTable).values(c).onConflictDoNothing(); } catch {}
   }
   console.log("✓ Courses seeded");
 
@@ -128,42 +133,43 @@ async function seed() {
     try { await db.insert(modulesTable).values(m).onConflictDoNothing(); } catch {}
   }
 
-  const chapterData = [
-    { id: nanoid(), moduleId: moduleData[0].id, title: "Introduction au commerce et à l'économie", type: "TEXT" as const, content: "Ce chapitre introduit les concepts fondamentaux du commerce...", duration: 30, order: 1 },
-    { id: nanoid(), moduleId: moduleData[0].id, title: "Gestion de la relation client (CRM)", type: "VIDEO" as const, content: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: 45, order: 2 },
-    { id: nanoid(), moduleId: moduleData[1].id, title: "Techniques de prospection commerciale", type: "PDF" as const, content: "/docs/prospection.pdf", duration: 60, order: 1 },
-    { id: nanoid(), moduleId: moduleData[2].id, title: "Concepts des bases de données relationnelles", type: "TEXT" as const, content: "Une base de données relationnelle est un ensemble de données...", duration: 40, order: 1 },
-    { id: nanoid(), moduleId: moduleData[2].id, title: "Introduction à SQL", type: "VIDEO" as const, content: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: 50, order: 2 },
-    { id: nanoid(), moduleId: moduleData[3].id, title: "Requêtes SQL avancées", type: "TEXT" as const, content: "Les requêtes SQL avancées incluent les JOIN, sous-requêtes...", duration: 70, order: 1 },
-    { id: nanoid(), moduleId: moduleData[4].id, title: "Le plan comptable OHADA", type: "PDF" as const, content: "/docs/ohada.pdf", duration: 90, order: 1 },
-    { id: nanoid(), moduleId: moduleData[5].id, title: "Bilan comptable et compte de résultat", type: "TEXT" as const, content: "Le bilan comptable représente la situation financière...", duration: 80, order: 1 },
+  const chapterData: InsertChapter[] = [
+    { id: nanoid(), moduleId: moduleData[0].id, title: "Introduction au commerce et à l'économie", type: "TEXT", content: "Ce chapitre introduit les concepts fondamentaux du commerce...", duration: 30, order: 1 },
+    { id: nanoid(), moduleId: moduleData[0].id, title: "Gestion de la relation client (CRM)", type: "VIDEO", content: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: 45, order: 2 },
+    { id: nanoid(), moduleId: moduleData[1].id, title: "Techniques de prospection commerciale", type: "PDF", content: "/docs/prospection.pdf", duration: 60, order: 1 },
+    { id: nanoid(), moduleId: moduleData[2].id, title: "Concepts des bases de données relationnelles", type: "TEXT", content: "Une base de données relationnelle est un ensemble de données...", duration: 40, order: 1 },
+    { id: nanoid(), moduleId: moduleData[2].id, title: "Introduction à SQL", type: "VIDEO", content: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: 50, order: 2 },
+    { id: nanoid(), moduleId: moduleData[3].id, title: "Requêtes SQL avancées", type: "TEXT", content: "Les requêtes SQL avancées incluent les JOIN, sous-requêtes...", duration: 70, order: 1 },
+    { id: nanoid(), moduleId: moduleData[4].id, title: "Le plan comptable OHADA", type: "PDF", content: "/docs/ohada.pdf", duration: 90, order: 1 },
+    { id: nanoid(), moduleId: moduleData[5].id, title: "Bilan comptable et compte de résultat", type: "TEXT", content: "Le bilan comptable représente la situation financière...", duration: 80, order: 1 },
   ];
   for (const c of chapterData) {
-    try { await db.insert(chaptersTable).values(c as any).onConflictDoNothing(); } catch {}
+    try { await db.insert(chaptersTable).values(c).onConflictDoNothing(); } catch {}
   }
   console.log("✓ Modules and chapters seeded");
 
-  const inscriptionData = [
-    { id: nanoid(), studentId: students[0].id, status: "APPROVED" as const, notes: "Dossier complet et validé", documents: JSON.stringify(["diplome.pdf", "photo.jpg", "cni.pdf"]) },
-    { id: nanoid(), studentId: students[1].id, status: "PENDING" as const, notes: null, documents: JSON.stringify(["diplome.pdf"]) },
-    { id: nanoid(), studentId: students[2].id, status: "UNDER_REVIEW" as const, notes: "En cours de vérification", documents: JSON.stringify(["diplome.pdf", "photo.jpg"]) },
-    { id: nanoid(), studentId: students[3].id, status: "APPROVED" as const, notes: "Dossier validé", documents: JSON.stringify(["diplome.pdf", "photo.jpg", "cni.pdf"]) },
-    { id: nanoid(), studentId: students[4].id, status: "REJECTED" as const, notes: "Documents manquants: carte nationale d'identité requise", documents: JSON.stringify(["diplome.pdf"]) },
+  const now = new Date().toISOString();
+  const inscriptionData: InsertInscription[] = [
+    { id: nanoid(), studentId: students[0].id, status: "APPROVED", notes: "Dossier complet et validé", documents: [{ type: "diplome", name: "diplome.pdf", url: "/docs/diplome.pdf", uploadedAt: now }, { type: "photo", name: "photo.jpg", url: "/docs/photo.jpg", uploadedAt: now }, { type: "cni", name: "cni.pdf", url: "/docs/cni.pdf", uploadedAt: now }] },
+    { id: nanoid(), studentId: students[1].id, status: "PENDING", notes: null, documents: [{ type: "diplome", name: "diplome.pdf", url: "/docs/diplome.pdf", uploadedAt: now }] },
+    { id: nanoid(), studentId: students[2].id, status: "UNDER_REVIEW", notes: "En cours de vérification", documents: [{ type: "diplome", name: "diplome.pdf", url: "/docs/diplome.pdf", uploadedAt: now }, { type: "photo", name: "photo.jpg", url: "/docs/photo.jpg", uploadedAt: now }] },
+    { id: nanoid(), studentId: students[3].id, status: "APPROVED", notes: "Dossier validé", documents: [{ type: "diplome", name: "diplome.pdf", url: "/docs/diplome.pdf", uploadedAt: now }, { type: "photo", name: "photo.jpg", url: "/docs/photo.jpg", uploadedAt: now }, { type: "cni", name: "cni.pdf", url: "/docs/cni.pdf", uploadedAt: now }] },
+    { id: nanoid(), studentId: students[4].id, status: "REJECTED", notes: "Documents manquants: carte nationale d'identité requise", documents: [{ type: "diplome", name: "diplome.pdf", url: "/docs/diplome.pdf", uploadedAt: now }] },
   ];
   for (const ins of inscriptionData) {
-    try { await db.insert(inscriptionsTable).values(ins as any).onConflictDoNothing(); } catch {}
+    try { await db.insert(inscriptionsTable).values(ins).onConflictDoNothing(); } catch {}
   }
   console.log("✓ Inscriptions seeded");
 
-  const paymentData = [
-    { id: nanoid(), studentId: students[0].id, reference: "ISC-001-ABCD", amount: "75000" as any, currency: "CDF", type: "INSCRIPTION" as const, operator: "MTN" as const, phoneNumber: "+243812345678", status: "CONFIRMED" as const, operatorRef: "MTN001" },
-    { id: nanoid(), studentId: students[0].id, reference: "ISC-002-EFGH", amount: "150000" as any, currency: "CDF", type: "MINERVAL" as const, operator: "AIRTEL" as const, phoneNumber: "+243812345678", status: "CONFIRMED" as const, operatorRef: "AIR001" },
-    { id: nanoid(), studentId: students[1].id, reference: "ISC-003-IJKL", amount: "75000" as any, currency: "CDF", type: "INSCRIPTION" as const, operator: "ORANGE" as const, phoneNumber: "+243823456789", status: "INITIATED" as const, operatorRef: null },
-    { id: nanoid(), studentId: students[2].id, reference: "ISC-004-MNOP", amount: "150000" as any, currency: "CDF", type: "MINERVAL" as const, operator: "MTN" as const, phoneNumber: "+243834567890", status: "CONFIRMED" as const, operatorRef: "MTN002" },
-    { id: nanoid(), studentId: students[3].id, reference: "ISC-005-QRST", amount: "25000" as any, currency: "CDF", type: "EXAM_FEES" as const, operator: "AIRTEL" as const, phoneNumber: "+243845678901", status: "PENDING" as const, operatorRef: null },
+  const paymentData: InsertPayment[] = [
+    { id: nanoid(), studentId: students[0].id, reference: "ISC-001-ABCD", amount: "75000", currency: "CDF", type: "INSCRIPTION", operator: "MTN", phoneNumber: "+243812345678", status: "CONFIRMED", operatorRef: "MTN001" },
+    { id: nanoid(), studentId: students[0].id, reference: "ISC-002-EFGH", amount: "150000", currency: "CDF", type: "MINERVAL", operator: "AIRTEL", phoneNumber: "+243812345678", status: "CONFIRMED", operatorRef: "AIR001" },
+    { id: nanoid(), studentId: students[1].id, reference: "ISC-003-IJKL", amount: "75000", currency: "CDF", type: "INSCRIPTION", operator: "ORANGE", phoneNumber: "+243823456789", status: "INITIATED", operatorRef: null },
+    { id: nanoid(), studentId: students[2].id, reference: "ISC-004-MNOP", amount: "150000", currency: "CDF", type: "MINERVAL", operator: "MTN", phoneNumber: "+243834567890", status: "CONFIRMED", operatorRef: "MTN002" },
+    { id: nanoid(), studentId: students[3].id, reference: "ISC-005-QRST", amount: "25000", currency: "CDF", type: "EXAM_FEES", operator: "AIRTEL", phoneNumber: "+243845678901", status: "PENDING", operatorRef: null },
   ];
   for (const p of paymentData) {
-    try { await db.insert(paymentsTable).values(p as any).onConflictDoNothing(); } catch {}
+    try { await db.insert(paymentsTable).values(p).onConflictDoNothing(); } catch {}
   }
   console.log("✓ Payments seeded");
 
