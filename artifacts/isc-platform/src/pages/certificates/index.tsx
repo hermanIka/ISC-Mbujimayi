@@ -10,6 +10,7 @@ import { fr, enUS } from "date-fns/locale";
 import { Link } from "@/lib/router";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
 
 export default function CertificatesPage() {
   const { t, i18n } = useTranslation();
@@ -18,25 +19,62 @@ export default function CertificatesPage() {
   const dateLocale = i18n.language === "fr" ? fr : enUS;
 
   const handleDownload = (cert: Certificate) => {
-    const content = [
-      "INSTITUT SUPERIEUR DE COMMERCE — MBUJIMAYI",
-      "",
-      t("certificates.certificate_of_completion"),
-      "",
-      t("certificates.course_label") + ": " + (cert.course?.title ?? "—"),
-      t("certificates.issued_on") + ": " + format(new Date(cert.issuedAt), "dd MMMM yyyy", { locale: dateLocale }),
-      t("certificates.identifier") + ": " + cert.hash,
-      "",
-      t("certificates.verified_text"),
-    ].join("\n");
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
 
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `certificat-isc-${cert.hash?.slice(0, 8) ?? cert.id}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    doc.setFillColor(15, 34, 64);
+    doc.rect(0, 0, W, 18, "F");
+    doc.setFillColor(15, 34, 64);
+    doc.rect(0, H - 12, W, 12, "F");
+
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(1.2);
+    doc.rect(10, 22, W - 20, H - 36, "S");
+    doc.setLineWidth(0.4);
+    doc.rect(12, 24, W - 24, H - 40, "S");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("INSTITUT SUPERIEUR DE COMMERCE — MBUJIMAYI", W / 2, 12, { align: "center" });
+
+    doc.setTextColor(15, 34, 64);
+    doc.setFontSize(28);
+    doc.setFont("helvetica", "bold");
+    doc.text(t("certificates.certificate_of_completion").toUpperCase(), W / 2, 50, { align: "center" });
+
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+    doc.text(t("certificates.cert_presented_to"), W / 2, 68, { align: "center" });
+
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 34, 64);
+    doc.text(cert.course?.title ?? "—", W / 2, 90, { align: "center", maxWidth: W - 60 });
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+
+    const issuedStr = format(new Date(cert.issuedAt), "dd MMMM yyyy", { locale: dateLocale });
+    doc.text(`${t("certificates.issued_on")}: ${issuedStr}`, W / 2, 115, { align: "center" });
+    doc.text(`${t("certificates.identifier")}: ${cert.hash}`, W / 2, 122, { align: "center" });
+
+    doc.setFontSize(9);
+    doc.setTextColor(140, 140, 140);
+    doc.text(t("certificates.verified_text"), W / 2, 140, { align: "center" });
+
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.6);
+    doc.line(W / 2 - 40, 148, W / 2 + 40, 148);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.text(`ISC Mbujimayi — ${new Date().getFullYear()}`, W / 2, H - 5, { align: "center" });
+
+    doc.save(`certificat-ISC-${cert.hash?.slice(0, 8) ?? cert.id}.pdf`);
     toast({ title: t("certificates.download_started"), description: t("certificates.download_desc") });
   };
 

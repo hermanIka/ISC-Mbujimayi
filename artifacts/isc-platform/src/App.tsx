@@ -42,6 +42,9 @@ const ProfileIndex = lazy(() => import("@/pages/profile/index"));
 const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminFilieres = lazy(() => import("@/pages/admin/filieres"));
 const AdminTeachers = lazy(() => import("@/pages/admin/teachers"));
+const CourseNew = lazy(() => import("@/pages/courses/new"));
+const CourseEdit = lazy(() => import("@/pages/courses/edit"));
+const EvaluationNew = lazy(() => import("@/pages/evaluations/new"));
 
 type UserRole =
   | "STUDENT"
@@ -256,6 +259,9 @@ function ClerkProviderWithRoutes() {
               <Route path="/payments" element={<StudentRoute><PaymentsIndex /></StudentRoute>} />
 
               <Route path="/dashboard/teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />
+              <Route path="/courses/new" element={<TeacherRoute><CourseNew /></TeacherRoute>} />
+              <Route path="/courses/:id/edit" element={<TeacherRoute><CourseEdit /></TeacherRoute>} />
+              <Route path="/evaluations/new" element={<TeacherRoute><EvaluationNew /></TeacherRoute>} />
 
               <Route path="/dashboard/academic" element={<AcademicRoute><AcademicDashboard /></AcademicRoute>} />
 

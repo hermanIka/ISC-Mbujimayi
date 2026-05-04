@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
+import ReactPlayer from "react-player";
 
 interface CourseChapter {
   id: string;
@@ -218,13 +219,27 @@ export default function CourseLearnPage() {
                 <>
                   {activeChapter.type === "VIDEO" && activeChapter.content && (
                     <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-lg">
-                      <iframe
-                        src={activeChapter.content}
-                        className="w-full h-full"
-                        allowFullScreen
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        title={activeChapter.title}
-                      />
+                      {typeof ReactPlayer.canPlay === "function" && ReactPlayer.canPlay(activeChapter.content) ? (
+                        <ReactPlayer
+                          src={activeChapter.content}
+                          width="100%"
+                          height="100%"
+                          controls
+                          onEnded={() => {
+                            if (enrollmentId && !completedChapters.has(activeChapter.id)) {
+                              void handleMarkComplete(activeChapter.id);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <iframe
+                          src={activeChapter.content}
+                          className="w-full h-full"
+                          allowFullScreen
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          title={activeChapter.title}
+                        />
+                      )}
                     </div>
                   )}
                   {activeChapter.type === "VIDEO" && !activeChapter.content && (
