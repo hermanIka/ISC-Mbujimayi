@@ -1,0 +1,148 @@
+import { Router, type IRouter } from "express";
+import { eq, ilike, or } from "drizzle-orm";
+import { db, usersTable } from "@workspace/db";
+import { getAuth } from "@clerk/express";
+import {
+  GetCurrentUserResponse,
+  UpdateCurrentUserBody,
+  ListUsersQueryParams,
+  ListUsersResponse,
+  GetUserByIdParams,
+  GetUserByIdResponse,
+  UpdateUserParams,
+  UpdateUserBody,
+  UpdateUserResponse,
+} from "@workspace/api-zod";
+import { nanoid } from "nanoid";
+
+const router: IRouter = Router();
+
+async function getOrCreateUser(clerkId: string, email: string) {
+  const [existing] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.clerkId, clerkId));
+  if (existing) return existing;
+  const [created] = await db
+    .insert(usersTable)
+    .values({ id: nanoid(), clerkId, email, role: "VISITOR" })
+    .returning();
+  return created;
+}
+
+router.get("/users/me", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const email = (req as any).auth?.sessionClaims?.email ?? "";
+  const user = await getOrCreateUser(userId, email as string);
+  res.json(GetCurrentUserResponse.parse(user));
+});
+
+router.put("/users/me", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const parsed = UpdateCurrentUserBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const existing = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.clerkId, userId));
+  if (!existing[0]) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set(parsed.data)
+    .where(eq(usersTable.clerkId, userId))
+    .returning();
+  res.json(GetCurrentUserResponse.parse(updated));
+});
+
+router.get("/users", async (req, res): Promise<void> => {
+  const params = ListUsersQueryParams.safeParse(req.query);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const { page = 1, pageSize = 20, role, search } = params.data;
+  const conditions: any[] = [];
+  if (role) conditions.push(eq(usersTable.role, role as any));
+  if (search) {
+    conditions.push(
+      or(
+        ilike(usersTable.firstName, `%${search}%`),
+        ilike(usersTable.lastName, `%${search}%`),
+        ilike(usersTable.email, `%${search}%`),
+      ),
+    );
+  }
+  const offset = (page - 1) * pageSize;
+  const query = db.select().from(usersTable);
+  if (conditions.length > 0) {
+    const { where } = await import("drizzle-orm");
+    query.where(conditions.length === 1 ? conditions[0] : where(...conditions));
+  }
+  const users = await query.limit(pageSize).offset(offset);
+  const total = users.length;
+  res.json(
+    ListUsersResponse.parse({
+      users,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    }),
+  );
+});
+
+router.get("/users/:id", async (req, res): Promise<void> => {
+  const params = GetUserByIdParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, params.data.id));
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  res.json(GetUserByIdResponse.parse(user));
+});
+
+router.put("/users/:id", async (req, res): Promise<void> => {
+  const params = UpdateUserParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = UpdateUserBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const [user] = await db
+    .update(usersTable)
+    .set(parsed.data)
+    .where(eq(usersTable.id, params.data.id))
+    .returning();
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  res.json(UpdateUserResponse.parse(user));
+});
+
+export default router;
