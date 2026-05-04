@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 import { db, inscriptionsTable, studentsTable, filieresTable, inscriptionStatusEnum, type Student, type Inscription } from "@workspace/db";
 import {
   ListInscriptionsQueryParams,
@@ -9,7 +9,7 @@ import {
   UpdateInscriptionStatusBody,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
-import { requireAuth, requireAcademic } from "../middlewares/auth";
+import { requireAuth, requireAcademic, getCallerDbUser } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -38,16 +38,38 @@ router.get("/inscriptions", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const { page = 1, pageSize = 20, status } = params.data;
-  const whereClause = status
-    ? eq(inscriptionsTable.status, status as typeof inscriptionStatusEnum.enumValues[number])
-    : undefined;
+
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+
+  let whereClause;
+  if (isStaff) {
+    whereClause = status
+      ? eq(inscriptionsTable.status, status as typeof inscriptionStatusEnum.enumValues[number])
+      : undefined;
+  } else {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent) {
+      res.json({ inscriptions: [], total: 0, page, pageSize, totalPages: 0 });
+      return;
+    }
+    whereClause = status
+      ? and(eq(inscriptionsTable.studentId, callerStudent.id), eq(inscriptionsTable.status, status as typeof inscriptionStatusEnum.enumValues[number]))
+      : eq(inscriptionsTable.studentId, callerStudent.id);
+  }
+
   const inscriptions = await db
     .select()
     .from(inscriptionsTable)
     .where(whereClause)
     .limit(pageSize)
     .offset((page - 1) * pageSize);
-  const [totalRow] = await db.select({ count: count() }).from(inscriptionsTable);
+  const [totalRow] = await db.select({ count: count() }).from(inscriptionsTable).where(whereClause);
   const total = Number(totalRow?.count ?? 0);
   const enriched = await Promise.all(inscriptions.map(enrichInscription));
   res.json({ inscriptions: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
@@ -84,6 +106,19 @@ router.get("/inscriptions/:id", requireAuth, async (req, res): Promise<void> => 
   if (!ins) {
     res.status(404).json({ error: "Inscription not found" });
     return;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent || ins.studentId !== callerStudent.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
   }
   res.json(await enrichInscription(ins));
 });

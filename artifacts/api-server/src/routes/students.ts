@@ -28,7 +28,7 @@ async function studentWithFiliere(student: Student) {
   };
 }
 
-router.get("/students", requireAuth, async (req, res): Promise<void> => {
+router.get("/students", requireAcademic, async (req, res): Promise<void> => {
   const params = ListStudentsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

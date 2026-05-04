@@ -10,11 +10,11 @@ async function seed() {
   console.log("Seeding database...");
 
   const filiereData = [
-    { id: nanoid(), code: "GCO", name: "Gestion Commerciale", description: "Formation en gestion commerciale et marketing", duration: 4 },
-    { id: nanoid(), code: "INFO", name: "Informatique de Gestion", description: "Formation en informatique de gestion et développement", duration: 4 },
     { id: nanoid(), code: "COMPTA", name: "Comptabilité", description: "Formation en comptabilité et finance d'entreprise", duration: 4 },
-    { id: nanoid(), code: "MGT", name: "Management", description: "Formation en management et leadership organisationnel", duration: 3 },
-    { id: nanoid(), code: "SECR", name: "Secrétariat de Direction", description: "Formation en secrétariat de direction et bureautique", duration: 3 },
+    { id: nanoid(), code: "MKT", name: "Marketing", description: "Formation en marketing et stratégie commerciale", duration: 4 },
+    { id: nanoid(), code: "INFO", name: "Informatique de Gestion", description: "Formation en informatique de gestion et développement", duration: 4 },
+    { id: nanoid(), code: "GRH", name: "Gestion des Ressources Humaines", description: "Formation en gestion des ressources humaines et management", duration: 4 },
+    { id: nanoid(), code: "FISC", name: "Fiscalité", description: "Formation en fiscalité, droit fiscal et optimisation fiscale", duration: 3 },
   ];
 
   for (const f of filiereData) {

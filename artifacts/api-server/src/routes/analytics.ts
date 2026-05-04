@@ -14,7 +14,7 @@ import {
   modulesTable,
   chaptersTable,
 } from "@workspace/db";
-import { requireAuth, requireAcademic, requireFinancial, requireRole, getCallerDbUser } from "../middlewares/auth";
+import { requireAuth, requireAcademic, requireFinancial, requireTeacher, requireRole, getCallerDbUser } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -73,7 +73,7 @@ router.get("/analytics/student", requireAuth, async (req, res): Promise<void> =>
   });
 });
 
-router.get("/analytics/teacher", requireAuth, async (_req, res): Promise<void> => {
+router.get("/analytics/teacher", requireTeacher, async (_req, res): Promise<void> => {
   const courses = await db.select().from(coursesTable);
   const published = courses.filter(c => c.status === "PUBLISHED").length;
   const [evalRow] = await db.select({ count: count() }).from(evaluationResultsTable);
