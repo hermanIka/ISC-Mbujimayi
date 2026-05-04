@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, isNull, count } from "drizzle-orm";
-import { db, forumPostsTable, usersTable } from "@workspace/db";
+import { db, forumPostsTable, usersTable, type ForumPost } from "@workspace/db";
+import { requireAuth } from "../middlewares/auth";
 import {
   ListForumPostsParams,
   ListForumPostsQueryParams,
@@ -14,7 +15,7 @@ import { nanoid } from "nanoid";
 
 const router: IRouter = Router();
 
-async function enrichPost(post: any): Promise<any> {
+async function enrichPost(post: ForumPost): Promise<Record<string, unknown>> {
   const [author] = await db.select().from(usersTable).where(eq(usersTable.id, post.authorId));
   const replies = await db
     .select()
@@ -51,7 +52,7 @@ router.get("/courses/:courseId/forum", async (req, res): Promise<void> => {
   res.json({ posts: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 
-router.post("/courses/:courseId/forum", async (req, res): Promise<void> => {
+router.post("/courses/:courseId/forum", requireAuth, async (req, res): Promise<void> => {
   const params = CreateForumPostParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -77,7 +78,7 @@ router.post("/courses/:courseId/forum", async (req, res): Promise<void> => {
   res.status(201).json(await enrichPost(post));
 });
 
-router.put("/forum/:id", async (req, res): Promise<void> => {
+router.put("/forum/:id", requireAuth, async (req, res): Promise<void> => {
   const params = UpdateForumPostParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -100,7 +101,7 @@ router.put("/forum/:id", async (req, res): Promise<void> => {
   res.json(await enrichPost(post));
 });
 
-router.delete("/forum/:id", async (req, res): Promise<void> => {
+router.delete("/forum/:id", requireAuth, async (req, res): Promise<void> => {
   const params = DeleteForumPostParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

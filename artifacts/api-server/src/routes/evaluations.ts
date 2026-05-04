@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
 import { db, evaluationsTable, questionsTable, evaluationResultsTable } from "@workspace/db";
+import { requireAuth, requireTeacher } from "../middlewares/auth";
 import {
   ListEvaluationsParams,
   CreateEvaluationParams,
@@ -43,7 +44,7 @@ router.get("/courses/:courseId/evaluations", async (req, res): Promise<void> => 
   res.json(enriched);
 });
 
-router.post("/courses/:courseId/evaluations", async (req, res): Promise<void> => {
+router.post("/courses/:courseId/evaluations", requireTeacher, async (req, res): Promise<void> => {
   const params = CreateEvaluationParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -82,7 +83,7 @@ router.get("/evaluations/:id", async (req, res): Promise<void> => {
   res.json({ ...ev, questionCount: questions.length, questions });
 });
 
-router.put("/evaluations/:id", async (req, res): Promise<void> => {
+router.put("/evaluations/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = UpdateEvaluationParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -106,7 +107,7 @@ router.put("/evaluations/:id", async (req, res): Promise<void> => {
   res.json({ ...ev, questionCount: Number(qRow?.count ?? 0) });
 });
 
-router.delete("/evaluations/:id", async (req, res): Promise<void> => {
+router.delete("/evaluations/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = DeleteEvaluationParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -116,7 +117,7 @@ router.delete("/evaluations/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-router.post("/evaluations/:id/submit", async (req, res): Promise<void> => {
+router.post("/evaluations/:id/submit", requireAuth, async (req, res): Promise<void> => {
   const params = SubmitEvaluationParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -179,7 +180,7 @@ router.get("/evaluations/:id/results", async (req, res): Promise<void> => {
   res.json(formatted);
 });
 
-router.put("/results/:id/grade", async (req, res): Promise<void> => {
+router.put("/results/:id/grade", requireTeacher, async (req, res): Promise<void> => {
   const params = GradeResultParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -215,7 +216,7 @@ router.get("/evaluations/:evaluationId/questions", async (req, res): Promise<voi
   res.json(questions);
 });
 
-router.post("/evaluations/:evaluationId/questions", async (req, res): Promise<void> => {
+router.post("/evaluations/:evaluationId/questions", requireTeacher, async (req, res): Promise<void> => {
   const params = CreateQuestionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -238,7 +239,7 @@ router.post("/evaluations/:evaluationId/questions", async (req, res): Promise<vo
   res.status(201).json(question);
 });
 
-router.put("/questions/:id", async (req, res): Promise<void> => {
+router.put("/questions/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = UpdateQuestionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -261,7 +262,7 @@ router.put("/questions/:id", async (req, res): Promise<void> => {
   res.json(question);
 });
 
-router.delete("/questions/:id", async (req, res): Promise<void> => {
+router.delete("/questions/:id", requireTeacher, async (req, res): Promise<void> => {
   const params = DeleteQuestionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

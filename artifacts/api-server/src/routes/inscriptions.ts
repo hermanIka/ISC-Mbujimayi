@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
-import { db, inscriptionsTable, studentsTable, filieresTable, inscriptionStatusEnum } from "@workspace/db";
+import { db, inscriptionsTable, studentsTable, filieresTable, inscriptionStatusEnum, type Student, type Inscription } from "@workspace/db";
 import {
   ListInscriptionsQueryParams,
   CreateInscriptionBody,
@@ -13,7 +13,7 @@ import { requireAuth, requireAcademic } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-async function enrichStudent(student: any) {
+async function enrichStudent(student: Student | null) {
   if (!student) return null;
   let filiere = null;
   if (student.filiereId) {
@@ -23,7 +23,7 @@ async function enrichStudent(student: any) {
   return { ...student, filiere };
 }
 
-async function enrichInscription(ins: any) {
+async function enrichInscription(ins: Inscription) {
   const [student] = await db
     .select()
     .from(studentsTable)

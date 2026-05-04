@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
-import { db, teachersTable, coursesTable, filieresTable } from "@workspace/db";
+import { db, teachersTable, coursesTable, filieresTable, type Teacher, type Course } from "@workspace/db";
 import { requireAcademic } from "../middlewares/auth";
 import {
   CreateTeacherBody,
@@ -10,7 +10,7 @@ import { nanoid } from "nanoid";
 
 const router: IRouter = Router();
 
-async function teacherWithCourseCount(teacher: any) {
+async function teacherWithCourseCount(teacher: Teacher) {
   const [row] = await db
     .select({ count: count() })
     .from(coursesTable)
@@ -18,7 +18,7 @@ async function teacherWithCourseCount(teacher: any) {
   return { ...teacher, courseCount: Number(row?.count ?? 0) };
 }
 
-async function courseWithDetails(course: any) {
+async function courseWithDetails(course: Course) {
   const [teacher] = await db
     .select()
     .from(teachersTable)

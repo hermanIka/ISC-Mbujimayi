@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, certificatesTable, coursesTable, teachersTable, filieresTable, studentsTable, enrollmentsTable, modulesTable } from "@workspace/db";
+import { db, certificatesTable, coursesTable, teachersTable, filieresTable, studentsTable, enrollmentsTable, modulesTable, type Course } from "@workspace/db";
 import { GetCertificateByIdParams, VerifyCertificateParams } from "@workspace/api-zod";
 import { count } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-async function enrichCourse(course: any) {
+async function enrichCourse(course: Course) {
   const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, course.teacherId));
   let filiere = null;
   if (course.filiereId) {

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, count, and } from "drizzle-orm";
-import { db, studentsTable, filieresTable, enrollmentsTable, paymentsTable, certificatesTable } from "@workspace/db";
+import { db, studentsTable, filieresTable, enrollmentsTable, paymentsTable, certificatesTable, type Student } from "@workspace/db";
 import { requireAuth, requireAcademic } from "../middlewares/auth";
 import {
   ListStudentsQueryParams,
@@ -13,7 +13,7 @@ import { nanoid } from "nanoid";
 
 const router: IRouter = Router();
 
-async function studentWithFiliere(student: any) {
+async function studentWithFiliere(student: Student) {
   if (!student.filiereId) return { ...student, filiere: null };
   const [filiere] = await db
     .select()

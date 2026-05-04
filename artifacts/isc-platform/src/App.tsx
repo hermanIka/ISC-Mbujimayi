@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
-import { ClerkProvider, SignIn, SignUp, useClerk, useUser, RedirectToSignIn } from "@clerk/react";
+import { ClerkProvider, SignIn, SignUp, useClerk, RedirectToSignIn, useAuth } from "@clerk/react";
+import { useGetCurrentUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
@@ -47,16 +48,29 @@ type ProtectedRouteProps = {
   allowedRoles?: UserRole[];
 };
 
-function useDbUser() {
-  const { user, isLoaded } = useUser();
-  return { isLoaded, clerkId: user?.id ?? null };
+function useCurrentUserRole(): { isLoaded: boolean; isSignedIn: boolean; role: UserRole | null } {
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useGetCurrentUser({
+    query: { queryKey: getGetCurrentUserQueryKey(), enabled: authLoaded && !!isSignedIn, retry: false },
+  });
+  return {
+    isLoaded: authLoaded && (!isSignedIn || !profileLoading),
+    isSignedIn: !!isSignedIn,
+    role: (profile?.role as UserRole | undefined) ?? null,
+  };
 }
 
 function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { isLoaded, clerkId } = useDbUser();
+  const { isLoaded, isSignedIn, role } = useCurrentUserRole();
   if (!isLoaded) return <PageLoader />;
-  if (!clerkId) return <RedirectToSignIn />;
-  void allowedRoles;
+  if (!isSignedIn) return <RedirectToSignIn />;
+  if (allowedRoles && role && !allowedRoles.includes(role)) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <p className="text-destructive font-medium">Accès non autorisé pour ce rôle.</p>
+      </div>
+    );
+  }
   return <>{children}</>;
 }
 

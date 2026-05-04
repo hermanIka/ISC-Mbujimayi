@@ -23,7 +23,7 @@ router.get("/analytics/student", requireAuth, async (_req, res): Promise<void> =
   const enrolled = enrollments.length;
   let completed = 0;
   let inProgress = 0;
-  const courseProgress: any[] = [];
+  const courseProgress: Array<{ courseId: string; courseTitle: string; progressPercent: number; enrolledAt: Date | null }> = [];
 
   for (const e of enrollments) {
     const modules = await db.select().from(modulesTable).where(eq(modulesTable.courseId, e.courseId));

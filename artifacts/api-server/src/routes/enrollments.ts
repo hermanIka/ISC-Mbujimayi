@@ -10,7 +10,10 @@ import {
   teachersTable,
   filieresTable,
   certificatesTable,
+  type Course,
+  type ChapterProgress,
 } from "@workspace/db";
+import { requireAuth } from "../middlewares/auth";
 import {
   ListEnrollmentsQueryParams,
   CreateEnrollmentBody,
@@ -23,7 +26,7 @@ import crypto from "crypto";
 
 const router: IRouter = Router();
 
-async function enrichCourseForEnrollment(course: any) {
+async function enrichCourseForEnrollment(course: Course) {
   const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, course.teacherId));
   let filiere = null;
   if (course.filiereId) {
@@ -79,7 +82,7 @@ router.get("/enrollments", async (req, res): Promise<void> => {
   res.json({ enrollments: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 
-router.post("/enrollments", async (req, res): Promise<void> => {
+router.post("/enrollments", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateEnrollmentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -130,7 +133,7 @@ router.get("/enrollments/:id", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/chapters/:chapterId/progress", async (req, res): Promise<void> => {
+router.post("/chapters/:chapterId/progress", requireAuth, async (req, res): Promise<void> => {
   const params = MarkChapterProgressParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -148,7 +151,7 @@ router.post("/chapters/:chapterId/progress", async (req, res): Promise<void> => 
     .where(eq(chapterProgressTable.enrollmentId, enrollmentId));
   const existingForChapter = existing.find(p => p.chapterId === params.data.chapterId);
 
-  let chapterProgress: any;
+  let chapterProgress: ChapterProgress | undefined;
   if (existingForChapter) {
     const [updated] = await db
       .update(chapterProgressTable)

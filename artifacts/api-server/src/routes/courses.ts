@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, count, and } from "drizzle-orm";
-import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, courseStatusEnum } from "@workspace/db";
+import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, courseStatusEnum, type Course } from "@workspace/db";
 import { requireAuth, requireTeacher } from "../middlewares/auth";
 import {
   ListCoursesQueryParams,
@@ -33,7 +33,7 @@ async function enrichTeacher(teacherId: string) {
   return { ...teacher, courseCount: Number(row?.count ?? 0) };
 }
 
-async function enrichCourse(course: any) {
+async function enrichCourse(course: Course) {
   const teacher = await enrichTeacher(course.teacherId);
   let filiere = null;
   if (course.filiereId) {
