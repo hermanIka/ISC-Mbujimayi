@@ -71,6 +71,8 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
     resolvedStudentId = callerStudent.id;
   }
   const reference = `ISC-${Date.now()}-${nanoid(6).toUpperCase()}`;
+  const courseIdFromBody = typeof req.body.courseId === "string" ? req.body.courseId : undefined;
+  const metadata = courseIdFromBody ? JSON.stringify({ courseId: courseIdFromBody }) : null;
   const [payment] = await db
     .insert(paymentsTable)
     .values({
@@ -81,6 +83,7 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
       ...parsed.data,
       studentId: resolvedStudentId,
       amount: parsed.data.amount,
+      ...(metadata ? { metadata } : {}),
     })
     .returning();
 
@@ -130,6 +133,7 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
       operatorRef: payment.operatorRef ?? null,
       phoneNumber: payment.phoneNumber ?? "",
       studentId: payment.studentId,
+      metadata: payment.metadata ?? null,
     });
   }
 
