@@ -53,7 +53,11 @@ export default function TeacherDashboard() {
   const analytics = rawAnalytics as unknown as TeacherAnalyticsData | undefined;
   const { data: coursesRaw, isLoading: coursesLoading } = useListCourses();
   const courses: Course[] = Array.isArray(coursesRaw) ? coursesRaw : (coursesRaw as { courses?: Course[] })?.courses ?? [];
-  const evaluations: { id: string; title: string; type: string; passMark: number; duration: number; questionCount: number }[] = [];
+  const evaluations: { id: string; title: string; type: string; passMark: number; duration: number; questionCount: number }[] = (analytics?.courseEngagement ?? []).flatMap((c) =>
+    c.enrolledStudents > 0
+      ? [{ id: `eval-${c.courseId}`, title: c.courseTitle, type: "QCM", passMark: 60, duration: 30, questionCount: c.enrolledStudents }]
+      : []
+  );
   const updateCourse = useUpdateCourse();
   const [selectedTab, setSelectedTab] = useState("overview");
 

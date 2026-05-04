@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Clock, FileQuestion } from "lucide-react";
+import { ArrowLeft, Clock, FileQuestion, CheckSquare } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function CourseEvaluationsPage() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/courses/:id/evaluations");
   const courseId = params?.id || "";
 
@@ -22,10 +24,16 @@ export default function CourseEvaluationsPage() {
     <AppLayout>
       <div className="max-w-4xl mx-auto p-8 space-y-6">
         <Button variant="ghost" asChild className="-ml-4">
-          <Link href={`/courses/${courseId}/learn`}><ArrowLeft className="mr-2 h-4 w-4" /> Retour au cours</Link>
+          <Link href={`/courses/${courseId}/learn`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t("evaluations.back_to_course")}
+          </Link>
         </Button>
 
-        <h1 className="text-3xl font-bold tracking-tight">Évaluations du cours</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t("evaluations.title")}</h1>
+          <p className="text-muted-foreground">{t("evaluations.subtitle")}</p>
+        </div>
 
         <div className="grid gap-4">
           {isLoading ? (
@@ -42,7 +50,8 @@ export default function CourseEvaluationsPage() {
             ))
           ) : evaluations.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground border rounded-lg bg-muted/10">
-              Aucune évaluation disponible pour ce cours.
+              <FileQuestion className="mx-auto h-12 w-12 opacity-20 mb-3" />
+              <p>{t("evaluations.none_available")}</p>
             </div>
           ) : (
             evaluations.map((evalItem: Evaluation) => (
@@ -50,23 +59,28 @@ export default function CourseEvaluationsPage() {
                 <CardHeader className="flex flex-row items-start justify-between space-y-0">
                   <div className="space-y-1">
                     <CardTitle>{evalItem.title}</CardTitle>
-                    <div className="flex gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" /> {evalItem.duration} min
+                        <Clock className="h-4 w-4" />
+                        {evalItem.duration} {t("evaluations.minutes")}
                       </div>
                       <div className="flex items-center gap-1">
-                        <FileQuestion className="h-4 w-4" /> {evalItem.questionCount || 0} questions
+                        <FileQuestion className="h-4 w-4" />
+                        {evalItem.questionCount || 0} {t("evaluations.questions")}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <CheckSquare className="h-4 w-4" />
+                        {t("evaluations.pass_mark")}: {evalItem.passMark}%
                       </div>
                     </div>
                   </div>
-                  <Badge>{evalItem.type}</Badge>
+                  <Badge variant="outline">{evalItem.type}</Badge>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm">Note de passage: {evalItem.passMark}%</p>
-                </CardContent>
                 <CardFooter>
                   <Button asChild>
-                    <Link href={`/evaluations/${evalItem.id}`}>Commencer l'évaluation</Link>
+                    <Link href={`/evaluations/${evalItem.id}`}>
+                      {t("evaluations.start")}
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>

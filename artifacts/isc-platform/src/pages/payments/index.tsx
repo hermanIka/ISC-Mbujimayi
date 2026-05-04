@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Plus } from "lucide-react";
+import { CreditCard, Plus, Receipt } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -184,6 +184,7 @@ export default function PaymentsPage() {
                     <TableHead>{t("payments.col_operator")}</TableHead>
                     <TableHead>{t("payments.col_amount")}</TableHead>
                     <TableHead>{t("payments.col_status")}</TableHead>
+                    <TableHead>{t("payments.col_receipt")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -203,6 +204,38 @@ export default function PaymentsPage() {
                         >
                           {getStatusLabel(payment.status)}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {payment.status === "CONFIRMED" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("payments.download_receipt")}
+                            onClick={() => {
+                              const lines = [
+                                "REÇU DE PAIEMENT — ISC MBUJIMAYI",
+                                "=".repeat(40),
+                                `Référence : ${payment.reference || payment.id}`,
+                                `Type      : ${payment.type}`,
+                                `Opérateur : ${payment.operator}`,
+                                `Montant   : ${Number(payment.amount).toLocaleString("fr-CD")} ${payment.currency}`,
+                                `Statut    : ${payment.status}`,
+                                `Date      : ${payment.createdAt ? new Date(payment.createdAt).toLocaleString("fr-CD") : "—"}`,
+                                "=".repeat(40),
+                                "Paiement vérifié et confirmé par ISC Mbujimayi",
+                              ].join("\n");
+                              const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `recu-${payment.reference || payment.id}.txt`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                          >
+                            <Receipt className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
