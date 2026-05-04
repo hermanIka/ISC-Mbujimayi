@@ -111,7 +111,7 @@ router.get("/certificates/:id/download", requireAuth, async (req, res): Promise<
     }
   }
 
-  generateCertificatePDF(
+  await generateCertificatePDF(
     {
       hash: cert.hash,
       issuedAt: cert.issuedAt ?? null,

@@ -90,6 +90,10 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
 
 router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
   const callbackSecret = process.env.PAYMENT_CALLBACK_SECRET;
+  if (!callbackSecret && process.env.NODE_ENV === "production") {
+    res.status(500).json({ error: "PAYMENT_CALLBACK_SECRET is not configured" });
+    return;
+  }
   if (callbackSecret) {
     const providedSecret = req.headers["x-callback-secret"] ?? req.headers["x-api-key"];
     if (providedSecret !== callbackSecret) {

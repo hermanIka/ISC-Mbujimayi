@@ -4,7 +4,7 @@ import { logger } from "./logger";
 
 const SUCCESS_RATE = 0.9;
 const MIN_DELAY_MS = 2000;
-const MAX_DELAY_MS = 8000;
+const MAX_DELAY_MS = 4000;
 
 const OPERATOR_PREFIXES: Record<string, string> = {
   MTN_MONEY: "MTN",
