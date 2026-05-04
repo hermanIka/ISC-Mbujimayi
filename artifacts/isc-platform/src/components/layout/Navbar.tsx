@@ -33,7 +33,7 @@ export function Navbar() {
             {t("nav.filieres")}
           </Link>
           <Link href="/news" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
-            Actualités
+            {t("nav.news")}
           </Link>
           <Link href="/about" className="hidden lg:inline text-sm font-medium transition-colors hover:text-primary">
             {t("nav.about")}

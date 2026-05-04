@@ -96,7 +96,7 @@ export default function InscriptionsPage() {
       await createInscription.mutateAsync({
         data: {
           filiereId,
-          studentId: "",
+          studentId: "auto",
           documents: docs.filter((d) => d.file).map((d) => ({
             type: d.type,
             url: `upload://${d.file?.name ?? "file"}`,

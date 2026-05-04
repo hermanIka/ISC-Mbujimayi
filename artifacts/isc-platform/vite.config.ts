@@ -38,12 +38,23 @@ export default defineConfig({
       devOptions: { enabled: false },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json}"],
-        navigateFallback: null,
+        navigateFallback: "/offline.html",
+        navigateFallbackDenylist: [/^\/api\//, /^\/sign-in/, /^\/sign-up/],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.destination === "document",
             handler: "NetworkFirst",
-            options: { cacheName: "html-cache" },
+            options: { cacheName: "html-cache", networkTimeoutSeconds: 10 },
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+            handler: "NetworkFirst",
+            options: { cacheName: "api-cache", networkTimeoutSeconds: 5 },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === "image",
+            handler: "CacheFirst",
+            options: { cacheName: "image-cache", expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 } },
           },
         ],
       },
@@ -58,10 +69,24 @@ export default defineConfig({
         start_url: "/",
         lang: "fr",
         icons: [
+          { src: "/images/logo-isc.png", sizes: "72x72", type: "image/png" },
+          { src: "/images/logo-isc.png", sizes: "96x96", type: "image/png" },
+          { src: "/images/logo-isc.png", sizes: "128x128", type: "image/png" },
+          { src: "/images/logo-isc.png", sizes: "144x144", type: "image/png" },
+          { src: "/images/logo-isc.png", sizes: "152x152", type: "image/png" },
           { src: "/images/logo-isc.png", sizes: "192x192", type: "image/png" },
+          { src: "/images/logo-isc.png", sizes: "384x384", type: "image/png" },
           { src: "/images/logo-isc.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
         categories: ["education", "productivity"],
+        screenshots: [
+          {
+            src: "/opengraph.jpg",
+            sizes: "1200x630",
+            type: "image/jpeg",
+            label: "ISC Mbujimayi — Plateforme e-learning",
+          },
+        ],
       },
     }),
     ...(process.env.NODE_ENV !== "production" &&

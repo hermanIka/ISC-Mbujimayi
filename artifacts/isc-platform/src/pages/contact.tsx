@@ -166,17 +166,18 @@ export default function ContactPage() {
           <h2 className="text-xl font-semibold">Notre emplacement</h2>
           <div className="rounded-xl overflow-hidden border shadow-sm">
             <iframe
-              title="ISC Mbujimayi — Carte OpenStreetMap"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=23.57%2C-6.16%2C23.61%2C-6.12&layer=mapnik&marker=-6.1400%2C23.5900"
+              title="ISC Mbujimayi — Google Maps"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d63047.83!2d23.5900!3d-6.1400!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19d9f1000000001%3A0x1!2sMbujimayi%2C+Democratic+Republic+of+the+Congo!5e0!3m2!1sfr!2scd!4v1"
               width="100%"
               height="320"
               style={{ border: 0, display: "block" }}
               loading="lazy"
               allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
           <p className="text-xs text-muted-foreground text-right">
-            Carte © <a href="https://www.openstreetmap.org/copyright" className="underline" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributeurs
+            Carte © <a href="https://maps.google.com" className="underline" target="_blank" rel="noopener noreferrer">Google Maps</a>
           </p>
         </section>
       </div>

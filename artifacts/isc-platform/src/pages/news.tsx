@@ -139,7 +139,7 @@ export default function NewsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {expandedId === article.id ? article.summary + " Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua." : article.summary}
+                  {article.summary}
                 </p>
               </CardContent>
               <CardFooter>

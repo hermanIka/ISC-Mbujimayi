@@ -9,14 +9,22 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const VISIT_COUNT_KEY = "isc_pwa_visit_count";
+const DISMISSED_KEY = "isc_pwa_prompt_dismissed";
+const VISITS_REQUIRED = 3;
+
 export function PwaInstallPrompt() {
   const { t } = useTranslation();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    const dismissed = sessionStorage.getItem("pwa_prompt_dismissed");
-    if (dismissed) return;
+    if (localStorage.getItem(DISMISSED_KEY)) return;
+
+    const count = Number(localStorage.getItem(VISIT_COUNT_KEY) ?? 0) + 1;
+    localStorage.setItem(VISIT_COUNT_KEY, String(count));
+
+    if (count < VISITS_REQUIRED) return;
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
@@ -33,13 +41,14 @@ export function PwaInstallPrompt() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
+      localStorage.setItem(DISMISSED_KEY, "1");
       setShowPrompt(false);
     }
     setDeferredPrompt(null);
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem("pwa_prompt_dismissed", "1");
+    localStorage.setItem(DISMISSED_KEY, "1");
     setShowPrompt(false);
   };
 
