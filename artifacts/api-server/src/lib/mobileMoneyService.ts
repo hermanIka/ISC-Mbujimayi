@@ -97,6 +97,7 @@ export function simulateMobileMoneyPayment(paymentId: string, operator: string):
           phoneNumber: updated.phoneNumber ?? "",
           studentId: updated.studentId,
           metadata: updated.metadata ?? null,
+          confirmedAt: updated.updatedAt ?? updated.createdAt ?? null,
         });
       }
     } catch (err) {

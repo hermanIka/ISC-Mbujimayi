@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, count, and } from "drizzle-orm";
-import { db, inscriptionsTable, studentsTable, filieresTable, inscriptionStatusEnum, type Student, type Inscription } from "@workspace/db";
+import { db, inscriptionsTable, studentsTable, filieresTable, usersTable, inscriptionStatusEnum, type Student, type Inscription } from "@workspace/db";
 import {
   ListInscriptionsQueryParams,
   CreateInscriptionBody,
@@ -10,6 +10,8 @@ import {
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
 import { requireAuth, requireAcademic, getCallerDbUser } from "../middlewares/auth";
+import { sendEmail, buildInscriptionStatusEmail } from "../lib/emailService";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -29,6 +31,42 @@ async function enrichInscription(ins: Inscription) {
     .from(studentsTable)
     .where(eq(studentsTable.id, ins.studentId));
   return { ...ins, student: await enrichStudent(student), documents: ins.documents ?? [] };
+}
+
+async function sendInscriptionStatusEmail(
+  ins: Inscription,
+  status: "APPROVED" | "REJECTED",
+  notes?: string | null,
+): Promise<void> {
+  try {
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, ins.studentId));
+    if (!student) return;
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, student.userId));
+    const email = user?.email;
+    if (!email) {
+      logger.warn({ studentId: ins.studentId }, "📧 [EMAIL] No email for student — skipping inscription status email");
+      return;
+    }
+
+    const studentName = `${student.firstName} ${student.lastName}`.trim();
+    let filiereName: string | null = null;
+    if (student.filiereId) {
+      const [filiere] = await db.select().from(filieresTable).where(eq(filieresTable.id, student.filiereId));
+      filiereName = filiere?.name ?? null;
+    }
+
+    const { subject, html } = buildInscriptionStatusEmail({
+      studentName,
+      status,
+      notes,
+      filiereName,
+    });
+
+    await sendEmail({ to: email, subject, html });
+  } catch (err) {
+    logger.error({ err, inscriptionId: ins.id }, "📧 [EMAIL] Failed to send inscription status email");
+  }
 }
 
 router.get("/inscriptions", requireAuth, async (req, res): Promise<void> => {
@@ -160,6 +198,12 @@ router.put("/inscriptions/:id/status", requireAcademic, async (req, res): Promis
     res.status(404).json({ error: "Inscription not found" });
     return;
   }
+
+  const newStatus = parsed.data.status;
+  if (newStatus === "APPROVED" || newStatus === "REJECTED") {
+    void sendInscriptionStatusEmail(ins, newStatus, parsed.data.notes);
+  }
+
   res.json(await enrichInscription(ins));
 });
 

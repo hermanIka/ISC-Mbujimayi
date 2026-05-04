@@ -26,6 +26,7 @@
     "pino": "^9",
     "pino-http": "^10",
     "qrcode": "^1.5.4",
+    "resend": "^6.12.2",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

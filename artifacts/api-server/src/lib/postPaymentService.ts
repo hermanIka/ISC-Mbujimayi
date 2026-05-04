@@ -1,7 +1,10 @@
-import { db, paymentsTable, studentsTable, usersTable, enrollmentsTable, coursesTable } from "@workspace/db";
+import { db, paymentsTable, studentsTable, usersTable, enrollmentsTable, coursesTable, filieresTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { logger } from "./logger";
+import { sendEmail, buildPaymentConfirmedEmail } from "./emailService";
+import { generatePaymentReceiptPDFBuffer } from "./pdfService";
+import type { PaymentReceiptData } from "./pdfService";
 
 export interface ConfirmedPaymentPayload {
   paymentId: string;
@@ -14,6 +17,7 @@ export interface ConfirmedPaymentPayload {
   phoneNumber: string;
   studentId: string;
   metadata?: string | null;
+  confirmedAt?: Date | null;
 }
 
 const OPERATOR_LABELS: Record<string, string> = {
@@ -29,40 +33,79 @@ const TYPE_LABELS: Record<string, string> = {
   OTHER: "Autre",
 };
 
-async function resolveStudentEmail(studentId: string): Promise<{ name: string; email: string } | null> {
+interface StudentInfo {
+  name: string;
+  email: string;
+  numEtudiant: string;
+  filiereName?: string | null;
+}
+
+async function resolveStudentInfo(studentId: string): Promise<StudentInfo | null> {
   const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, studentId));
   if (!student) return null;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, student.userId));
   const email = user?.email ?? null;
   const name = `${student.firstName} ${student.lastName}`.trim();
-  return { name, email: email ?? `${name.toLowerCase().replace(/ /g, ".")}@isc-mbujimayi.ac.cd` };
+
+  let filiereName: string | null = null;
+  if (student.filiereId) {
+    const [filiere] = await db.select().from(filieresTable).where(eq(filieresTable.id, student.filiereId));
+    filiereName = filiere?.name ?? null;
+  }
+
+  return {
+    name,
+    email: email ?? `${name.toLowerCase().replace(/ /g, ".")}@isc-mbujimayi.ac.cd`,
+    numEtudiant: student.numEtudiant ?? studentId,
+    filiereName,
+  };
 }
 
-async function logReceiptEmail(payment: ConfirmedPaymentPayload, studentName: string, studentEmail: string) {
-  const amountFormatted = Number(payment.amount).toLocaleString("fr-CD");
-  const emailContent = {
-    to: studentEmail,
-    subject: `[ISC Mbujimayi] Confirmation de paiement — Réf: ${payment.reference}`,
-    body: [
-      `Cher(e) ${studentName},`,
-      "",
-      "Nous avons bien reçu votre paiement. Voici le récapitulatif :",
-      "",
-      `  Référence         : ${payment.reference}`,
-      `  Montant           : ${amountFormatted} ${payment.currency}`,
-      `  Type              : ${TYPE_LABELS[payment.type] ?? payment.type}`,
-      `  Opérateur         : ${OPERATOR_LABELS[payment.operator] ?? payment.operator}`,
-      `  Référence op.     : ${payment.operatorRef ?? "N/A"}`,
-      `  Numéro            : ${payment.phoneNumber}`,
-      `  Statut            : ✓ CONFIRMÉ`,
-      "",
-      "Votre reçu PDF est disponible sur la plateforme : https://www.isc-mbujimayi.ac.cd/dashboard",
-      "",
-      "Cordialement,",
-      "Service Financier — Institut Supérieur de Commerce de Mbujimayi",
-    ].join("\n"),
+async function sendPaymentConfirmationEmail(
+  payload: ConfirmedPaymentPayload,
+  studentInfo: StudentInfo,
+): Promise<void> {
+  const { subject, html } = buildPaymentConfirmedEmail({
+    studentName: studentInfo.name,
+    reference: payload.reference,
+    amount: payload.amount,
+    currency: payload.currency,
+    type: payload.type,
+    operator: payload.operator,
+    operatorRef: payload.operatorRef,
+    phoneNumber: payload.phoneNumber,
+  });
+
+  const receiptData: PaymentReceiptData = {
+    reference: payload.reference,
+    amount: payload.amount,
+    currency: payload.currency,
+    type: payload.type,
+    operator: payload.operator,
+    phoneNumber: payload.phoneNumber,
+    operatorRef: payload.operatorRef,
+    status: "CONFIRMED",
+    createdAt: payload.confirmedAt ?? new Date(),
+    studentName: studentInfo.name,
+    numEtudiant: studentInfo.numEtudiant,
+    filiereName: studentInfo.filiereName,
   };
-  logger.info({ emailContent, event: "payment_confirmed_email" }, "📧 [EMAIL] Reçu de paiement à envoyer");
+
+  let pdfBuffer: Buffer | undefined;
+  try {
+    pdfBuffer = await generatePaymentReceiptPDFBuffer(receiptData);
+  } catch (err) {
+    logger.warn({ err, paymentId: payload.paymentId }, "📧 [EMAIL] Failed to generate receipt PDF for attachment");
+  }
+
+  await sendEmail({
+    to: studentInfo.email,
+    subject,
+    html,
+    attachments: pdfBuffer
+      ? [{ filename: `recu-${payload.reference}.pdf`, content: pdfBuffer }]
+      : undefined,
+  });
 }
 
 async function unlockCourseEnrollment(studentId: string, courseId: string): Promise<void> {
@@ -95,11 +138,15 @@ async function unlockCourseEnrollment(studentId: string, courseId: string): Prom
 
 export async function handlePaymentConfirmed(payload: ConfirmedPaymentPayload): Promise<void> {
   try {
-    const recipient = await resolveStudentEmail(payload.studentId);
-    const studentName = recipient?.name ?? "Étudiant";
-    const studentEmail = recipient?.email ?? `student.${payload.studentId}@isc-mbujimayi.ac.cd`;
+    const studentInfo = await resolveStudentInfo(payload.studentId);
+    const studentName = studentInfo?.name ?? "Étudiant";
+    const studentEmail = studentInfo?.email ?? `student.${payload.studentId}@isc-mbujimayi.ac.cd`;
 
-    await logReceiptEmail(payload, studentName, studentEmail);
+    if (studentInfo) {
+      await sendPaymentConfirmationEmail(payload, studentInfo);
+    } else {
+      logger.warn({ studentId: payload.studentId }, "📧 [EMAIL] Student not found — skipping payment confirmation email");
+    }
 
     if (payload.type === "COURSE_FEE" && payload.metadata) {
       try {

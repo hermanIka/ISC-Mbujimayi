@@ -75,12 +75,7 @@ export interface PaymentReceiptData {
   filiereName?: string | null;
 }
 
-export function generatePaymentReceiptPDF(data: PaymentReceiptData, res: Response): void {
-  const doc = new PDFDocument({ size: "A4", margin: 40 });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="recu-${data.reference}.pdf"`);
-  doc.pipe(res);
-
+function writeReceiptContent(doc: PDFKit.PDFDocument, data: PaymentReceiptData): void {
   drawReceiptHeader(doc);
 
   doc.moveDown(4.5);
@@ -137,6 +132,26 @@ export function generatePaymentReceiptPDF(data: PaymentReceiptData, res: Respons
     .text("Conservez ce document comme preuve de votre paiement à l'ISC Mbujimayi.", 0, noteY + 24, { align: "center" });
 
   drawReceiptFooter(doc);
+}
+
+export function generatePaymentReceiptPDFBuffer(data: PaymentReceiptData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+    writeReceiptContent(doc, data);
+    doc.end();
+  });
+}
+
+export function generatePaymentReceiptPDF(data: PaymentReceiptData, res: Response): void {
+  const doc = new PDFDocument({ size: "A4", margin: 40 });
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="recu-${data.reference}.pdf"`);
+  doc.pipe(res);
+  writeReceiptContent(doc, data);
   doc.end();
 }
 
@@ -152,7 +167,7 @@ export interface CertificateData {
   verifyUrl?: string;
 }
 
-export async function generateCertificatePDF(data: CertificateData, res: Response): Promise<void> {
+async function writeCertificateContent(doc: PDFKit.PDFDocument, data: CertificateData): Promise<void> {
   let qrBuffer: Buffer | null = null;
   const verifyUrl = data.verifyUrl ?? `https://${ISC_WEBSITE}/verify/${data.hash}`;
   try {
@@ -160,11 +175,6 @@ export async function generateCertificatePDF(data: CertificateData, res: Respons
   } catch {
     // QR generation failed — skip
   }
-
-  const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 50 });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="certificat-${data.hash.substring(0, 8)}.pdf"`);
-  doc.pipe(res);
 
   const W = doc.page.width;
   const H = doc.page.height;
@@ -240,6 +250,34 @@ export async function generateCertificatePDF(data: CertificateData, res: Respons
 
   doc.fillColor("#94a3b8").fontSize(7).text(`Délivré le ${issuedDate}`, 0, H - 46, { align: "center" });
   doc.fillColor("#cbd5e1").fontSize(6.5).text(`Code: ${data.hash}`, 0, H - 34, { align: "center" });
+}
 
+export async function generateCertificatePDFBuffer(data: CertificateData): Promise<Buffer> {
+  const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 50 });
+  const chunks: Buffer[] = [];
+
+  const streamDone = new Promise<Buffer>((resolve, reject) => {
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+  });
+
+  try {
+    await writeCertificateContent(doc, data);
+  } catch (err) {
+    doc.end();
+    throw err;
+  }
+
+  doc.end();
+  return streamDone;
+}
+
+export async function generateCertificatePDF(data: CertificateData, res: Response): Promise<void> {
+  const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 50 });
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="certificat-${data.hash.substring(0, 8)}.pdf"`);
+  doc.pipe(res);
+  await writeCertificateContent(doc, data);
   doc.end();
 }

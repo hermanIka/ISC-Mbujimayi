@@ -11,6 +11,7 @@ import {
   filieresTable,
   certificatesTable,
   studentsTable,
+  usersTable,
   type Course,
   type ChapterProgress,
 } from "@workspace/db";
@@ -24,8 +25,79 @@ import {
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
+import { sendEmail, buildCertificateIssuedEmail } from "../lib/emailService";
+import { generateCertificatePDFBuffer } from "../lib/pdfService";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+async function sendCertificateEmail(
+  studentId: string,
+  courseId: string,
+  hash: string,
+  issuedAt: Date | null,
+): Promise<void> {
+  try {
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, studentId));
+    if (!student) return;
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, student.userId));
+    const email = user?.email;
+    if (!email) {
+      logger.warn({ studentId }, "📧 [EMAIL] No email for student — skipping certificate email");
+      return;
+    }
+    const studentName = `${student.firstName} ${student.lastName}`.trim();
+
+    const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, courseId));
+    if (!course) return;
+
+    let filiereName: string | null = null;
+    if (student.filiereId) {
+      const [filiere] = await db.select().from(filieresTable).where(eq(filieresTable.id, student.filiereId));
+      filiereName = filiere?.name ?? null;
+    }
+
+    let teacherName = "ISC Mbujimayi";
+    const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, course.teacherId));
+    if (teacher) {
+      teacherName = `${teacher.firstName} ${teacher.lastName}`.trim();
+    }
+
+    const { subject, html } = buildCertificateIssuedEmail({
+      studentName,
+      courseTitle: course.title,
+      filiereName,
+      hash,
+      issuedAt,
+    });
+
+    let pdfBuffer: Buffer | undefined;
+    try {
+      pdfBuffer = await generateCertificatePDFBuffer({
+        hash,
+        issuedAt,
+        studentName,
+        numEtudiant: student.numEtudiant ?? studentId,
+        courseTitle: course.title,
+        teacherName,
+        filiereName,
+      });
+    } catch (err) {
+      logger.warn({ err, studentId, courseId }, "📧 [EMAIL] Failed to generate certificate PDF for email attachment");
+    }
+
+    await sendEmail({
+      to: email,
+      subject,
+      html,
+      attachments: pdfBuffer
+        ? [{ filename: `certificat-${hash.substring(0, 8)}.pdf`, content: pdfBuffer }]
+        : undefined,
+    });
+  } catch (err) {
+    logger.error({ err, studentId, courseId }, "📧 [EMAIL] Failed to send certificate email");
+  }
+}
 
 async function enrichCourseForEnrollment(course: Course) {
   const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, course.teacherId));
@@ -264,6 +336,8 @@ router.post("/chapters/:chapterId/progress", requireAuth, async (req, res): Prom
           .returning();
         certificateGenerated = true;
         certificate = cert;
+
+        void sendCertificateEmail(enrollment.studentId, enrollment.courseId, cert.hash, cert.issuedAt);
       }
     }
   }
