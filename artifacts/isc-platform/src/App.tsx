@@ -64,7 +64,7 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { isLoaded, isSignedIn, role } = useCurrentUserRole();
   if (!isLoaded) return <PageLoader />;
   if (!isSignedIn) return <RedirectToSignIn />;
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
+  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <p className="text-destructive font-medium">Accès non autorisé pour ce rôle.</p>

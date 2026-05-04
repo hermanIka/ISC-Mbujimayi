@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
-import { db, evaluationsTable, questionsTable, evaluationResultsTable } from "@workspace/db";
-import { requireAuth, requireTeacher } from "../middlewares/auth";
+import { db, evaluationsTable, questionsTable, evaluationResultsTable, studentsTable } from "@workspace/db";
+import { requireAuth, requireTeacher, getCallerDbUser } from "../middlewares/auth";
 import {
   ListEvaluationsParams,
   CreateEvaluationParams,
@@ -149,11 +149,21 @@ router.post("/evaluations/:id/submit", requireAuth, async (req, res): Promise<vo
     if (correct && correct.text === answer.answer) score += q.points;
   }
   const passed = maxScore > 0 ? (score / maxScore) * 100 >= ev.passMark : false;
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+  if (!student) {
+    res.status(403).json({ error: "Only students can submit evaluations" });
+    return;
+  }
   const [result] = await db
     .insert(evaluationResultsTable)
     .values({
       id: nanoid(),
-      studentId: nanoid(),
+      studentId: student.id,
       evaluationId: ev.id,
       score,
       maxScore,

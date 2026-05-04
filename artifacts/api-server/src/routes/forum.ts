@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, isNull, count } from "drizzle-orm";
 import { db, forumPostsTable, usersTable, type ForumPost } from "@workspace/db";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, getCallerDbUser } from "../middlewares/auth";
 import {
   ListForumPostsParams,
   ListForumPostsQueryParams,
@@ -63,14 +63,17 @@ router.post("/courses/:courseId/forum", requireAuth, async (req, res): Promise<v
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const users = await db.select().from(usersTable).limit(1);
-  const authorId = users[0]?.id ?? nanoid();
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
   const [post] = await db
     .insert(forumPostsTable)
     .values({
       id: nanoid(),
       courseId: params.data.courseId,
-      authorId,
+      authorId: callerUser.id,
       content: parsed.data.content,
       parentId: parsed.data.parentId ?? null,
     })
@@ -89,15 +92,26 @@ router.put("/forum/:id", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const [existing] = await db.select().from(forumPostsTable).where(eq(forumPostsTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+  const isAdmin = callerUser.role === "ADMIN" || callerUser.role === "DIRECTOR";
+  if (existing.authorId !== callerUser.id && !isAdmin) {
+    res.status(403).json({ error: "You can only edit your own posts" });
+    return;
+  }
   const [post] = await db
     .update(forumPostsTable)
     .set(parsed.data)
     .where(eq(forumPostsTable.id, params.data.id))
     .returning();
-  if (!post) {
-    res.status(404).json({ error: "Post not found" });
-    return;
-  }
   res.json(await enrichPost(post));
 });
 
@@ -105,6 +119,21 @@ router.delete("/forum/:id", requireAuth, async (req, res): Promise<void> => {
   const params = DeleteForumPostParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const [existing] = await db.select().from(forumPostsTable).where(eq(forumPostsTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+  const isAdmin = callerUser.role === "ADMIN" || callerUser.role === "DIRECTOR";
+  if (existing.authorId !== callerUser.id && !isAdmin) {
+    res.status(403).json({ error: "You can only delete your own posts" });
     return;
   }
   await db.delete(forumPostsTable).where(eq(forumPostsTable.id, params.data.id));

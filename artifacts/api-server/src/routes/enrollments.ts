@@ -10,10 +10,11 @@ import {
   teachersTable,
   filieresTable,
   certificatesTable,
+  studentsTable,
   type Course,
   type ChapterProgress,
 } from "@workspace/db";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, getCallerDbUser } from "../middlewares/auth";
 import {
   ListEnrollmentsQueryParams,
   CreateEnrollmentBody,
@@ -88,7 +89,16 @@ router.post("/enrollments", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const students = await db.select().from(enrollmentsTable).limit(1);
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+  if (!student) {
+    res.status(403).json({ error: "Only students can enroll in courses" });
+    return;
+  }
   const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, parsed.data.courseId));
   if (!course) {
     res.status(404).json({ error: "Course not found" });
@@ -96,7 +106,7 @@ router.post("/enrollments", requireAuth, async (req, res): Promise<void> => {
   }
   const [enrollment] = await db
     .insert(enrollmentsTable)
-    .values({ id: nanoid(), studentId: nanoid(), courseId: parsed.data.courseId })
+    .values({ id: nanoid(), studentId: student.id, courseId: parsed.data.courseId })
     .returning();
   res.status(201).json({
     ...enrollment,

@@ -20,6 +20,13 @@ declare global {
   }
 }
 
+export async function getCallerDbUser(req: Request) {
+  const { userId } = getAuth(req);
+  if (!userId) return null;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, userId));
+  return user ?? null;
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const { userId } = getAuth(req);
   if (!userId) {

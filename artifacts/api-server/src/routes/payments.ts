@@ -9,7 +9,8 @@ import {
   PaymentCallbackParams,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
-import { requireAuth, requireFinancial } from "../middlewares/auth";
+import { requireAuth, requireFinancial, getCallerDbUser } from "../middlewares/auth";
+import { studentsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -20,16 +21,27 @@ router.get("/payments", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const { page = 1, pageSize = 20, status } = params.data;
-  const whereClause = status
-    ? eq(paymentsTable.status, status as typeof paymentStatusEnum.enumValues[number])
-    : undefined;
-  const payments = await db
-    .select()
-    .from(paymentsTable)
-    .where(whereClause)
-    .limit(pageSize)
-    .offset((page - 1) * pageSize);
-  const [totalRow] = await db.select({ count: count() }).from(paymentsTable);
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
+  let studentId: string | undefined;
+  if (!isStaff) {
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!student) {
+      res.json({ payments: [], total: 0, page, pageSize, totalPages: 0 });
+      return;
+    }
+    studentId = student.id;
+  }
+  const { and: andOp } = await import("drizzle-orm");
+  const statusClause = status ? eq(paymentsTable.status, status as typeof paymentStatusEnum.enumValues[number]) : undefined;
+  const studentClause = studentId ? eq(paymentsTable.studentId, studentId) : undefined;
+  const whereClause = statusClause && studentClause ? andOp(statusClause, studentClause) : statusClause ?? studentClause;
+  const payments = await db.select().from(paymentsTable).where(whereClause).limit(pageSize).offset((page - 1) * pageSize);
+  const [totalRow] = await db.select({ count: count() }).from(paymentsTable).where(whereClause);
   const total = Number(totalRow?.count ?? 0);
   const formatted = payments.map(p => ({ ...p, amount: p.amount?.toString() ?? "0" }));
   res.json({ payments: formatted, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
