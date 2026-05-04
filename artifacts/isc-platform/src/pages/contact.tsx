@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -5,33 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Mail, Clock, Facebook, Twitter } from "lucide-react";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-const contactInfo = [
-  {
-    icon: MapPin,
-    label: "Adresse",
-    lines: ["Avenue Bakwa Dianga", "Mbujimayi, Kasaï-Oriental", "République Démocratique du Congo"],
-  },
-  {
-    icon: Phone,
-    label: "Téléphone",
-    lines: ["+243 99 000 0000", "+243 81 000 0000"],
-  },
-  {
-    icon: Mail,
-    label: "Email",
-    lines: ["info@isc-mbujimayi.ac.cd", "scolarite@isc-mbujimayi.ac.cd"],
-  },
-  {
-    icon: Clock,
-    label: "Horaires",
-    lines: ["Lundi – Vendredi : 7h30 – 17h00", "Samedi : 8h00 – 12h00"],
-  },
-];
-
 export default function ContactPage() {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -39,16 +18,39 @@ export default function ContactPage() {
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
 
+  const contactInfo = [
+    {
+      icon: MapPin,
+      label: "Adresse",
+      lines: ["Avenue Bakwa Dianga", "Mbujimayi, Kasaï-Oriental", "République Démocratique du Congo"],
+    },
+    {
+      icon: Phone,
+      label: "Téléphone",
+      lines: ["+243 99 000 0000", "+243 81 000 0000"],
+    },
+    {
+      icon: Mail,
+      label: "Email",
+      lines: ["info@isc-mbujimayi.ac.cd", "scolarite@isc-mbujimayi.ac.cd"],
+    },
+    {
+      icon: Clock,
+      label: "Horaires",
+      lines: ["Lundi – Vendredi : 7h30 – 17h00", "Samedi : 8h00 – 12h00"],
+    },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !messageText) {
-      toast({ title: "Erreur", description: "Veuillez remplir tous les champs obligatoires.", variant: "destructive" });
+      toast({ title: t("common.error"), description: "Veuillez remplir tous les champs obligatoires.", variant: "destructive" });
       return;
     }
     setSending(true);
     await new Promise((r) => setTimeout(r, 800));
     setSending(false);
-    toast({ title: "Message envoyé", description: "Nous vous répondrons dans les 48 heures." });
+    toast({ title: t("contact.success"), description: t("contact.success_desc") });
     setName("");
     setEmail("");
     setSubject("");
@@ -59,11 +61,8 @@ export default function ContactPage() {
     <AppLayout>
       <div className="max-w-5xl mx-auto px-6 py-12 space-y-10">
         <section className="text-center space-y-3">
-          <h1 className="text-4xl font-bold tracking-tight">Contactez-nous</h1>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Notre équipe est disponible pour répondre à toutes vos questions sur les admissions,
-            les programmes et la vie estudiantine.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight">{t("contact.title")}</h1>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">{t("contact.subtitle")}</p>
         </section>
 
         <div className="grid gap-8 md:grid-cols-2">
@@ -105,12 +104,12 @@ export default function ContactPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Envoyer un message</CardTitle>
+              <CardTitle>{t("contact.send_message")}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nom complet *</Label>
+                  <Label htmlFor="name">{t("contact.name")} *</Label>
                   <Input
                     id="name"
                     placeholder="Votre nom"
@@ -120,7 +119,7 @@ export default function ContactPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">{t("contact.email")} *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -131,7 +130,7 @@ export default function ContactPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Sujet</Label>
+                  <Label htmlFor="subject">{t("contact.subject")}</Label>
                   <Input
                     id="subject"
                     placeholder="Objet de votre message"
@@ -140,11 +139,11 @@ export default function ContactPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message *</Label>
+                  <Label htmlFor="message">{t("contact.message")} *</Label>
                   <Textarea
                     id="message"
                     placeholder="Décrivez votre demande..."
-                    className="min-h-[120px]"
+                    className="min-h-[100px]"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     data-testid="input-contact-message"
@@ -156,19 +155,29 @@ export default function ContactPage() {
                   disabled={sending}
                   data-testid="button-contact-submit"
                 >
-                  {sending ? "Envoi en cours..." : "Envoyer le message"}
+                  {sending ? t("contact.sending") : t("contact.send")}
                 </Button>
               </form>
             </CardContent>
           </Card>
         </div>
 
-        <section className="rounded-xl overflow-hidden border h-64 bg-muted flex items-center justify-center">
-          <div className="text-center text-muted-foreground space-y-2">
-            <MapPin className="h-10 w-10 mx-auto opacity-30" />
-            <p className="text-sm">Carte interactive — Mbujimayi, Kasaï-Oriental</p>
-            <p className="text-xs opacity-60">Avenue Bakwa Dianga, Mbujimayi</p>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Notre emplacement</h2>
+          <div className="rounded-xl overflow-hidden border shadow-sm">
+            <iframe
+              title="ISC Mbujimayi — Carte OpenStreetMap"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=23.57%2C-6.16%2C23.61%2C-6.12&layer=mapnik&marker=-6.1400%2C23.5900"
+              width="100%"
+              height="320"
+              style={{ border: 0, display: "block" }}
+              loading="lazy"
+              allowFullScreen
+            />
           </div>
+          <p className="text-xs text-muted-foreground text-right">
+            Carte © <a href="https://www.openstreetmap.org/copyright" className="underline" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributeurs
+          </p>
         </section>
       </div>
     </AppLayout>

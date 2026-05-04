@@ -1,0 +1,157 @@
+{
+  "nav": {
+    "catalogue": "Catalogue",
+    "filieres": "Filières",
+    "about": "À propos",
+    "contact": "Contact",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "dashboard": "Tableau de bord"
+  },
+  "home": {
+    "hero_title": "L'Excellence Académique à l'Ère du Numérique",
+    "hero_subtitle": "Bienvenue sur la plateforme digitale de l'Institut Supérieur de Commerce Mbujimayi. Gérez votre parcours, accédez à vos cours et effectuez vos paiements en toute simplicité.",
+    "explore_programs": "Explorer les programmes",
+    "register_now": "S'inscrire maintenant",
+    "our_filieres": "Nos Filières",
+    "filieres_subtitle": "Découvrez nos domaines d'expertise",
+    "featured_courses": "Cours à la une",
+    "courses_subtitle": "Commencez votre apprentissage dès aujourd'hui",
+    "view_details": "Voir les détails",
+    "view_all_courses": "Voir tous les cours"
+  },
+  "courses": {
+    "catalogue": "Catalogue de cours",
+    "catalogue_subtitle": "Découvrez nos formations disponibles",
+    "search_placeholder": "Rechercher un cours...",
+    "no_courses": "Aucun cours trouvé.",
+    "view_details": "Voir les détails",
+    "enroll": "S'inscrire à ce cours",
+    "enrolling": "Inscription en cours...",
+    "program": "Programme du cours",
+    "back_to_courses": "Retour aux cours"
+  },
+  "payments": {
+    "title": "Paiements",
+    "subtitle": "Gérez vos frais académiques (Mobile Money)",
+    "make_payment": "Effectuer un paiement",
+    "history": "Historique des transactions",
+    "no_transactions": "Aucune transaction trouvée.",
+    "reference": "Référence",
+    "type": "Type",
+    "operator": "Opérateur",
+    "amount": "Montant",
+    "status": "Statut",
+    "payment_types": {
+      "INSCRIPTION_FEE": "Frais d'inscription",
+      "COURSE_FEE": "Minerval",
+      "EXAM_FEE": "Frais d'examens",
+      "OTHER": "Autre"
+    },
+    "operators": {
+      "ORANGE_MONEY": "Orange Money",
+      "AIRTEL_MONEY": "Airtel Money",
+      "MPESA": "M-Pesa"
+    },
+    "status_labels": {
+      "CONFIRMED": "Confirmé",
+      "FAILED": "Échoué",
+      "CANCELLED": "Annulé",
+      "PENDING": "En attente",
+      "INITIATED": "Initié"
+    }
+  },
+  "chatbot": {
+    "title": "Assistant ISC",
+    "greeting": "Bonjour ! Comment puis-je vous aider ?",
+    "loading": "Chargement...",
+    "placeholder": "Votre question...",
+    "typing": "L'assistant répond..."
+  },
+  "about": {
+    "title": "Institut Supérieur de Commerce de Mbujimayi",
+    "subtitle": "Depuis plus de 30 ans, l'ISC Mbujimayi forme les cadres et professionnels qui façonnent l'économie du Kasaï-Oriental.",
+    "mission": "Notre Mission",
+    "values": "Nos valeurs",
+    "contact_us": "Nous contacter"
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Notre équipe est disponible pour répondre à toutes vos questions.",
+    "send_message": "Envoyer un message",
+    "name": "Nom complet",
+    "email": "Email",
+    "subject": "Sujet",
+    "message": "Message",
+    "send": "Envoyer le message",
+    "sending": "Envoi en cours...",
+    "success": "Message envoyé",
+    "success_desc": "Nous vous répondrons dans les 48 heures."
+  },
+  "news": {
+    "title": "Actualités & Annonces",
+    "subtitle": "Restez informé des dernières nouvelles de l'ISC Mbujimayi.",
+    "read_more": "Lire la suite",
+    "published_on": "Publié le",
+    "no_articles": "Aucun article disponible.",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "page": "Page"
+  },
+  "programs": {
+    "title": "Nos Filières",
+    "subtitle": "L'ISC Mbujimayi propose cinq filières professionnalisantes reconnues par l'État.",
+    "duration": "3 ans (Licence)",
+    "students": "étudiants",
+    "state_diploma": "Diplôme d'État",
+    "view_courses": "Voir les cours",
+    "cta_title": "Prêt à commencer votre parcours ?",
+    "cta_subtitle": "Inscrivez-vous dès aujourd'hui et rejoignez la communauté ISC Mbujimayi.",
+    "register_now": "S'inscrire maintenant",
+    "contact_us": "Nous contacter"
+  },
+  "inscriptions": {
+    "title": "Mes Inscriptions",
+    "subtitle": "Suivez l'état de vos dossiers académiques",
+    "new_inscription": "Nouvelle Inscription",
+    "no_inscriptions": "Aucune inscription",
+    "no_inscriptions_desc": "Vous n'avez pas encore soumis de dossier d'inscription.",
+    "start_inscription": "Commencer l'inscription",
+    "details": "Détails",
+    "steps": {
+      "personal": "Informations personnelles",
+      "filiere": "Choix de filière",
+      "documents": "Documents",
+      "review": "Révision"
+    },
+    "status": {
+      "APPROVED": "Approuvé",
+      "REJECTED": "Rejeté",
+      "UNDER_REVIEW": "En révision",
+      "PENDING": "En attente"
+    }
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "submit": "Soumettre",
+    "close": "Fermer",
+    "search": "Rechercher",
+    "back": "Retour"
+  },
+  "pwa": {
+    "install_title": "Installer l'application",
+    "install_desc": "Installez la plateforme ISC Mbujimayi sur votre appareil pour un accès rapide, même hors ligne.",
+    "install": "Installer",
+    "dismiss": "Plus tard"
+  },
+  "offline": {
+    "title": "Hors ligne",
+    "subtitle": "Vous n'êtes pas connecté à Internet. Veuillez vérifier votre connexion.",
+    "retry": "Réessayer"
+  }
+}

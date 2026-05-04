@@ -12,8 +12,10 @@ import Home from "@/pages/home";
 import About from "@/pages/about";
 import Programs from "@/pages/programs";
 import Contact from "@/pages/contact";
+import News from "@/pages/news";
 import DashboardRouter from "@/pages/dashboard/index";
 import NotFound from "@/pages/not-found";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 
 const StudentDashboard = lazy(() => import("@/pages/dashboard/student"));
 const TeacherDashboard = lazy(() => import("@/pages/dashboard/teacher"));
@@ -225,6 +227,7 @@ function ClerkProviderWithRoutes() {
               <Route path="/about" element={<About />} />
               <Route path="/programs" element={<Programs />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/news" element={<News />} />
               <Route path="/sign-in/*" element={<SignInPage />} />
               <Route path="/sign-up/*" element={<SignUpPage />} />
               <Route path="/courses" element={<CoursesIndex />} />
@@ -261,6 +264,7 @@ function ClerkProviderWithRoutes() {
             </Routes>
           </Suspense>
           <Toaster />
+          <PwaInstallPrompt />
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>

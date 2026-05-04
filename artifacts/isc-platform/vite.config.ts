@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from "vite-plugin-pwa";
 
 const rawPort = process.env.PORT;
 
@@ -32,6 +33,37 @@ export default defineConfig({
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    VitePWA({
+      registerType: "autoUpdate",
+      devOptions: { enabled: false },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,json}"],
+        navigateFallback: null,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === "document",
+            handler: "NetworkFirst",
+            options: { cacheName: "html-cache" },
+          },
+        ],
+      },
+      manifest: {
+        name: "ISC Mbujimayi — Plateforme Académique",
+        short_name: "ISC Mbujimayi",
+        description: "Plateforme e-learning et de gestion académique de l'Institut Supérieur de Commerce Mbujimayi",
+        theme_color: "#1a3c6e",
+        background_color: "#f5f7fa",
+        display: "standalone",
+        orientation: "portrait-primary",
+        start_url: "/",
+        lang: "fr",
+        icons: [
+          { src: "/images/logo-isc.png", sizes: "192x192", type: "image/png" },
+          { src: "/images/logo-isc.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+        ],
+        categories: ["education", "productivity"],
+      },
+    }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [

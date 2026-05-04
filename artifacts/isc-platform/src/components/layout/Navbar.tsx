@@ -4,11 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useGetCurrentUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
+import { Globe } from "lucide-react";
 
 export function Navbar() {
   const { signOut } = useClerk();
   const { user: clerkUser } = useUser();
   const { data: dbUser } = useGetCurrentUser({ query: { enabled: !!clerkUser, queryKey: getGetCurrentUserQueryKey() } });
+  const { t, i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr");
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -18,30 +25,46 @@ export function Navbar() {
           <span className="hidden font-bold sm:inline-block">ISC Mbujimayi</span>
         </Link>
 
-        <nav className="flex items-center gap-6">
-          <Link href="/courses" className="text-sm font-medium transition-colors hover:text-primary">
-            Catalogue
+        <nav className="flex items-center gap-4">
+          <Link href="/courses" className="hidden sm:inline text-sm font-medium transition-colors hover:text-primary">
+            {t("nav.catalogue")}
           </Link>
           <Link href="/programs" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
-            Filières
+            {t("nav.filieres")}
           </Link>
-          <Link href="/about" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
-            À propos
+          <Link href="/news" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
+            Actualités
           </Link>
-          <Link href="/contact" className="hidden md:inline text-sm font-medium transition-colors hover:text-primary">
-            Contact
+          <Link href="/about" className="hidden lg:inline text-sm font-medium transition-colors hover:text-primary">
+            {t("nav.about")}
           </Link>
+          <Link href="/contact" className="hidden lg:inline text-sm font-medium transition-colors hover:text-primary">
+            {t("nav.contact")}
+          </Link>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 text-xs font-semibold"
+            title={i18n.language === "fr" ? "Switch to English" : "Passer en Français"}
+            data-testid="button-language-toggle"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            {i18n.language === "fr" ? "EN" : "FR"}
+          </Button>
+
           <Show when="signed-out">
             <Link href="/sign-in" className="text-sm font-medium transition-colors hover:text-primary">
-              Connexion
+              {t("nav.login")}
             </Link>
             <Button asChild>
-              <Link href="/sign-up">S'inscrire</Link>
+              <Link href="/sign-up">{t("nav.register")}</Link>
             </Button>
           </Show>
           <Show when="signed-in">
-            <Link href="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
-              Tableau de bord
+            <Link href="/dashboard" className="hidden sm:inline text-sm font-medium transition-colors hover:text-primary">
+              {t("nav.dashboard")}
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

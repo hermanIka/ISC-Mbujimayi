@@ -1,0 +1,157 @@
+{
+  "nav": {
+    "catalogue": "Catalogue",
+    "filieres": "Programs",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Sign In",
+    "register": "Sign Up",
+    "dashboard": "Dashboard"
+  },
+  "home": {
+    "hero_title": "Academic Excellence in the Digital Age",
+    "hero_subtitle": "Welcome to the digital platform of the Institut Supérieur de Commerce Mbujimayi. Manage your journey, access your courses and make payments with ease.",
+    "explore_programs": "Explore programs",
+    "register_now": "Register now",
+    "our_filieres": "Our Programs",
+    "filieres_subtitle": "Discover our areas of expertise",
+    "featured_courses": "Featured Courses",
+    "courses_subtitle": "Start learning today",
+    "view_details": "View details",
+    "view_all_courses": "View all courses"
+  },
+  "courses": {
+    "catalogue": "Course Catalogue",
+    "catalogue_subtitle": "Discover our available programs",
+    "search_placeholder": "Search for a course...",
+    "no_courses": "No courses found.",
+    "view_details": "View details",
+    "enroll": "Enroll in this course",
+    "enrolling": "Enrolling...",
+    "program": "Course program",
+    "back_to_courses": "Back to courses"
+  },
+  "payments": {
+    "title": "Payments",
+    "subtitle": "Manage your academic fees (Mobile Money)",
+    "make_payment": "Make a payment",
+    "history": "Transaction history",
+    "no_transactions": "No transactions found.",
+    "reference": "Reference",
+    "type": "Type",
+    "operator": "Operator",
+    "amount": "Amount",
+    "status": "Status",
+    "payment_types": {
+      "INSCRIPTION_FEE": "Registration fee",
+      "COURSE_FEE": "Tuition fee",
+      "EXAM_FEE": "Exam fees",
+      "OTHER": "Other"
+    },
+    "operators": {
+      "ORANGE_MONEY": "Orange Money",
+      "AIRTEL_MONEY": "Airtel Money",
+      "MPESA": "M-Pesa"
+    },
+    "status_labels": {
+      "CONFIRMED": "Confirmed",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "PENDING": "Pending",
+      "INITIATED": "Initiated"
+    }
+  },
+  "chatbot": {
+    "title": "ISC Assistant",
+    "greeting": "Hello! How can I help you?",
+    "loading": "Loading...",
+    "placeholder": "Your question...",
+    "typing": "Assistant is typing..."
+  },
+  "about": {
+    "title": "Institut Supérieur de Commerce de Mbujimayi",
+    "subtitle": "For over 30 years, ISC Mbujimayi has trained the professionals who shape the economy of Kasaï-Oriental.",
+    "mission": "Our Mission",
+    "values": "Our Values",
+    "contact_us": "Contact Us"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Our team is available to answer all your questions.",
+    "send_message": "Send a message",
+    "name": "Full name",
+    "email": "Email",
+    "subject": "Subject",
+    "message": "Message",
+    "send": "Send message",
+    "sending": "Sending...",
+    "success": "Message sent",
+    "success_desc": "We will reply within 48 hours."
+  },
+  "news": {
+    "title": "News & Announcements",
+    "subtitle": "Stay informed about the latest news from ISC Mbujimayi.",
+    "read_more": "Read more",
+    "published_on": "Published on",
+    "no_articles": "No articles available.",
+    "prev": "Previous",
+    "next": "Next",
+    "page": "Page"
+  },
+  "programs": {
+    "title": "Our Programs",
+    "subtitle": "ISC Mbujimayi offers five state-accredited professional programs.",
+    "duration": "3 years (Bachelor's)",
+    "students": "students",
+    "state_diploma": "State Diploma",
+    "view_courses": "View courses",
+    "cta_title": "Ready to start your journey?",
+    "cta_subtitle": "Sign up today and join the ISC Mbujimayi community.",
+    "register_now": "Register now",
+    "contact_us": "Contact us"
+  },
+  "inscriptions": {
+    "title": "My Registrations",
+    "subtitle": "Track the status of your academic files",
+    "new_inscription": "New Registration",
+    "no_inscriptions": "No registrations",
+    "no_inscriptions_desc": "You have not yet submitted a registration file.",
+    "start_inscription": "Start registration",
+    "details": "Details",
+    "steps": {
+      "personal": "Personal information",
+      "filiere": "Program choice",
+      "documents": "Documents",
+      "review": "Review"
+    },
+    "status": {
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "UNDER_REVIEW": "Under review",
+      "PENDING": "Pending"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "close": "Close",
+    "search": "Search",
+    "back": "Back"
+  },
+  "pwa": {
+    "install_title": "Install the app",
+    "install_desc": "Install the ISC Mbujimayi platform on your device for quick access, even offline.",
+    "install": "Install",
+    "dismiss": "Later"
+  },
+  "offline": {
+    "title": "Offline",
+    "subtitle": "You are not connected to the Internet. Please check your connection.",
+    "retry": "Try again"
+  }
+}
