@@ -25,7 +25,7 @@ import { nanoid } from "nanoid";
 
 const router: IRouter = Router();
 
-router.get("/courses/:courseId/evaluations", async (req, res): Promise<void> => {
+router.get("/courses/:courseId/evaluations", requireAuth, async (req, res): Promise<void> => {
   const params = ListEvaluationsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -62,7 +62,7 @@ router.post("/courses/:courseId/evaluations", requireTeacher, async (req, res): 
   res.status(201).json({ ...ev, questionCount: 0 });
 });
 
-router.get("/evaluations/:id", async (req, res): Promise<void> => {
+router.get("/evaluations/:id", requireAuth, async (req, res): Promise<void> => {
   const params = GetEvaluationByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -173,7 +173,7 @@ router.post("/evaluations/:id/submit", requireAuth, async (req, res): Promise<vo
   res.status(201).json({ ...result, passed });
 });
 
-router.get("/evaluations/:id/results", async (req, res): Promise<void> => {
+router.get("/evaluations/:id/results", requireTeacher, async (req, res): Promise<void> => {
   const params = ListEvaluationResultsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -213,7 +213,7 @@ router.put("/results/:id/grade", requireTeacher, async (req, res): Promise<void>
   res.json({ ...result, passed: result.maxScore > 0 ? (result.score / result.maxScore) * 100 >= 50 : false });
 });
 
-router.get("/evaluations/:evaluationId/questions", async (req, res): Promise<void> => {
+router.get("/evaluations/:evaluationId/questions", requireAuth, async (req, res): Promise<void> => {
   const params = ListQuestionsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

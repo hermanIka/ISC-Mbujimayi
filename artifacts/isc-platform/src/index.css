@@ -57,6 +57,10 @@
   --color-sidebar-accent-border: var(--sidebar-accent-border);
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
+  --color-academic-green: hsl(var(--academic-green));
+  --color-academic-red: hsl(var(--academic-red));
+  --color-academic-gold: hsl(var(--academic-gold));
+
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
@@ -76,6 +80,11 @@
 
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
+
+  /* ISC brand semantic colors */
+  --academic-green: 142 71% 35%;
+  --academic-red: 0 72% 45%;
+  --academic-gold: 43 89% 48%;
 
   /* ISC Navy blue #1a3c6e → H215 S61% L27% */
   --background: 214 32% 97%;

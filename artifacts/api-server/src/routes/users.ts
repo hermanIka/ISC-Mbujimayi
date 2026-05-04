@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, and } from "drizzle-orm";
 import { db, usersTable, roleEnum } from "@workspace/db";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 import {
   GetCurrentUserResponse,
@@ -39,6 +39,12 @@ router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
   }
   const email = (getAuth(req).sessionClaims?.email as string | undefined) ?? "";
   const user = await getOrCreateUser(userId, email as string);
+  try {
+    await clerkClient.users.updateUserMetadata(userId, {
+      publicMetadata: { role: user.role },
+    });
+  } catch {
+  }
   res.json(GetCurrentUserResponse.parse(user));
 });
 
@@ -142,6 +148,14 @@ router.put("/users/:id", requireAdmin, async (req, res): Promise<void> => {
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
+  }
+  if (user.clerkId && parsed.data.role) {
+    try {
+      await clerkClient.users.updateUserMetadata(user.clerkId, {
+        publicMetadata: { role: user.role },
+      });
+    } catch {
+    }
   }
   res.json(UpdateUserResponse.parse(user));
 });

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, count, and } from "drizzle-orm";
-import { db, studentsTable, filieresTable, enrollmentsTable, paymentsTable, certificatesTable, type Student } from "@workspace/db";
+import { db, studentsTable, filieresTable, enrollmentsTable, paymentsTable, certificatesTable, usersTable, type Student } from "@workspace/db";
 import { requireAuth, requireAcademic } from "../middlewares/auth";
 import {
   ListStudentsQueryParams,
@@ -68,13 +68,23 @@ router.post("/students", requireAcademic, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [existingUser] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.data.userId));
+  if (!existingUser) {
+    res.status(400).json({ error: "userId must reference an existing user account" });
+    return;
+  }
+  const [alreadyStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, parsed.data.userId));
+  if (alreadyStudent) {
+    res.status(409).json({ error: "A student profile already exists for this user" });
+    return;
+  }
   const num = Date.now().toString().slice(-6);
-  const { birthDate, ...rest } = parsed.data;
+  const { birthDate, userId, ...rest } = parsed.data;
   const [student] = await db
     .insert(studentsTable)
     .values({
       id: nanoid(),
-      userId: nanoid(),
+      userId,
       numEtudiant: `ISC${num}`,
       ...rest,
       ...(birthDate ? { birthDate: birthDate instanceof Date ? birthDate.toISOString().split("T")[0] : birthDate } : {}),

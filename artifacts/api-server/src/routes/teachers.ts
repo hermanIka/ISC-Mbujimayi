@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
-import { db, teachersTable, coursesTable, filieresTable, type Teacher, type Course } from "@workspace/db";
+import { db, teachersTable, coursesTable, filieresTable, usersTable, type Teacher, type Course } from "@workspace/db";
 import { requireAcademic } from "../middlewares/auth";
 import {
   CreateTeacherBody,
@@ -50,14 +50,25 @@ router.post("/teachers", requireAcademic, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [existingUser] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.data.userId));
+  if (!existingUser) {
+    res.status(400).json({ error: "userId must reference an existing user account" });
+    return;
+  }
+  const [alreadyTeacher] = await db.select().from(teachersTable).where(eq(teachersTable.userId, parsed.data.userId));
+  if (alreadyTeacher) {
+    res.status(409).json({ error: "A teacher profile already exists for this user" });
+    return;
+  }
   const num = Math.floor(Math.random() * 9000 + 1000);
+  const { userId, ...rest } = parsed.data;
   const [teacher] = await db
     .insert(teachersTable)
     .values({
       id: nanoid(),
-      userId: nanoid(),
+      userId,
       code: `PROF${num}`,
-      ...parsed.data,
+      ...rest,
     })
     .returning();
   res.status(201).json({ ...teacher, courseCount: 0 });

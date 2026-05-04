@@ -81,6 +81,23 @@ router.post("/inscriptions", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  let resolvedStudentId: string;
+  if (isStaff) {
+    resolvedStudentId = parsed.data.studentId;
+  } else {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent) {
+      res.status(403).json({ error: "No student profile found for this account" });
+      return;
+    }
+    resolvedStudentId = callerStudent.id;
+  }
   const { documents, ...rest } = parsed.data;
   const serializedDocs = (documents ?? []).map((d) => ({
     ...d,
@@ -88,7 +105,7 @@ router.post("/inscriptions", requireAuth, async (req, res): Promise<void> => {
   }));
   const [ins] = await db
     .insert(inscriptionsTable)
-    .values({ id: nanoid(), ...rest, documents: serializedDocs })
+    .values({ id: nanoid(), ...rest, studentId: resolvedStudentId, documents: serializedDocs })
     .returning();
   res.status(201).json(await enrichInscription(ins));
 });

@@ -304,6 +304,7 @@ export const ListStudentsResponse = zod.object({
  * @summary Create student profile
  */
 export const CreateStudentBody = zod.object({
+  userId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
   phone: zod.string().optional(),
@@ -418,6 +419,7 @@ export const ListTeachersResponse = zod.array(ListTeachersResponseItem);
  * @summary Create teacher profile
  */
 export const CreateTeacherBody = zod.object({
+  userId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
   specialty: zod.string().optional(),
