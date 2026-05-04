@@ -24,11 +24,20 @@ async function getOrCreateUser(clerkId: string, email: string) {
     .from(usersTable)
     .where(eq(usersTable.clerkId, clerkId));
   if (existing) return existing;
+  const resolvedEmail = email && email.trim() !== ""
+    ? email
+    : `clerk_${clerkId}@placeholder.test`;
   const [created] = await db
     .insert(usersTable)
-    .values({ id: nanoid(), clerkId, email, role: "VISITOR" })
+    .values({ id: nanoid(), clerkId, email: resolvedEmail, role: "VISITOR" })
+    .onConflictDoNothing()
     .returning();
-  return created;
+  if (created) return created;
+  const [refetched] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.clerkId, clerkId));
+  return refetched;
 }
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
