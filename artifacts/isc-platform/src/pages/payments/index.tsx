@@ -20,21 +20,10 @@ import { CreditCard, Plus } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-
-const PAYMENT_TYPE_LABELS: Record<string, string> = {
-  INSCRIPTION_FEE: "Frais d'inscription",
-  COURSE_FEE: "Minerval",
-  EXAM_FEE: "Frais d'examens",
-  OTHER: "Autre",
-};
-
-const PAYMENT_OPERATOR_LABELS: Record<string, string> = {
-  MTN_MONEY: "MTN Mobile Money",
-  AIRTEL_MONEY: "Airtel Money",
-  ORANGE_MONEY: "Orange Money",
-};
+import { useTranslation } from "react-i18next";
 
 export default function PaymentsPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useListPayments();
   const { data: currentUser } = useGetCurrentUser({
     query: { queryKey: getGetCurrentUserQueryKey() },
@@ -59,22 +48,16 @@ export default function PaymentsPage() {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "CONFIRMED": return "Confirmé";
-      case "FAILED": return "Échoué";
-      case "CANCELLED": return "Annulé";
-      case "PENDING": return "En attente";
-      default: return "Initié";
-    }
+    return t(`payments.status.${status.toLowerCase()}` as Parameters<typeof t>[0]) as string || status;
   };
 
   const handlePayment = async () => {
     if (!amount || !phoneNumber) {
-      toast({ title: "Erreur", description: "Veuillez remplir tous les champs", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("payments.fill_fields"), variant: "destructive" });
       return;
     }
     if (!currentUser?.id) {
-      toast({ title: "Erreur", description: "Profil utilisateur introuvable", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("payments.user_not_found"), variant: "destructive" });
       return;
     }
 
@@ -88,13 +71,13 @@ export default function PaymentsPage() {
           phoneNumber,
         },
       });
-      toast({ title: "Paiement initié", description: "Veuillez confirmer sur votre téléphone." });
+      toast({ title: t("payments.initiated"), description: t("payments.confirm_phone") });
       setIsOpen(false);
       setAmount("");
       setPhoneNumber("");
       queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
     } catch {
-      toast({ title: "Erreur", description: "Impossible d'initier le paiement", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("payments.initiate_error"), variant: "destructive" });
     }
   };
 
@@ -103,39 +86,39 @@ export default function PaymentsPage() {
       <div className="p-8 max-w-6xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Paiements</h1>
-            <p className="text-muted-foreground">Gérez vos frais académiques (Mobile Money)</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("payments.title")}</h1>
+            <p className="text-muted-foreground">{t("payments.subtitle")}</p>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button data-testid="button-initiate-payment">
-                <Plus className="mr-2 h-4 w-4" /> Effectuer un paiement
+                <Plus className="mr-2 h-4 w-4" /> {t("payments.make_payment")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nouveau Paiement</DialogTitle>
+                <DialogTitle>{t("payments.new_payment")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>Type de frais</Label>
+                  <Label>{t("payments.fee_type")}</Label>
                   <Select value={type} onValueChange={(v) => setType(v as InitiatePaymentBodyType)}>
                     <SelectTrigger data-testid="select-payment-type">
-                      <SelectValue placeholder="Sélectionner le type" />
+                      <SelectValue placeholder={t("payments.select_type")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="INSCRIPTION_FEE">Frais d'inscription</SelectItem>
-                      <SelectItem value="COURSE_FEE">Minerval</SelectItem>
-                      <SelectItem value="EXAM_FEE">Frais d'examens</SelectItem>
-                      <SelectItem value="OTHER">Autre</SelectItem>
+                      <SelectItem value="INSCRIPTION_FEE">{t("payments.type_inscription")}</SelectItem>
+                      <SelectItem value="COURSE_FEE">{t("payments.type_course")}</SelectItem>
+                      <SelectItem value="EXAM_FEE">{t("payments.type_exam")}</SelectItem>
+                      <SelectItem value="OTHER">{t("payments.type_other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Opérateur</Label>
+                  <Label>{t("payments.operator")}</Label>
                   <Select value={operator} onValueChange={(v) => setOperator(v as InitiatePaymentBodyOperator)}>
                     <SelectTrigger data-testid="select-payment-operator">
-                      <SelectValue placeholder="Sélectionner l'opérateur" />
+                      <SelectValue placeholder={t("payments.select_operator")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="MTN_MONEY">MTN Mobile Money</SelectItem>
@@ -145,19 +128,19 @@ export default function PaymentsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Montant (CDF)</Label>
+                  <Label>{t("payments.amount_cdf")}</Label>
                   <Input
                     type="number"
-                    placeholder="Ex: 50000"
+                    placeholder={t("payments.amount_placeholder")}
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     data-testid="input-payment-amount"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Numéro de téléphone</Label>
+                  <Label>{t("payments.phone_number")}</Label>
                   <Input
-                    placeholder="Ex: 08..."
+                    placeholder={t("payments.phone_placeholder")}
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     data-testid="input-payment-phone"
@@ -169,7 +152,7 @@ export default function PaymentsPage() {
                   disabled={initiatePayment.isPending}
                   data-testid="button-submit-payment"
                 >
-                  {initiatePayment.isPending ? "En cours..." : "Payer"}
+                  {initiatePayment.isPending ? t("payments.processing") : t("payments.pay")}
                 </Button>
               </div>
             </DialogContent>
@@ -178,7 +161,7 @@ export default function PaymentsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Historique des transactions</CardTitle>
+            <CardTitle>{t("payments.history")}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -190,25 +173,25 @@ export default function PaymentsPage() {
             ) : !data?.payments || data.payments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CreditCard className="mx-auto h-12 w-12 opacity-20 mb-4" />
-                <p>Aucune transaction trouvée.</p>
+                <p>{t("payments.no_transactions")}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Référence</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Opérateur</TableHead>
-                    <TableHead>Montant</TableHead>
-                    <TableHead>Statut</TableHead>
+                    <TableHead>{t("payments.col_reference")}</TableHead>
+                    <TableHead>{t("payments.col_type")}</TableHead>
+                    <TableHead>{t("payments.col_operator")}</TableHead>
+                    <TableHead>{t("payments.col_amount")}</TableHead>
+                    <TableHead>{t("payments.col_status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.payments.map((payment: Payment) => (
                     <TableRow key={payment.id} data-testid={`row-payment-${payment.id}`}>
                       <TableCell className="font-mono text-xs">{payment.reference || "N/A"}</TableCell>
-                      <TableCell>{PAYMENT_TYPE_LABELS[payment.type] ?? payment.type}</TableCell>
-                      <TableCell>{PAYMENT_OPERATOR_LABELS[payment.operator] ?? payment.operator}</TableCell>
+                      <TableCell>{t(`payments.type_${payment.type.toLowerCase().replace(/_fee$/, "")}` as Parameters<typeof t>[0]) as string || payment.type}</TableCell>
+                      <TableCell>{payment.operator}</TableCell>
                       <TableCell className="font-medium">
                         {Number(payment.amount).toLocaleString("fr-CD")} {payment.currency}
                       </TableCell>

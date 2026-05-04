@@ -29,14 +29,7 @@ export function PwaInstallPrompt() {
     localStorage.setItem(VISIT_COUNT_KEY, String(count));
 
     if (count < VISITS_REQUIRED) {
-      const handleLate = (e: Event) => {
-        e.preventDefault();
-        window.__pwaInstallEvent = e as Window["__pwaInstallEvent"];
-        setDeferredPrompt(e as Window["__pwaInstallEvent"]);
-        setShowPrompt(true);
-      };
-      window.addEventListener("beforeinstallprompt", handleLate);
-      return () => window.removeEventListener("beforeinstallprompt", handleLate);
+      return;
     }
 
     if (window.__pwaInstallEvent) {

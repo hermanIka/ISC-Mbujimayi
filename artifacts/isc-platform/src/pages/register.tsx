@@ -62,16 +62,21 @@ export default function RegisterPage() {
   const isStudentRole = selectedRole === "STUDENT";
 
   const STEPS = isStudentRole
-    ? [t("register.step_role"), t("register.step_info"), t("register.step_program"), t("register.step_documents"), t("register.step_review")]
+    ? [
+        t("register.step_role"),
+        t("register.step_info"),
+        t("register.step_documents"),
+        t("register.step_program"),
+        t("register.step_review"),
+      ]
     : [t("register.step_role"), t("register.step_info"), t("register.step_review")];
 
   const totalSteps = STEPS.length;
-  const clerkStep = totalSteps;
 
   const canAdvanceStep = () => {
     if (step === 0) return !!selectedRole;
     if (step === 1) return firstName.trim().length > 1 && lastName.trim().length > 1;
-    if (step === 2 && isStudentRole) return !!selectedFiliere;
+    if (step === 3 && isStudentRole) return !!selectedFiliere;
     return true;
   };
 
@@ -96,6 +101,8 @@ export default function RegisterPage() {
     { key: "cni", label: t("register.doc_cni"), required: true },
     { key: "photo", label: t("register.doc_photo"), required: true },
   ];
+
+  const isReviewStep = (isStudentRole && step === 4) || (!isStudentRole && step === 2);
 
   if (readyForClerk) {
     return (
@@ -233,37 +240,6 @@ export default function RegisterPage() {
           {step === 2 && isStudentRole && (
             <Card>
               <CardHeader>
-                <CardTitle>{t("register.choose_program")}</CardTitle>
-                <CardDescription>{t("register.choose_program_desc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-2">
-                {(filieres.length > 0 ? filieres : [
-                  { id: "COMPTA", code: "COMPTA", name: "Comptabilité", duration: 3 },
-                  { id: "MKTG", code: "MKTG", name: "Marketing", duration: 3 },
-                  { id: "INFO", code: "INFO", name: "Informatique de Gestion", duration: 3 },
-                  { id: "GRH", code: "GRH", name: "Gestion des Ressources Humaines", duration: 3 },
-                  { id: "FISC", code: "FISC", name: "Fiscalité", duration: 3 },
-                ]).map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setSelectedFiliere(f.code)}
-                    className={cn(
-                      "text-left p-4 rounded-xl border-2 transition-all hover:border-primary/50",
-                      selectedFiliere === f.code ? "border-primary bg-primary/5" : "border-border"
-                    )}
-                  >
-                    <Badge variant="outline" className="mb-2">{f.code}</Badge>
-                    <p className="font-semibold text-sm">{f.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{f.duration} {t("register.years")}</p>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {step === 3 && isStudentRole && (
-            <Card>
-              <CardHeader>
                 <CardTitle>{t("register.upload_docs")}</CardTitle>
                 <CardDescription>{t("register.upload_docs_desc")}</CardDescription>
               </CardHeader>
@@ -324,7 +300,38 @@ export default function RegisterPage() {
             </Card>
           )}
 
-          {((step === 4 && isStudentRole) || (step === 2 && !isStudentRole)) && (
+          {step === 3 && isStudentRole && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("register.choose_program")}</CardTitle>
+                <CardDescription>{t("register.choose_program_desc")}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-2">
+                {(filieres.length > 0 ? filieres : [
+                  { id: "COMPTA", code: "COMPTA", name: "Comptabilité", duration: 3 },
+                  { id: "MKTG", code: "MKTG", name: "Marketing", duration: 3 },
+                  { id: "INFO", code: "INFO", name: "Informatique de Gestion", duration: 3 },
+                  { id: "GRH", code: "GRH", name: "Gestion des Ressources Humaines", duration: 3 },
+                  { id: "FISC", code: "FISC", name: "Fiscalité", duration: 3 },
+                ]).map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setSelectedFiliere(f.code)}
+                    className={cn(
+                      "text-left p-4 rounded-xl border-2 transition-all hover:border-primary/50",
+                      selectedFiliere === f.code ? "border-primary bg-primary/5" : "border-border"
+                    )}
+                  >
+                    <Badge variant="outline" className="mb-2">{f.code}</Badge>
+                    <p className="font-semibold text-sm">{f.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{f.duration} {t("register.years")}</p>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {isReviewStep && (
             <Card>
               <CardHeader>
                 <CardTitle>{t("register.review_title")}</CardTitle>
@@ -373,7 +380,7 @@ export default function RegisterPage() {
             </Card>
           )}
 
-          {((step === 4 && isStudentRole) || (step === 2 && !isStudentRole)) ? null : (
+          {!isReviewStep ? (
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
@@ -384,9 +391,7 @@ export default function RegisterPage() {
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
-          )}
-
-          {((step === 4 && isStudentRole) || (step === 2 && !isStudentRole)) && (
+          ) : (
             <div className="flex justify-start">
               <Button variant="outline" onClick={() => setStep(s => Math.max(0, s - 1))}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
