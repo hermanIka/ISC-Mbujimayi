@@ -3,6 +3,75 @@ import { Card, CardContent } from "@/components/ui/card";
 import { GraduationCap, BookOpen, Users, Award, MapPin, Phone, Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+const ORG_CHART = {
+  label: "Direction Générale",
+  children: [
+    {
+      label: "Direction Académique",
+      children: [
+        { label: "Département Comptabilité" },
+        { label: "Département Marketing" },
+        { label: "Département Informatique" },
+        { label: "Département GRH" },
+        { label: "Département Fiscalité" },
+      ],
+    },
+    {
+      label: "Direction Financière",
+      children: [
+        { label: "Comptabilité Générale" },
+        { label: "Frais Académiques" },
+      ],
+    },
+    {
+      label: "Administration",
+      children: [
+        { label: "Secrétariat" },
+        { label: "Bibliothèque" },
+        { label: "Informatique" },
+      ],
+    },
+  ],
+};
+
+interface OrgNode {
+  label: string;
+  children?: OrgNode[];
+}
+
+function OrgBox({ node, isRoot = false }: { node: OrgNode; isRoot?: boolean }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div
+        className={`px-3 py-2 rounded-lg border text-center text-xs font-medium whitespace-nowrap shadow-sm
+          ${isRoot
+            ? "bg-primary text-primary-foreground border-primary text-sm px-5 py-3 font-bold"
+            : "bg-card text-foreground border-border"
+          }`}
+      >
+        {node.label}
+      </div>
+      {node.children && node.children.length > 0 && (
+        <div className="flex flex-col items-center mt-0">
+          <div className="w-px h-4 bg-border" />
+          <div className="flex gap-4 items-start relative">
+            <div
+              className="absolute top-0 left-0 right-0 border-t border-border"
+              style={{ top: 0 }}
+            />
+            {node.children.map((child, idx) => (
+              <div key={idx} className="flex flex-col items-center">
+                <div className="w-px h-4 bg-border" />
+                <OrgBox node={child} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AboutPage() {
   const { t } = useTranslation();
 
@@ -87,6 +156,16 @@ export default function AboutPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </section>
+
+        <section className="space-y-6">
+          <h2 className="text-2xl font-bold">{t("about.org_chart")}</h2>
+          <p className="text-muted-foreground text-sm">{t("about.org_chart_subtitle")}</p>
+          <div className="overflow-x-auto py-4">
+            <div className="flex justify-center min-w-max">
+              <OrgBox node={ORG_CHART} isRoot />
+            </div>
           </div>
         </section>
 

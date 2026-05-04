@@ -19,7 +19,10 @@
     "featured_courses": "Featured Courses",
     "courses_subtitle": "Start learning today",
     "view_details": "View details",
-    "view_all_courses": "View all courses"
+    "view_all_courses": "View all courses",
+    "testimonials_title": "Student Testimonials",
+    "testimonials_subtitle": "What our students say about ISC Mbujimayi",
+    "no_courses": "No courses available at the moment."
   },
   "courses": {
     "catalogue": "Course Catalogue",
@@ -92,7 +95,9 @@
     "address_label": "Address",
     "phone_label": "Phone",
     "email_label": "Email",
-    "contact_us": "Contact us"
+    "contact_us": "Contact us",
+    "org_chart": "Institutional Organization Chart",
+    "org_chart_subtitle": "Organizational structure of ISC Mbujimayi"
   },
   "contact": {
     "title": "Contact Us",

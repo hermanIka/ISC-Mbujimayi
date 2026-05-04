@@ -6,8 +6,76 @@ import type { Course } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, GraduationCap, Users } from "lucide-react";
+import { BookOpen, GraduationCap, Users, Star, Award, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useEffect, useRef, useState } from "react";
+
+function useCountUp(target: number, duration = 1500, triggered = false) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!triggered) return;
+    let start = 0;
+    const step = target / (duration / 16);
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [target, duration, triggered]);
+  return count;
+}
+
+function AnimatedStat({ value, suffix, label }: { value: number; suffix: string; label: string }) {
+  const [triggered, setTriggered] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const count = useCountUp(value, 1800, triggered);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setTriggered(true); observer.disconnect(); }
+    }, { threshold: 0.5 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className="text-center">
+      <div className="text-4xl font-bold text-primary">{count}{suffix}</div>
+      <div className="text-sm text-muted-foreground mt-1">{label}</div>
+    </div>
+  );
+}
+
+const TESTIMONIALS = [
+  {
+    name: "Marie Tshala",
+    program: "Comptabilité",
+    year: "2023",
+    text: "La plateforme ISC a complètement transformé ma façon d'apprendre. J'accède à mes cours n'importe où et je suis mes progrès en temps réel.",
+    rating: 5,
+  },
+  {
+    name: "Jean-Pierre Mukendi",
+    program: "Informatique de Gestion",
+    year: "2022",
+    text: "Les évaluations en ligne sont très pratiques. J'ai obtenu mon certificat de fin de cours en quelques semaines. Excellente expérience!",
+    rating: 5,
+  },
+  {
+    name: "Grace Kabamba",
+    program: "Marketing",
+    year: "2023",
+    text: "L'ISC Mbujimayi m'a préparée pour le monde professionnel. Les enseignants sont compétents et la plateforme digitale est très intuitive.",
+    rating: 5,
+  },
+];
 
 export default function Home() {
   const { t } = useTranslation();
@@ -19,20 +87,35 @@ export default function Home() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center bg-muted/20 border-b">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground max-w-3xl mb-6">
-          {t("home.hero_title")}
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-          {t("home.hero_subtitle")}
-        </p>
-        <div className="flex gap-4">
-          <Button asChild size="lg">
-            <Link href="/courses">{t("home.explore_programs")}</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link href="/sign-up">{t("home.register_now")}</Link>
-          </Button>
+      <div className="relative flex flex-col items-center justify-center min-h-[65vh] px-4 text-center bg-gradient-to-br from-primary/5 via-background to-primary/10 border-b overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-primary/8 rounded-full blur-2xl animate-pulse" style={{ animationDelay: "1s" }} />
+        </div>
+        <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground max-w-3xl mb-6 leading-tight">
+            {t("home.hero_title")}
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mb-8">
+            {t("home.hero_subtitle")}
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button asChild size="lg" className="shadow-lg hover:shadow-primary/25 hover:shadow-xl transition-shadow">
+              <Link href="/courses">{t("home.explore_programs")}</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/sign-up">{t("home.register_now")}</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="py-12 border-b bg-card">
+        <div className="max-w-4xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+          <AnimatedStat value={30} suffix="+" label={t("about.stat_years")} />
+          <AnimatedStat value={5000} suffix="+" label={t("about.stat_graduates")} />
+          <AnimatedStat value={5} suffix="" label={t("about.stat_programs")} />
+          <AnimatedStat value={50} suffix="+" label={t("about.stat_teachers")} />
         </div>
       </div>
 
@@ -52,6 +135,25 @@ export default function Home() {
               Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-32 w-full rounded-xl" />
               ))
+            ) : filieres.length === 0 ? (
+              [
+                { name: "Comptabilité", code: "COMPTA", icon: Award },
+                { name: "Marketing", code: "MKTG", icon: Globe },
+                { name: "Informatique de Gestion", code: "INFO", icon: BookOpen },
+              ].map((f) => (
+                <Card key={f.code} className="hover-elevate">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <f.icon className="h-8 w-8 text-primary mb-2" />
+                      <Badge variant="secondary">{f.code}</Badge>
+                    </div>
+                    <CardTitle>{f.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">Formation professionnelle de 3 ans reconnue par l'État.</p>
+                  </CardContent>
+                </Card>
+              ))
             ) : (
               filieres.slice(0, 6).map((filiere) => (
                 <Card key={filiere.id} className="hover-elevate">
@@ -65,7 +167,7 @@ export default function Home() {
                   <CardContent>
                     <p className="text-sm text-muted-foreground line-clamp-2">{filiere.description}</p>
                     <div className="flex justify-between items-center mt-4 text-xs text-muted-foreground font-medium">
-                      <span>{filiere.duration} {t("programs.duration").split(" ")[0] === "3" ? "ans" : "yrs"}</span>
+                      <span>{filiere.duration} ans</span>
                       <span className="flex items-center gap-1"><Users className="h-3 w-3"/> {filiere.studentCount} {t("programs.students")}</span>
                     </div>
                   </CardContent>
@@ -90,12 +192,8 @@ export default function Home() {
               Array.from({ length: 3 }).map((_, i) => (
                 <Card key={i} className="flex flex-col">
                   <Skeleton className="h-48 w-full rounded-t-xl" />
-                  <CardHeader>
-                    <Skeleton className="h-6 w-2/3" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-16 w-full" />
-                  </CardContent>
+                  <CardHeader><Skeleton className="h-6 w-2/3" /></CardHeader>
+                  <CardContent><Skeleton className="h-16 w-full" /></CardContent>
                 </Card>
               ))
             ) : courses.length === 0 ? (
@@ -120,14 +218,10 @@ export default function Home() {
                       <Badge variant="outline">{course.filiere?.code}</Badge>
                     </div>
                     <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-                    <CardDescription>
-                      Par {course.teacher?.firstName} {course.teacher?.lastName}
-                    </CardDescription>
+                    <CardDescription>Par {course.teacher?.firstName} {course.teacher?.lastName}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {course.description || t("courses.no_courses")}
-                    </p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{course.description}</p>
                   </CardContent>
                   <CardFooter className="mt-auto pt-4">
                     <Button asChild className="w-full">
@@ -137,6 +231,31 @@ export default function Home() {
                 </Card>
               ))
             )}
+          </div>
+        </section>
+
+        <section className="space-y-8">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">{t("home.testimonials_title")}</h2>
+            <p className="text-muted-foreground">{t("home.testimonials_subtitle")}</p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {TESTIMONIALS.map((testimonial) => (
+              <Card key={testimonial.name} className="relative">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex gap-1">
+                    {Array.from({ length: testimonial.rating }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground italic">"{testimonial.text}"</p>
+                  <div>
+                    <p className="font-semibold text-sm">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.program} · Promotion {testimonial.year}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
       </div>

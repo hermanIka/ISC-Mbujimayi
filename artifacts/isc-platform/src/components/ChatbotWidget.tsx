@@ -45,47 +45,6 @@ function saveGuestHistory(messages: GuestMessage[]): void {
   sessionStorage.setItem(GUEST_HISTORY_KEY, JSON.stringify(messages));
 }
 
-const FAQ: Array<{ keywords: string[]; answer: string }> = [
-  {
-    keywords: ["frais", "minerval", "scolarite", "scolarité", "coût", "cout", "paiement", "tarif"],
-    answer: "Les frais de scolarité (minerval) à l'ISC Mbujimayi varient selon la filière et le niveau. Vous pouvez les régler via Orange Money, Airtel Money ou M-Pesa sur la plateforme. Contactez le service financier pour les montants exacts.",
-  },
-  {
-    keywords: ["inscription", "inscrire", "dossier", "candidature", "admission"],
-    answer: "Pour vous inscrire à l'ISC Mbujimayi, créez un compte sur la plateforme, puis soumettez votre dossier depuis la section 'Mes Inscriptions'. Vous aurez besoin de vos documents (carte d'identité, diplôme, photo).",
-  },
-  {
-    keywords: ["filiere", "filière", "programme", "spécialité", "specialite", "section"],
-    answer: "L'ISC Mbujimayi propose 5 filières : Comptabilité, Marketing, Informatique de Gestion, GRH (Gestion des Ressources Humaines), et Fiscalité. Chaque filière dure 3 ans et mène à un Diplôme d'État.",
-  },
-  {
-    keywords: ["certificat", "diplôme", "diplome", "attestation"],
-    answer: "Les certificats de réussite sont délivrés automatiquement après validation d'un cours. Vous pouvez les télécharger et les vérifier depuis votre tableau de bord.",
-  },
-  {
-    keywords: ["cours", "programme", "matière", "matiere", "enseignement"],
-    answer: "Nos cours sont disponibles en ligne dans le catalogue. Une fois inscrit à un cours, vous accédez aux modules, chapitres, vidéos et évaluations depuis votre espace étudiant.",
-  },
-  {
-    keywords: ["contact", "adresse", "telephone", "téléphone", "email", "localisation"],
-    answer: "ISC Mbujimayi : Avenue Bakwa Dianga, Mbujimayi, Kasaï-Oriental, RDC. Tél : +243 99 000 0000. Email : info@isc-mbujimayi.ac.cd. Horaires : Lun-Ven 7h30-17h00.",
-  },
-  {
-    keywords: ["horaire", "calendrier", "emploi du temps", "cours en ligne"],
-    answer: "La plateforme e-learning est accessible 24h/24. Le secrétariat est ouvert du lundi au vendredi de 7h30 à 17h00, le samedi de 8h00 à 12h00.",
-  },
-];
-
-function getFaqAnswer(input: string): string | null {
-  const normalized = input.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  for (const faq of FAQ) {
-    if (faq.keywords.some((kw) => normalized.includes(kw))) {
-      return faq.answer;
-    }
-  }
-  return null;
-}
-
 export function ChatbotWidget() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -131,29 +90,14 @@ export function ChatbotWidget() {
 
   const handleSend = async () => {
     if (!message.trim() || sendMessage.isPending || isTyping) return;
-
     const currentMessage = message;
     setMessage("");
-
-    const faqAnswer = getFaqAnswer(currentMessage);
 
     if (!isSignedIn) {
       const userMsg: GuestMessage = { id: Date.now().toString(), role: "user", content: currentMessage };
       const updatedWithUser = [...guestMessages, userMsg];
       setGuestMessages(updatedWithUser);
       saveGuestHistory(updatedWithUser);
-
-      if (faqAnswer) {
-        setIsTyping(true);
-        await new Promise((r) => setTimeout(r, 600));
-        setIsTyping(false);
-        const assistantMsg: GuestMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: faqAnswer };
-        const updatedWithBoth = [...updatedWithUser, assistantMsg];
-        setGuestMessages(updatedWithBoth);
-        saveGuestHistory(updatedWithBoth);
-        return;
-      }
-
       setIsTyping(true);
       try {
         const response = await sendMessage.mutateAsync({ data: { message: currentMessage, sessionId } });
@@ -182,25 +126,17 @@ export function ChatbotWidget() {
       [...(previousHistory ?? []), optimisticUserMessage]
     );
 
-    if (faqAnswer) {
-      setIsTyping(true);
-      await new Promise((r) => setTimeout(r, 600));
-      setIsTyping(false);
-      const faqMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(), role: "assistant", content: faqAnswer,
-        usedAI: false, sessionId, createdAt: new Date().toISOString(),
+    setIsTyping(true);
+    try {
+      const response = await sendMessage.mutateAsync({ data: { message: currentMessage, sessionId } });
+      const assistantMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(), role: "assistant", content: response.reply,
+        usedAI: response.usedAI ?? false, sessionId, createdAt: new Date().toISOString(),
       };
       queryClient.setQueryData<ChatMessage[]>(
         getGetChatHistoryQueryKey({ sessionId }),
-        [...(previousHistory ?? []), optimisticUserMessage, faqMsg]
+        [...(previousHistory ?? []), optimisticUserMessage, assistantMsg]
       );
-      return;
-    }
-
-    setIsTyping(true);
-    try {
-      await sendMessage.mutateAsync({ data: { message: currentMessage, sessionId } });
-      queryClient.invalidateQueries({ queryKey: getGetChatHistoryQueryKey({ sessionId }) });
     } catch {
       queryClient.setQueryData<ChatMessage[]>(getGetChatHistoryQueryKey({ sessionId }), previousHistory ?? []);
     } finally {
