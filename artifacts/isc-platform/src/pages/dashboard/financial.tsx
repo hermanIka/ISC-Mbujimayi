@@ -6,9 +6,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
+interface FinancialAnalyticsData {
+  totalRevenue: string;
+  pendingAmount: string;
+  confirmedTransactions: number;
+  failedTransactions: number;
+  revenueByOperator: Array<{ operator: string; amount: string; transactionCount: number }>;
+  revenueByType: Array<{ type: string; amount: string; count: number }>;
+  revenueTimeline: Array<{ date: string; amount: string; count: number }>;
+}
+
 export default function FinancialDashboard() {
-  const { data: analytics, isLoading } = useGetFinancialAnalytics();
-  const a = analytics as any;
+  const { data: rawAnalytics, isLoading } = useGetFinancialAnalytics();
+  const analytics = rawAnalytics as unknown as FinancialAnalyticsData | undefined;
 
   return (
     <AppLayout>
@@ -25,46 +35,46 @@ export default function FinancialDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalRevenue || 0} CDF</div>
+                <div className="text-2xl font-bold">{analytics?.totalRevenue ?? "0"} CDF</div>
               )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenu du mois</CardTitle>
+              <CardTitle className="text-sm font-medium">Montant en attente</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.monthlyRevenue || a?.totalRevenue || 0} CDF</div>
+                <div className="text-2xl font-bold">{analytics?.pendingAmount ?? "0"} CDF</div>
               )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Paiements validés</CardTitle>
+              <CardTitle className="text-sm font-medium">Paiements confirmés</CardTitle>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.confirmedPayments || a?.totalPayments || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.confirmedTransactions ?? 0}</div>
               )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Paiements en attente</CardTitle>
+              <CardTitle className="text-sm font-medium">Paiements échoués</CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.pendingAmount || a?.pendingPayments || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.failedTransactions ?? 0}</div>
               )}
             </CardContent>
           </Card>

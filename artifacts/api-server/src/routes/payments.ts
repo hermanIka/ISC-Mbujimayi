@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
-import { db, paymentsTable } from "@workspace/db";
+import { db, paymentsTable, paymentStatusEnum } from "@workspace/db";
 import {
   ListPaymentsQueryParams,
   InitiatePaymentBody,
@@ -9,26 +9,33 @@ import {
   PaymentCallbackParams,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
+import { requireAuth, requireFinancial } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/payments", async (req, res): Promise<void> => {
+router.get("/payments", requireAuth, async (req, res): Promise<void> => {
   const params = ListPaymentsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
   const { page = 1, pageSize = 20, status } = params.data;
-  let query = db.select().from(paymentsTable);
-  if (status) query = query.where(eq(paymentsTable.status, status as any)) as any;
-  const payments = await query.limit(pageSize).offset((page - 1) * pageSize);
+  const whereClause = status
+    ? eq(paymentsTable.status, status as typeof paymentStatusEnum.enumValues[number])
+    : undefined;
+  const payments = await db
+    .select()
+    .from(paymentsTable)
+    .where(whereClause)
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
   const [totalRow] = await db.select({ count: count() }).from(paymentsTable);
   const total = Number(totalRow?.count ?? 0);
   const formatted = payments.map(p => ({ ...p, amount: p.amount?.toString() ?? "0" }));
   res.json({ payments: formatted, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 
-router.post("/payments/initiate", async (req, res): Promise<void> => {
+router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> => {
   const parsed = InitiatePaymentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -43,7 +50,7 @@ router.post("/payments/initiate", async (req, res): Promise<void> => {
       status: "INITIATED",
       currency: "CDF",
       ...parsed.data,
-      amount: parsed.data.amount as any,
+      amount: parsed.data.amount,
     })
     .returning();
   res.status(201).json({ ...payment, amount: payment.amount?.toString() ?? "0" });
@@ -60,16 +67,16 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const status = parsed.data.status === "SUCCESS" ? "CONFIRMED" : "FAILED";
+  const status: typeof paymentStatusEnum.enumValues[number] = parsed.data.status === "SUCCESS" ? "CONFIRMED" : "FAILED";
   const [payment] = await db
     .update(paymentsTable)
-    .set({ status: status as any, operatorRef: parsed.data.operatorRef })
+    .set({ status, operatorRef: parsed.data.operatorRef })
     .where(eq(paymentsTable.reference, parsed.data.reference))
     .returning();
   res.json({ success: true, payment: payment ? { ...payment, amount: payment.amount?.toString() ?? "0" } : null });
 });
 
-router.get("/payments/:id", async (req, res): Promise<void> => {
+router.get("/payments/:id", requireAuth, async (req, res): Promise<void> => {
   const params = GetPaymentByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

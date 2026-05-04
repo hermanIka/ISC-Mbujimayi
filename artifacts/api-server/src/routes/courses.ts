@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, count } from "drizzle-orm";
-import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable } from "@workspace/db";
+import { eq, ilike, count, and } from "drizzle-orm";
+import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, courseStatusEnum } from "@workspace/db";
+import { requireAuth, requireTeacher } from "../middlewares/auth";
 import {
   ListCoursesQueryParams,
   CreateCourseBody,
@@ -56,19 +57,26 @@ router.get("/courses", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { page = 1, pageSize = 20, filiereId, teacherId, status, search } = params.data;
-  let query = db.select().from(coursesTable);
-  if (status) query = query.where(eq(coursesTable.status, status as any)) as any;
-  else if (filiereId) query = query.where(eq(coursesTable.filiereId, filiereId)) as any;
-  else if (teacherId) query = query.where(eq(coursesTable.teacherId, teacherId)) as any;
-  const courses = await query.limit(pageSize).offset((page - 1) * pageSize);
+  const { page = 1, pageSize = 20, filiereId, teacherId, status } = params.data;
+  const conditions = [
+    status ? eq(coursesTable.status, status as typeof courseStatusEnum.enumValues[number]) : undefined,
+    filiereId ? eq(coursesTable.filiereId, filiereId) : undefined,
+    teacherId ? eq(coursesTable.teacherId, teacherId) : undefined,
+  ].filter((c): c is NonNullable<typeof c> => c != null);
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const courses = await db
+    .select()
+    .from(coursesTable)
+    .where(whereClause)
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
   const [totalRow] = await db.select({ count: count() }).from(coursesTable);
   const total = Number(totalRow?.count ?? 0);
   const enriched = await Promise.all(courses.map(enrichCourse));
   res.json({ courses: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 
-router.post("/courses", async (req, res): Promise<void> => {
+router.post("/courses", requireTeacher, async (req, res): Promise<void> => {
   const parsed = CreateCourseBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

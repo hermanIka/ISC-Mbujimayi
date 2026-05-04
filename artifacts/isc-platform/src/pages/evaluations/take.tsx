@@ -33,8 +33,8 @@ export default function TakeEvaluationPage() {
 
       await submitEval.mutateAsync({ id: evaluationId, data: { answers: formattedAnswers } });
       toast({ title: "Évaluation soumise", description: "Vos réponses ont été enregistrées avec succès." });
-      if ((evaluation as any)?.courseId) {
-        setLocation(`/courses/${(evaluation as any).courseId}/learn`);
+      if (evaluation?.courseId) {
+        setLocation(`/courses/${evaluation.courseId}/learn`);
       } else {
         setLocation("/dashboard/student");
       }
@@ -58,7 +58,7 @@ export default function TakeEvaluationPage() {
     return <AppLayout><div className="p-8 text-center">Évaluation introuvable</div></AppLayout>;
   }
 
-  const questions: any[] = (evaluation as any).questions ?? [];
+  const questions = evaluation.questions ?? [];
 
   return (
     <AppLayout>
@@ -74,7 +74,7 @@ export default function TakeEvaluationPage() {
               Aucune question disponible pour cette évaluation.
             </div>
           ) : (
-            questions.map((q: any, idx: number) => (
+            questions.map((q, idx) => (
               <Card key={q.id ?? idx}>
                 <CardHeader>
                   <CardTitle className="text-lg flex justify-between">
@@ -89,7 +89,7 @@ export default function TakeEvaluationPage() {
                       value={answers[q.id]}
                       className="space-y-3"
                     >
-                      {q.options.map((opt: any, optIdx: number) => (
+                      {q.options.map((opt, optIdx) => (
                         <div key={optIdx} className="flex items-center space-x-2 border p-3 rounded-md hover:bg-muted/50">
                           <RadioGroupItem value={opt.text} id={`q${idx}-opt${optIdx}`} />
                           <Label htmlFor={`q${idx}-opt${optIdx}`} className="flex-1 cursor-pointer">{opt.text}</Label>

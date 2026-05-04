@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { eq, ilike, or, and } from "drizzle-orm";
+import { db, usersTable, roleEnum } from "@workspace/db";
 import { getAuth } from "@clerk/express";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 import {
   GetCurrentUserResponse,
   UpdateCurrentUserBody,
@@ -30,18 +31,18 @@ async function getOrCreateUser(clerkId: string, email: string) {
   return created;
 }
 
-router.get("/users/me", async (req, res): Promise<void> => {
+router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   if (!userId) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  const email = (req as any).auth?.sessionClaims?.email ?? "";
+  const email = (getAuth(req).sessionClaims?.email as string | undefined) ?? "";
   const user = await getOrCreateUser(userId, email as string);
   res.json(GetCurrentUserResponse.parse(user));
 });
 
-router.put("/users/me", async (req, res): Promise<void> => {
+router.put("/users/me", requireAuth, async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   if (!userId) {
     res.status(401).json({ error: "Unauthorized" });
@@ -68,31 +69,31 @@ router.put("/users/me", async (req, res): Promise<void> => {
   res.json(GetCurrentUserResponse.parse(updated));
 });
 
-router.get("/users", async (req, res): Promise<void> => {
+router.get("/users", requireAdmin, async (req, res): Promise<void> => {
   const params = ListUsersQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
   const { page = 1, pageSize = 20, role, search } = params.data;
-  const conditions: any[] = [];
-  if (role) conditions.push(eq(usersTable.role, role as any));
-  if (search) {
-    conditions.push(
-      or(
-        ilike(usersTable.firstName, `%${search}%`),
-        ilike(usersTable.lastName, `%${search}%`),
-        ilike(usersTable.email, `%${search}%`),
-      ),
-    );
-  }
+  const conditions = [
+    role ? eq(usersTable.role, role as typeof roleEnum.enumValues[number]) : undefined,
+    search
+      ? or(
+          ilike(usersTable.firstName, `%${search}%`),
+          ilike(usersTable.lastName, `%${search}%`),
+          ilike(usersTable.email, `%${search}%`),
+        )
+      : undefined,
+  ].filter((c): c is NonNullable<typeof c> => c != null);
   const offset = (page - 1) * pageSize;
-  const query = db.select().from(usersTable);
-  if (conditions.length > 0) {
-    const { where } = await import("drizzle-orm");
-    query.where(conditions.length === 1 ? conditions[0] : where(...conditions));
-  }
-  const users = await query.limit(pageSize).offset(offset);
+  const whereClause = conditions.length === 0 ? undefined : and(...conditions);
+  const users = await db
+    .select()
+    .from(usersTable)
+    .where(whereClause)
+    .limit(pageSize)
+    .offset(offset);
   const total = users.length;
   res.json(
     ListUsersResponse.parse({
@@ -105,7 +106,7 @@ router.get("/users", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/users/:id", async (req, res): Promise<void> => {
+router.get("/users/:id", requireAdmin, async (req, res): Promise<void> => {
   const params = GetUserByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -122,7 +123,7 @@ router.get("/users/:id", async (req, res): Promise<void> => {
   res.json(GetUserByIdResponse.parse(user));
 });
 
-router.put("/users/:id", async (req, res): Promise<void> => {
+router.put("/users/:id", requireAdmin, async (req, res): Promise<void> => {
   const params = UpdateUserParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

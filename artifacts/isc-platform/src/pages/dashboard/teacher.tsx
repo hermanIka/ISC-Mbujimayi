@@ -6,9 +6,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
+interface TeacherAnalyticsData {
+  totalCourses: number;
+  publishedCourses: number;
+  totalStudents: number;
+  totalEvaluations: number;
+  averageScore: number | null;
+  courseEngagement: Array<{
+    courseId: string;
+    courseTitle: string;
+    enrolledStudents: number;
+    averageProgress: number;
+    completedStudents: number;
+  }>;
+}
+
 export default function TeacherDashboard() {
-  const { data: analytics, isLoading } = useGetTeacherAnalytics();
-  const a = analytics as any;
+  const { data: rawAnalytics, isLoading } = useGetTeacherAnalytics();
+  const analytics = rawAnalytics as unknown as TeacherAnalyticsData | undefined;
 
   return (
     <AppLayout>
@@ -30,7 +45,7 @@ export default function TeacherDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalCourses || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.totalCourses ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -43,7 +58,7 @@ export default function TeacherDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalStudents || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.totalStudents ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -56,20 +71,22 @@ export default function TeacherDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalEvaluations || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.totalEvaluations ?? 0}</div>
               )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Note moyenne</CardTitle>
+              <CardTitle className="text-sm font-medium">Score moyen</CardTitle>
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.averageScore ?? "N/A"}</div>
+                <div className="text-2xl font-bold">
+                  {analytics?.averageScore != null ? `${analytics.averageScore}%` : "N/A"}
+                </div>
               )}
             </CardContent>
           </Card>

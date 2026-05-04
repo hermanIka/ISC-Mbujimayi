@@ -102,7 +102,7 @@ export default function CertificateVerificationPage() {
                       <div>
                         <div className="text-sm text-muted-foreground">Décerné à</div>
                         <div className="font-semibold text-lg">
-                          {(verificationResult as any).studentName ?? verificationResult.certificate?.studentId}
+                          {verificationResult.certificate?.studentId}
                         </div>
                       </div>
                     </div>

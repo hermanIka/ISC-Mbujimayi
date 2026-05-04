@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or, count } from "drizzle-orm";
+import { eq, ilike, or, count, and } from "drizzle-orm";
 import { db, studentsTable, filieresTable, enrollmentsTable, paymentsTable, certificatesTable } from "@workspace/db";
 import {
   ListStudentsQueryParams,
@@ -34,20 +34,20 @@ router.get("/students", async (req, res): Promise<void> => {
     return;
   }
   const { page = 1, pageSize = 20, filiereId, search } = params.data;
-  let query = db.select().from(studentsTable);
-  const conditions: any[] = [];
-  if (filiereId) conditions.push(eq(studentsTable.filiereId, filiereId));
-  if (search) {
-    conditions.push(
-      or(
-        ilike(studentsTable.firstName, `%${search}%`),
-        ilike(studentsTable.lastName, `%${search}%`),
-        ilike(studentsTable.numEtudiant, `%${search}%`),
-      ),
-    );
-  }
-  if (conditions.length === 1) query = query.where(conditions[0]) as any;
-  const students = await query
+  const conditions = [
+    filiereId ? eq(studentsTable.filiereId, filiereId) : undefined,
+    search
+      ? or(
+          ilike(studentsTable.firstName, `%${search}%`),
+          ilike(studentsTable.lastName, `%${search}%`),
+          ilike(studentsTable.numEtudiant, `%${search}%`),
+        )
+      : undefined,
+  ].filter((c): c is NonNullable<typeof c> => c != null);
+  const students = await db
+    .select()
+    .from(studentsTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .limit(pageSize)
     .offset((page - 1) * pageSize);
   const total = await db.select({ count: count() }).from(studentsTable);
@@ -68,9 +68,16 @@ router.post("/students", async (req, res): Promise<void> => {
     return;
   }
   const num = Date.now().toString().slice(-6);
+  const { birthDate, ...rest } = parsed.data;
   const [student] = await db
     .insert(studentsTable)
-    .values({ id: nanoid(), userId: nanoid(), numEtudiant: `ISC${num}`, ...parsed.data })
+    .values({
+      id: nanoid(),
+      userId: nanoid(),
+      numEtudiant: `ISC${num}`,
+      ...rest,
+      ...(birthDate ? { birthDate: birthDate instanceof Date ? birthDate.toISOString().split("T")[0] : birthDate } : {}),
+    })
     .returning();
   res.status(201).json(await studentWithFiliere(student));
 });

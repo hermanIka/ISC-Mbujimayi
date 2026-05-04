@@ -53,9 +53,11 @@ router.post("/chatbot/message", async (req, res): Promise<void> => {
 router.get("/chatbot/history", async (req, res): Promise<void> => {
   const params = GetChatHistoryQueryParams.safeParse(req.query);
   const sessionId = params.data?.sessionId;
-  let query = db.select().from(chatMessagesTable);
-  if (sessionId) query = query.where(eq(chatMessagesTable.sessionId, sessionId)) as any;
-  const messages = await query.limit(50);
+  const messages = await db
+    .select()
+    .from(chatMessagesTable)
+    .where(sessionId ? eq(chatMessagesTable.sessionId, sessionId) : undefined)
+    .limit(50);
   res.json(messages);
 });
 

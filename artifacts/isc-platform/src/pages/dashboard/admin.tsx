@@ -6,9 +6,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
+interface AcademicAnalyticsData {
+  totalInscriptions: number;
+  pendingInscriptions: number;
+  approvedInscriptions: number;
+  underReviewInscriptions: number;
+  rejectedInscriptions: number;
+}
+
 export default function AdminDashboard() {
   const { data: users, isLoading: usersLoading } = useListUsers();
-  const { data: analytics, isLoading: analyticsLoading } = useGetAcademicAnalytics();
+  const { data: rawAnalytics, isLoading: analyticsLoading } = useGetAcademicAnalytics();
+  const analytics = rawAnalytics as unknown as AcademicAnalyticsData | undefined;
 
   return (
     <AppLayout>
@@ -25,7 +34,7 @@ export default function AdminDashboard() {
               {usersLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{users?.total || 0}</div>
+                <div className="text-2xl font-bold">{users?.total ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -47,7 +56,7 @@ export default function AdminDashboard() {
               {analyticsLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{(analytics as any)?.approvedInscriptions || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.approvedInscriptions ?? 0}</div>
               )}
             </CardContent>
           </Card>

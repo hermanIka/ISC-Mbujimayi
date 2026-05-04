@@ -156,7 +156,7 @@ router.post("/evaluations/:id/submit", async (req, res): Promise<void> => {
       evaluationId: ev.id,
       score,
       maxScore,
-      answers: parsed.data.answers as any,
+      answers: parsed.data.answers as Array<{ questionId: string; answer: string }>,
     })
     .returning();
   res.status(201).json({ ...result, passed });
@@ -232,7 +232,7 @@ router.post("/evaluations/:evaluationId/questions", async (req, res): Promise<vo
       id: nanoid(),
       evaluationId: params.data.evaluationId,
       ...parsed.data,
-      options: parsed.data.options as any,
+      options: parsed.data.options as Array<{ text: string; isCorrect: boolean }> | undefined,
     })
     .returning();
   res.status(201).json(question);
@@ -251,7 +251,7 @@ router.put("/questions/:id", async (req, res): Promise<void> => {
   }
   const [question] = await db
     .update(questionsTable)
-    .set({ ...parsed.data, options: parsed.data.options as any })
+    .set({ ...parsed.data, options: parsed.data.options as Array<{ text: string; isCorrect: boolean }> | undefined })
     .where(eq(questionsTable.id, params.data.id))
     .returning();
   if (!question) {

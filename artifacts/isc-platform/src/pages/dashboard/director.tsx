@@ -4,9 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, GraduationCap, DollarSign, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface DirectorAnalyticsData {
+  totalStudents: number;
+  totalTeachers: number;
+  totalCourses: number;
+  totalRevenue: string;
+  monthlyEnrollmentGrowth: number;
+  platformEngagementRate: number;
+  enrollmentTrend: Array<{ month: string; count: number }>;
+  revenueTrend: Array<{ date: string; amount: string; count: number }>;
+  enrollmentsByFiliere: Array<{ filiereId: string; filiereName: string; studentCount: number }>;
+  totalInscriptions?: number;
+  approvedInscriptions?: number;
+}
+
 export default function DirectorDashboard() {
-  const { data: analytics, isLoading } = useGetDirectorAnalytics();
-  const a = analytics as any;
+  const { data: rawAnalytics, isLoading } = useGetDirectorAnalytics();
+  const analytics = rawAnalytics as unknown as DirectorAnalyticsData | undefined;
 
   return (
     <AppLayout>
@@ -23,7 +37,7 @@ export default function DirectorDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalStudents || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.totalStudents ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -36,7 +50,7 @@ export default function DirectorDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalTeachers || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.totalTeachers ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -49,20 +63,24 @@ export default function DirectorDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalRevenue || 0} CDF</div>
+                <div className="text-2xl font-bold">{analytics?.totalRevenue ?? "0"} CDF</div>
               )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Inscriptions actives</CardTitle>
+              <CardTitle className="text-sm font-medium">Croissance mensuelle</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalInscriptions || a?.approvedInscriptions || 0}</div>
+                <div className="text-2xl font-bold">
+                  {analytics?.monthlyEnrollmentGrowth != null
+                    ? `+${analytics.monthlyEnrollmentGrowth}%`
+                    : "N/A"}
+                </div>
               )}
             </CardContent>
           </Card>

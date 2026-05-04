@@ -7,10 +7,29 @@ import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
+interface StudentAnalyticsData {
+  enrolledCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  certificates: number;
+  pendingPayments: number;
+  confirmedPayments: number;
+  totalAmountPaid: string;
+  upcomingEvaluations: number;
+  averageScore: number | null;
+  courseProgress: Array<{
+    courseId: string;
+    courseTitle: string;
+    progressPercent: number;
+    enrolledAt: string;
+  }>;
+}
+
 export default function StudentDashboard() {
-  const { data: analytics, isLoading: analyticsLoading } = useGetStudentAnalytics();
+  const { data: rawAnalytics, isLoading: analyticsLoading } = useGetStudentAnalytics();
   const { data: enrollments, isLoading: enrollmentsLoading } = useListEnrollments();
-  const a = analytics as any;
+
+  const analytics = rawAnalytics as unknown as StudentAnalyticsData | undefined;
   const enrollmentList = enrollments?.enrollments ?? [];
 
   return (
@@ -28,7 +47,7 @@ export default function StudentDashboard() {
               {analyticsLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.enrolledCourses || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.enrolledCourses ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -41,7 +60,7 @@ export default function StudentDashboard() {
               {analyticsLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.completedCourses || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.completedCourses ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -54,7 +73,7 @@ export default function StudentDashboard() {
               {analyticsLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.certificates || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.certificates ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -67,7 +86,7 @@ export default function StudentDashboard() {
               {analyticsLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.pendingPayments || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.pendingPayments ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -87,7 +106,7 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {enrollmentList.map((enrollment: any) => (
+                  {enrollmentList.map((enrollment) => (
                     <div key={enrollment.id} className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="text-sm font-medium leading-none">{enrollment.course?.title}</p>

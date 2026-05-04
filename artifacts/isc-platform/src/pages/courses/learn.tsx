@@ -12,6 +12,25 @@ import { ArrowLeft, PlayCircle, FileText, CheckCircle2, MessageSquare, Clipboard
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+interface CourseChapter {
+  id: string;
+  title: string;
+  type: "VIDEO" | "PDF" | "TEXT" | "PRESENTATION";
+  content: string | null;
+  order: number;
+}
+
+interface CourseModule {
+  id: string;
+  title: string;
+  order: number;
+  chapters: CourseChapter[];
+}
+
+interface CourseWithModules {
+  modules: CourseModule[];
+}
+
 export default function CourseLearnPage() {
   const [, params] = useRoute("/courses/:id/learn");
   const courseId = params?.id || "";
@@ -24,9 +43,10 @@ export default function CourseLearnPage() {
 
   const markProgress = useMarkChapterProgress();
 
-  const allModules: any[] = (course as any)?.modules ?? [];
-  const allChapters: any[] = allModules.flatMap((m: any) => m.chapters ?? []);
-  const activeChapter = allChapters.find((c) => c.id === activeChapterId) ?? allChapters[0] ?? null;
+  const courseWithModules = course as unknown as CourseWithModules & typeof course;
+  const allModules: CourseModule[] = courseWithModules?.modules ?? [];
+  const allChapters: CourseChapter[] = allModules.flatMap((m) => m.chapters ?? []);
+  const activeChapter: CourseChapter | null = allChapters.find((c) => c.id === activeChapterId) ?? allChapters[0] ?? null;
 
   const handleMarkComplete = async (chapterId: string) => {
     try {
@@ -76,13 +96,13 @@ export default function CourseLearnPage() {
               {allModules.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun module disponible.</p>
               ) : (
-                allModules.map((module: any) => (
+                allModules.map((module) => (
                   <div key={module.id} className="space-y-2">
                     <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
                       {module.title}
                     </h3>
                     <div className="space-y-1">
-                      {(module.chapters ?? []).map((chapter: any) => (
+                      {(module.chapters ?? []).map((chapter) => (
                         <button
                           key={chapter.id}
                           className={`w-full flex items-center gap-2 p-2 rounded-md text-sm transition-colors text-left ${

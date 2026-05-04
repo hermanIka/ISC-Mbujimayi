@@ -1,8 +1,7 @@
 import { Router, type IRouter } from "express";
-import { count, sum, eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import {
   db,
-  usersTable,
   studentsTable,
   teachersTable,
   coursesTable,
@@ -15,11 +14,11 @@ import {
   modulesTable,
   chaptersTable,
 } from "@workspace/db";
-import { GetFinancialAnalyticsQueryParams } from "@workspace/api-zod";
+import { requireAuth, requireAcademic, requireFinancial, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/analytics/student", async (_req, res): Promise<void> => {
+router.get("/analytics/student", requireAuth, async (_req, res): Promise<void> => {
   const enrollments = await db.select().from(enrollmentsTable).limit(100);
   const enrolled = enrollments.length;
   let completed = 0;
@@ -64,7 +63,7 @@ router.get("/analytics/student", async (_req, res): Promise<void> => {
   });
 });
 
-router.get("/analytics/teacher", async (_req, res): Promise<void> => {
+router.get("/analytics/teacher", requireAuth, async (_req, res): Promise<void> => {
   const courses = await db.select().from(coursesTable);
   const published = courses.filter(c => c.status === "PUBLISHED").length;
   const [evalRow] = await db.select({ count: count() }).from(evaluationResultsTable);
@@ -97,7 +96,7 @@ router.get("/analytics/teacher", async (_req, res): Promise<void> => {
   });
 });
 
-router.get("/analytics/academic", async (_req, res): Promise<void> => {
+router.get("/analytics/academic", requireAcademic, async (_req, res): Promise<void> => {
   const inscriptions = await db.select().from(inscriptionsTable);
   const byStatus = {
     total: inscriptions.length,
@@ -131,7 +130,7 @@ router.get("/analytics/academic", async (_req, res): Promise<void> => {
   });
 });
 
-router.get("/analytics/financial", async (req, res): Promise<void> => {
+router.get("/analytics/financial", requireFinancial, async (req, res): Promise<void> => {
   const payments = await db.select().from(paymentsTable);
   const confirmed = payments.filter(p => p.status === "CONFIRMED");
   const pending = payments.filter(p => p.status === "INITIATED" || p.status === "PENDING");
@@ -178,7 +177,7 @@ router.get("/analytics/financial", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/analytics/director", async (_req, res): Promise<void> => {
+router.get("/analytics/director", requireRole("DIRECTOR", "ADMIN"), async (_req, res): Promise<void> => {
   const [studentRow] = await db.select({ count: count() }).from(studentsTable);
   const [teacherRow] = await db.select({ count: count() }).from(teachersTable);
   const [courseRow] = await db.select({ count: count() }).from(coursesTable);

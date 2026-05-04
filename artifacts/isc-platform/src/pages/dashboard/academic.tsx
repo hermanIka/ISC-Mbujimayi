@@ -6,9 +6,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
+interface AcademicAnalyticsData {
+  totalInscriptions: number;
+  pendingInscriptions: number;
+  underReviewInscriptions: number;
+  approvedInscriptions: number;
+  rejectedInscriptions: number;
+  enrollmentsByFiliere: Array<{ filiereId: string; filiereName: string; studentCount: number }>;
+  weeklyRegistrations: Array<{ week: string; count: number }>;
+}
+
 export default function AcademicDashboard() {
-  const { data: analytics, isLoading } = useGetAcademicAnalytics();
-  const a = analytics as any;
+  const { data: rawAnalytics, isLoading } = useGetAcademicAnalytics();
+  const analytics = rawAnalytics as unknown as AcademicAnalyticsData | undefined;
 
   return (
     <AppLayout>
@@ -25,7 +35,7 @@ export default function AcademicDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.totalInscriptions || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.totalInscriptions ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -38,7 +48,7 @@ export default function AcademicDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.pendingInscriptions || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.pendingInscriptions ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -51,7 +61,7 @@ export default function AcademicDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.approvedInscriptions || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.approvedInscriptions ?? 0}</div>
               )}
             </CardContent>
           </Card>
@@ -64,7 +74,7 @@ export default function AcademicDashboard() {
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <div className="text-2xl font-bold">{a?.underReviewInscriptions || 0}</div>
+                <div className="text-2xl font-bold">{analytics?.underReviewInscriptions ?? 0}</div>
               )}
             </CardContent>
           </Card>
