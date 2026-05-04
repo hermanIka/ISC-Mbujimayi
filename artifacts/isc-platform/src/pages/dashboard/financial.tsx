@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt, Loader2, ChevronLeft, ChevronRight, FolderArchive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/react";
@@ -82,6 +82,7 @@ export default function FinancialDashboard() {
   const totalCount = paymentsResponse?.total ?? 0;
 
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+  const [downloadingZip, setDownloadingZip] = useState(false);
 
   const kpis = [
     {
@@ -146,6 +147,37 @@ export default function FinancialDashboard() {
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadZip = async () => {
+    if (downloadingZip) return;
+    setDownloadingZip(true);
+    try {
+      const token = await getToken();
+      const headers: HeadersInit = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const response = await fetch(`/api/payments/receipts/bulk?period=${period}`, {
+        credentials: "include",
+        headers,
+      });
+      if (response.status === 204) {
+        toast({ title: t("financial.export_zip_empty") });
+        return;
+      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `recus-${period}-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: t("financial.export_zip_success"), description: t("financial.export_zip_success_desc") });
+    } catch {
+      toast({ title: t("common.error"), description: t("financial.export_zip_error"), variant: "destructive" });
+    } finally {
+      setDownloadingZip(false);
+    }
+  };
+
   const handleDownloadReceipt = async (payment: Payment) => {
     if (downloadingIds.has(payment.id)) return;
     setDownloadingIds((prev) => new Set(prev).add(payment.id));
@@ -186,6 +218,20 @@ export default function FinancialDashboard() {
             <Button variant="outline" size="sm" onClick={handleExport} disabled={!analytics}>
               <Download className="mr-1.5 h-4 w-4" />
               {t("financial.export")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadZip}
+              disabled={downloadingZip}
+              data-testid="btn-bulk-download-zip"
+            >
+              {downloadingZip ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <FolderArchive className="mr-1.5 h-4 w-4" />
+              )}
+              {downloadingZip ? t("financial.export_zip_loading") : t("financial.export_zip")}
             </Button>
           </div>
         </div>

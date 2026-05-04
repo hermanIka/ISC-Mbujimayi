@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and, gte, lte, inArray } from "drizzle-orm";
 import { db, paymentsTable, paymentStatusEnum, studentsTable, filieresTable } from "@workspace/db";
 import {
   ListPaymentsQueryParams,
@@ -11,8 +11,9 @@ import {
 import { nanoid } from "nanoid";
 import { requireAuth, getCallerDbUser } from "../middlewares/auth";
 import { simulateMobileMoneyPayment } from "../lib/mobileMoneyService";
-import { generatePaymentReceiptPDF } from "../lib/pdfService";
+import { generatePaymentReceiptPDF, generatePaymentReceiptPDFBuffer } from "../lib/pdfService";
 import { handlePaymentConfirmed } from "../lib/postPaymentService";
+import archiver from "archiver";
 
 const router: IRouter = Router();
 
@@ -147,6 +148,120 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
   }
 
   res.json({ success: true, payment: payment ? { ...payment, amount: payment.amount?.toString() ?? "0" } : null });
+});
+
+router.get("/payments/receipts/bulk", requireAuth, async (req, res): Promise<void> => {
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
+  if (!isStaff) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
+  const VALID_PERIODS = ["day", "week", "month", "year"] as const;
+  type ValidPeriod = typeof VALID_PERIODS[number];
+  const rawPeriod = req.query.period as string | undefined;
+  if (rawPeriod && !VALID_PERIODS.includes(rawPeriod as ValidPeriod)) {
+    res.status(400).json({ error: `Invalid period. Must be one of: ${VALID_PERIODS.join(", ")}` });
+    return;
+  }
+  const period: ValidPeriod = (rawPeriod as ValidPeriod) || "month";
+  const now = new Date();
+  let periodStart: Date;
+  switch (period) {
+    case "day":
+      periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case "week": {
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      periodStart = new Date(now.getFullYear(), now.getMonth(), diff);
+      break;
+    }
+    case "year":
+      periodStart = new Date(now.getFullYear(), 0, 1);
+      break;
+    case "month":
+    default:
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+  }
+  const periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  const confirmedPayments = await db
+    .select()
+    .from(paymentsTable)
+    .where(
+      and(
+        eq(paymentsTable.status, "CONFIRMED"),
+        gte(paymentsTable.createdAt, periodStart),
+        lte(paymentsTable.createdAt, periodEnd),
+      ),
+    );
+
+  if (confirmedPayments.length === 0) {
+    res.status(204).end();
+    return;
+  }
+
+  const studentIds = [...new Set(confirmedPayments.map((p) => p.studentId).filter(Boolean))] as string[];
+  const students = studentIds.length > 0
+    ? await db.select().from(studentsTable).where(inArray(studentsTable.id, studentIds))
+    : [];
+  const studentMap = new Map(students.map((s) => [s.id, s]));
+
+  const filiereIds = [...new Set(students.map((s) => s.filiereId).filter(Boolean))] as string[];
+  const filieres = filiereIds.length > 0
+    ? await db.select().from(filieresTable).where(inArray(filieresTable.id, filiereIds))
+    : [];
+  const filiereMap = new Map(filieres.map((f) => [f.id, f]));
+
+  res.setHeader("Content-Type", "application/zip");
+  res.setHeader("Content-Disposition", `attachment; filename="recus-${period}-${now.toISOString().slice(0, 10)}.zip"`);
+
+  const archive = archiver("zip", { zlib: { level: 6 } });
+  archive.on("error", (err) => {
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.destroy(err);
+    }
+  });
+  archive.pipe(res);
+
+  try {
+    for (const payment of confirmedPayments) {
+      const student = payment.studentId ? studentMap.get(payment.studentId) : undefined;
+      const filiereName = student?.filiereId ? (filiereMap.get(student.filiereId)?.name ?? null) : null;
+      const pdfBuffer = await generatePaymentReceiptPDFBuffer({
+        reference: payment.reference,
+        amount: payment.amount?.toString() ?? "0",
+        currency: payment.currency ?? "CDF",
+        type: payment.type ?? "OTHER",
+        operator: payment.operator ?? "MTN_MONEY",
+        phoneNumber: payment.phoneNumber ?? null,
+        operatorRef: payment.operatorRef ?? null,
+        status: payment.status,
+        createdAt: payment.createdAt ?? null,
+        studentName: student ? `${student.firstName} ${student.lastName}` : "N/A",
+        numEtudiant: student?.numEtudiant ?? "N/A",
+        filiereName,
+      });
+      archive.append(pdfBuffer, { name: `recu-${payment.reference || payment.id}.pdf` });
+    }
+    await archive.finalize();
+  } catch (err) {
+    archive.abort();
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to generate ZIP archive" });
+    } else {
+      res.destroy(err instanceof Error ? err : new Error(String(err)));
+    }
+  }
 });
 
 router.get("/payments/:id/receipt", requireAuth, async (req, res): Promise<void> => {
