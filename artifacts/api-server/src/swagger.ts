@@ -274,7 +274,7 @@ export const swaggerSpec = {
       post: {
         tags: ["Payments"],
         summary: "Initier un paiement Mobile Money",
-        description: "Initie un paiement et déclenche la simulation asynchrone MTN/Airtel/Orange (délai 2–8 sec, taux de succès 90%).",
+        description: "Initie un paiement et déclenche la simulation asynchrone MTN/Airtel/Orange (délai 2–4 sec selon opérateur, taux de succès 90%).",
         requestBody: {
           required: true,
           content: {

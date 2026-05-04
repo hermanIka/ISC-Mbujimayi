@@ -12,6 +12,7 @@ import { nanoid } from "nanoid";
 import { requireAuth, getCallerDbUser } from "../middlewares/auth";
 import { simulateMobileMoneyPayment } from "../lib/mobileMoneyService";
 import { generatePaymentReceiptPDF } from "../lib/pdfService";
+import { handlePaymentConfirmed } from "../lib/postPaymentService";
 
 const router: IRouter = Router();
 
@@ -117,6 +118,21 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
     .set({ status, operatorRef: parsed.data.operatorRef })
     .where(eq(paymentsTable.reference, parsed.data.reference))
     .returning();
+
+  if (status === "CONFIRMED" && payment) {
+    await handlePaymentConfirmed({
+      paymentId: payment.id,
+      reference: payment.reference,
+      amount: payment.amount?.toString() ?? "0",
+      currency: payment.currency ?? "CDF",
+      type: payment.type ?? "OTHER",
+      operator: payment.operator ?? params.data.operator,
+      operatorRef: payment.operatorRef ?? null,
+      phoneNumber: payment.phoneNumber ?? "",
+      studentId: payment.studentId,
+    });
+  }
+
   res.json({ success: true, payment: payment ? { ...payment, amount: payment.amount?.toString() ?? "0" } : null });
 });
 
