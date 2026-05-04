@@ -57,6 +57,14 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
 });
 
 router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
+  const callbackSecret = process.env.PAYMENT_CALLBACK_SECRET;
+  if (callbackSecret) {
+    const providedSecret = req.headers["x-callback-secret"] ?? req.headers["x-api-key"];
+    if (providedSecret !== callbackSecret) {
+      res.status(401).json({ error: "Invalid callback secret" });
+      return;
+    }
+  }
   const params = PaymentCallbackParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
