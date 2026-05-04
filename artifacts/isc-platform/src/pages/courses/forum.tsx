@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListForumPosts, useCreateForumPost, getListForumPostsQueryKey } from "@workspace/api-client-react";
+import type { ForumPost } from "@workspace/api-client-react";
 import { useRoute, Link } from "@/lib/router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,7 +76,7 @@ export default function CourseForumPage() {
           ) : !forumData?.posts || forumData.posts.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">Aucun message pour le moment. Soyez le premier à lancer la discussion!</div>
           ) : (
-            (forumData?.posts ?? []).map((post: any) => (
+            (forumData?.posts ?? [] as ForumPost[]).map((post: ForumPost) => (
               <Card key={post.id}>
                 <CardHeader className="pb-2 flex flex-row items-start gap-4 space-y-0">
                   <Avatar>

@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListCertificates } from "@workspace/api-client-react";
+import type { Certificate } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,7 +43,7 @@ export default function CertificatesPage() {
               </Button>
             </div>
           ) : (
-            (Array.isArray(data) ? data : []).map((cert: any) => (
+            (Array.isArray(data) ? data : [] as Certificate[]).map((cert: Certificate) => (
               <Card key={cert.id} className="overflow-hidden border-2 flex flex-col">
                 <div className="bg-primary/5 p-6 flex justify-center border-b border-primary/10">
                   <Award className="h-20 w-20 text-primary" />

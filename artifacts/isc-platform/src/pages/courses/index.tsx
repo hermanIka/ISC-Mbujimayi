@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListCourses } from "@workspace/api-client-react";
+import type { Course } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ export default function CoursesPage() {
               Aucun cours trouvé.
             </div>
           ) : (
-            filteredCourses.map((course: any) => (
+            filteredCourses.map((course: Course) => (
               <Card key={course.id} className="flex flex-col hover-elevate transition-all duration-200">
                 <div className="aspect-video w-full overflow-hidden rounded-t-xl bg-muted">
                   {course.thumbnail ? (

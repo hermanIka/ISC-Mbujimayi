@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetCourseById, useListModules, useCreateEnrollment, getGetCourseByIdQueryKey, getListModulesQueryKey } from "@workspace/api-client-react";
+import type { Module } from "@workspace/api-client-react";
 import { useRoute, Link, useLocation } from "@/lib/router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,7 +142,7 @@ export default function CourseDetailPage() {
           </div>
         ) : (
           <Accordion type="multiple" className="w-full" data-testid="modules-accordion">
-            {(Array.isArray(modulesData) ? modulesData : []).map((module: any, index: number) => (
+            {(Array.isArray(modulesData) ? modulesData : [] as Module[]).map((module: Module, index: number) => (
               <AccordionItem key={module.id} value={module.id}>
                 <AccordionTrigger className="text-left font-medium">
                   Module {index + 1}: {module.title}

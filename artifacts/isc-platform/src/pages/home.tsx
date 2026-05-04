@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router";
 import { useListCourses, useListFilieres } from "@workspace/api-client-react";
+import type { Course } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -101,7 +102,7 @@ export default function Home() {
                 Aucun cours disponible pour le moment.
               </div>
             ) : (
-              courses.map((course: any) => (
+              courses.map((course: Course) => (
                 <Card key={course.id} className="flex flex-col hover-elevate transition-all duration-200">
                   <div className="aspect-video w-full overflow-hidden rounded-t-xl bg-muted">
                     {course.thumbnail ? (

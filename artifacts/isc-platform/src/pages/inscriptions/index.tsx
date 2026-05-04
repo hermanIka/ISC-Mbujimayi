@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useListInscriptions, getListInscriptionsQueryKey } from "@workspace/api-client-react";
+import { useListInscriptions } from "@workspace/api-client-react";
+import type { Inscription } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ export default function InscriptionsPage() {
               <Button variant="outline" className="mt-4">Commencer l'inscription</Button>
             </div>
           ) : (
-            (data?.inscriptions ?? []).map((inscription: any) => (
+            (data?.inscriptions ?? [] as Inscription[]).map((inscription: Inscription) => (
               <Card key={inscription.id}>
                 <CardContent className="p-6 flex items-center justify-between">
                   <div className="space-y-1">

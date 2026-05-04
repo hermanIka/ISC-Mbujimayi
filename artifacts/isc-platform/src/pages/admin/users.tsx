@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListUsers } from "@workspace/api-client-react";
+import type { User } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const { data, isLoading } = useListUsers();
 
-  const filteredUsers = (data?.users ?? []).filter((user: any) => 
+  const filteredUsers = (data?.users ?? []).filter((user: User) => 
     user.firstName?.toLowerCase().includes(search.toLowerCase()) || 
     user.lastName?.toLowerCase().includes(search.toLowerCase()) ||
     user.email.toLowerCase().includes(search.toLowerCase())
@@ -59,7 +60,7 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((user: any) => (
+                  {filteredUsers.map((user: User) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
                       <TableCell>{user.email}</TableCell>

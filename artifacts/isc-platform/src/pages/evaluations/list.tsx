@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListEvaluations, getListEvaluationsQueryKey } from "@workspace/api-client-react";
+import type { Evaluation } from "@workspace/api-client-react";
 import { useRoute, Link } from "@/lib/router";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ export default function CourseEvaluationsPage() {
               Aucune évaluation disponible pour ce cours.
             </div>
           ) : (
-            evaluations.map((evalItem: any) => (
+            evaluations.map((evalItem: Evaluation) => (
               <Card key={evalItem.id}>
                 <CardHeader className="flex flex-row items-start justify-between space-y-0">
                   <div className="space-y-1">

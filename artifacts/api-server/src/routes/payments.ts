@@ -53,6 +53,21 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
+  let resolvedStudentId = parsed.data.studentId;
+  if (!isStaff) {
+    const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!callerStudent) {
+      res.status(403).json({ error: "Student profile not found. Please complete your student registration first." });
+      return;
+    }
+    resolvedStudentId = callerStudent.id;
+  }
   const reference = `ISC-${Date.now()}-${nanoid(6).toUpperCase()}`;
   const [payment] = await db
     .insert(paymentsTable)
@@ -62,6 +77,7 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
       status: "INITIATED",
       currency: "CDF",
       ...parsed.data,
+      studentId: resolvedStudentId,
       amount: parsed.data.amount,
     })
     .returning();

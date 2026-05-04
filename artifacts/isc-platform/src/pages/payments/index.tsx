@@ -1,5 +1,12 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useListPayments, useInitiatePayment, getListPaymentsQueryKey } from "@workspace/api-client-react";
+import {
+  useListPayments,
+  useInitiatePayment,
+  useGetCurrentUser,
+  getListPaymentsQueryKey,
+  getGetCurrentUserQueryKey,
+} from "@workspace/api-client-react";
+import type { Payment, InitiatePaymentBodyType, InitiatePaymentBodyOperator } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,28 +19,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CreditCard, Plus } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function PaymentsPage() {
   const { data, isLoading } = useListPayments();
+  const { data: currentUser } = useGetCurrentUser({
+    query: { queryKey: getGetCurrentUserQueryKey() },
+  });
   const initiatePayment = useInitiatePayment();
   const { toast } = useToast();
-  const { user } = useUser();
   const queryClient = useQueryClient();
 
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState<any>("MINERVAL");
-  const [operator, setOperator] = useState<any>("ORANGE");
+  const [type, setType] = useState<InitiatePaymentBodyType>("MINERVAL");
+  const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("ORANGE");
   const [phoneNumber, setPhoneNumber] = useState("");
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'CONFIRMED': return 'bg-green-500/10 text-green-700 border-green-200';
-      case 'FAILED': return 'bg-red-500/10 text-red-700 border-red-200';
-      case 'CANCELLED': return 'bg-gray-500/10 text-gray-700 border-gray-200';
-      default: return 'bg-yellow-500/10 text-yellow-700 border-yellow-200';
+      case "CONFIRMED": return "bg-green-500/10 text-green-700 border-green-200";
+      case "FAILED": return "bg-red-500/10 text-red-700 border-red-200";
+      case "CANCELLED": return "bg-gray-500/10 text-gray-700 border-gray-200";
+      default: return "bg-yellow-500/10 text-yellow-700 border-yellow-200";
     }
   };
 
@@ -42,21 +50,27 @@ export default function PaymentsPage() {
       toast({ title: "Erreur", description: "Veuillez remplir tous les champs", variant: "destructive" });
       return;
     }
+    if (!currentUser?.id) {
+      toast({ title: "Erreur", description: "Profil utilisateur introuvable", variant: "destructive" });
+      return;
+    }
 
     try {
       await initiatePayment.mutateAsync({
         data: {
-          studentId: "me", // Backend logic determines current user
+          studentId: currentUser.id,
           amount,
           type,
           operator,
           phoneNumber,
-        }
+        },
       });
       toast({ title: "Paiement initié", description: "Veuillez confirmer sur votre téléphone." });
       setIsOpen(false);
+      setAmount("");
+      setPhoneNumber("");
       queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
-    } catch (e) {
+    } catch {
       toast({ title: "Erreur", description: "Impossible d'initier le paiement", variant: "destructive" });
     }
   };
@@ -71,7 +85,7 @@ export default function PaymentsPage() {
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button data-testid="button-initiate-payment">
                 <Plus className="mr-2 h-4 w-4" /> Effectuer un paiement
               </Button>
             </DialogTrigger>
@@ -82,8 +96,8 @@ export default function PaymentsPage() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Type de frais</Label>
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger>
+                  <Select value={type} onValueChange={(v) => setType(v as InitiatePaymentBodyType)}>
+                    <SelectTrigger data-testid="select-payment-type">
                       <SelectValue placeholder="Sélectionner le type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -96,8 +110,8 @@ export default function PaymentsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Opérateur</Label>
-                  <Select value={operator} onValueChange={setOperator}>
-                    <SelectTrigger>
+                  <Select value={operator} onValueChange={(v) => setOperator(v as InitiatePaymentBodyOperator)}>
+                    <SelectTrigger data-testid="select-payment-operator">
                       <SelectValue placeholder="Sélectionner l'opérateur" />
                     </SelectTrigger>
                     <SelectContent>
@@ -109,13 +123,29 @@ export default function PaymentsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Montant (CDF)</Label>
-                  <Input type="number" placeholder="Ex: 50000" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <Input
+                    type="number"
+                    placeholder="Ex: 50000"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    data-testid="input-payment-amount"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Numéro de téléphone</Label>
-                  <Input placeholder="Ex: 08..." value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                  <Input
+                    placeholder="Ex: 08..."
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    data-testid="input-payment-phone"
+                  />
                 </div>
-                <Button className="w-full" onClick={handlePayment} disabled={initiatePayment.isPending}>
+                <Button
+                  className="w-full"
+                  onClick={handlePayment}
+                  disabled={initiatePayment.isPending}
+                  data-testid="button-submit-payment"
+                >
                   {initiatePayment.isPending ? "En cours..." : "Payer"}
                 </Button>
               </div>
@@ -151,14 +181,20 @@ export default function PaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(data?.payments ?? []).map((payment: any) => (
-                    <TableRow key={payment.id}>
+                  {data.payments.map((payment: Payment) => (
+                    <TableRow key={payment.id} data-testid={`row-payment-${payment.id}`}>
                       <TableCell className="font-mono text-xs">{payment.reference || "N/A"}</TableCell>
                       <TableCell>{payment.type}</TableCell>
                       <TableCell>{payment.operator}</TableCell>
-                      <TableCell className="font-medium">{payment.amount} {payment.currency}</TableCell>
+                      <TableCell className="font-medium">
+                        {payment.amount} {payment.currency}
+                      </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(payment.status)} variant="outline">
+                        <Badge
+                          className={getStatusColor(payment.status)}
+                          variant="outline"
+                          data-testid={`status-payment-${payment.id}`}
+                        >
                           {payment.status}
                         </Badge>
                       </TableCell>
