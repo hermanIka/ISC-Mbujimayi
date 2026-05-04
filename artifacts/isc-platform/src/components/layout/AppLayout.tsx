@@ -1,6 +1,7 @@
 import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
 import { Show } from "@clerk/react";
+import { ChatbotWidget } from "@/components/ChatbotWidget";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,8 +11,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Show when="signed-in">
           <Sidebar />
         </Show>
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto relative">
           {children}
+          <ChatbotWidget />
         </main>
       </div>
     </div>

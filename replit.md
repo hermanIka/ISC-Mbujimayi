@@ -30,7 +30,7 @@ pnpm workspace monorepo using TypeScript throughout.
 - **API codegen**: Orval (from OpenAPI spec)
 - **Auth**: Clerk (`@clerk/express` on backend, `@clerk/react` on frontend)
 - **UI**: shadcn/ui + Tailwind CSS
-- **Routing**: Wouter (frontend)
+- **Routing**: react-router-dom v7 (frontend) — wouter-compatible shim at `src/lib/router.tsx`
 - **State/data**: TanStack Query (via Orval-generated hooks)
 
 ## Branding
