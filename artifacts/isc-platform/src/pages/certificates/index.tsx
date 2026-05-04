@@ -10,7 +10,18 @@ import { fr, enUS } from "date-fns/locale";
 import { Link } from "@/lib/router";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
+
+async function downloadApiPdf(url: string, filename: string): Promise<void> {
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
 
 export default function CertificatesPage() {
   const { t, i18n } = useTranslation();
@@ -18,64 +29,16 @@ export default function CertificatesPage() {
   const { data, isLoading } = useListCertificates();
   const dateLocale = i18n.language === "fr" ? fr : enUS;
 
-  const handleDownload = (cert: Certificate) => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const W = doc.internal.pageSize.getWidth();
-    const H = doc.internal.pageSize.getHeight();
-
-    doc.setFillColor(15, 34, 64);
-    doc.rect(0, 0, W, 18, "F");
-    doc.setFillColor(15, 34, 64);
-    doc.rect(0, H - 12, W, 12, "F");
-
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(1.2);
-    doc.rect(10, 22, W - 20, H - 36, "S");
-    doc.setLineWidth(0.4);
-    doc.rect(12, 24, W - 24, H - 40, "S");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("INSTITUT SUPERIEUR DE COMMERCE — MBUJIMAYI", W / 2, 12, { align: "center" });
-
-    doc.setTextColor(15, 34, 64);
-    doc.setFontSize(28);
-    doc.setFont("helvetica", "bold");
-    doc.text(t("certificates.certificate_of_completion").toUpperCase(), W / 2, 50, { align: "center" });
-
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80, 80, 80);
-    doc.text(t("certificates.cert_presented_to"), W / 2, 68, { align: "center" });
-
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(15, 34, 64);
-    doc.text(cert.course?.title ?? "—", W / 2, 90, { align: "center", maxWidth: W - 60 });
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80, 80, 80);
-
-    const issuedStr = format(new Date(cert.issuedAt), "dd MMMM yyyy", { locale: dateLocale });
-    doc.text(`${t("certificates.issued_on")}: ${issuedStr}`, W / 2, 115, { align: "center" });
-    doc.text(`${t("certificates.identifier")}: ${cert.hash}`, W / 2, 122, { align: "center" });
-
-    doc.setFontSize(9);
-    doc.setTextColor(140, 140, 140);
-    doc.text(t("certificates.verified_text"), W / 2, 140, { align: "center" });
-
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(0.6);
-    doc.line(W / 2 - 40, 148, W / 2 + 40, 148);
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
-    doc.text(`ISC Mbujimayi — ${new Date().getFullYear()}`, W / 2, H - 5, { align: "center" });
-
-    doc.save(`certificat-ISC-${cert.hash?.slice(0, 8) ?? cert.id}.pdf`);
-    toast({ title: t("certificates.download_started"), description: t("certificates.download_desc") });
+  const handleDownload = async (cert: Certificate) => {
+    try {
+      await downloadApiPdf(
+        `/api/certificates/${cert.id}/download`,
+        `certificat-ISC-${cert.hash?.slice(0, 8) ?? cert.id}.pdf`
+      );
+      toast({ title: t("certificates.download_started"), description: t("certificates.download_desc") });
+    } catch {
+      toast({ title: t("common.error"), description: t("certificates.download_error") || "Download failed", variant: "destructive" });
+    }
   };
 
   const handleShare = async (cert: Certificate) => {

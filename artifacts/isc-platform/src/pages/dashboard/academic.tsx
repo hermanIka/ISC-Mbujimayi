@@ -42,6 +42,13 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
 
 const KANBAN_COLS = ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"] as const;
 
+function getStudentName(ins: Inscription): string {
+  if (ins.student?.firstName || ins.student?.lastName) {
+    return [ins.student.firstName, ins.student.lastName].filter(Boolean).join(" ");
+  }
+  return ins.studentId.slice(0, 8) + "…";
+}
+
 export default function AcademicDashboard() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -165,9 +172,12 @@ export default function AcademicDashboard() {
                         >
                           <CardContent className="p-3 space-y-2">
                             <div className="flex items-start justify-between gap-1">
-                              <p className="text-sm font-medium leading-tight">{ins.studentId}</p>
+                              <p className="text-sm font-medium leading-tight">{getStudentName(ins)}</p>
                               <Eye className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
                             </div>
+                            {ins.student?.filiere?.name && (
+                              <p className="text-xs text-primary font-medium">{ins.student.filiere.name}</p>
+                            )}
                             <p className="text-xs text-muted-foreground">
                               {ins.createdAt ? format(new Date(ins.createdAt), "dd MMM yyyy", { locale: dateLocale }) : "—"}
                             </p>
@@ -195,8 +205,14 @@ export default function AcademicDashboard() {
                 <div className="bg-muted/30 rounded-lg p-4 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t("academic.student_id")}</span>
-                    <span className="font-mono font-medium">{selected.studentId}</span>
+                    <span className="font-medium">{getStudentName(selected)}</span>
                   </div>
+                  {selected.student?.filiere?.name && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("academic.filiere")}</span>
+                      <span className="font-medium">{selected.student.filiere.name}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t("academic.current_status")}</span>
                     <Badge variant="outline" className={STATUS_CONFIG[selected.status]?.bg ?? ""}>

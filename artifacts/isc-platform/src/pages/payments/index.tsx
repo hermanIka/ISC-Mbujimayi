@@ -22,6 +22,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
+async function downloadApiPdf(url: string, filename: string): Promise<void> {
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export default function PaymentsPage() {
   const { t } = useTranslation();
   const { data, isLoading } = useListPayments();
@@ -76,6 +88,18 @@ export default function PaymentsPage() {
       setAmount("");
       setPhoneNumber("");
       queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+    } catch {
+      toast({ title: t("common.error"), description: t("payments.initiate_error"), variant: "destructive" });
+    }
+  };
+
+  const handleDownloadReceipt = async (payment: Payment) => {
+    try {
+      await downloadApiPdf(
+        `/api/payments/${payment.id}/receipt`,
+        `recu-${payment.reference || payment.id}.pdf`
+      );
+      toast({ title: t("payments.download_receipt") });
     } catch {
       toast({ title: t("common.error"), description: t("payments.initiate_error"), variant: "destructive" });
     }
@@ -211,27 +235,7 @@ export default function PaymentsPage() {
                             variant="ghost"
                             size="icon"
                             title={t("payments.download_receipt")}
-                            onClick={() => {
-                              const lines = [
-                                "REÇU DE PAIEMENT — ISC MBUJIMAYI",
-                                "=".repeat(40),
-                                `Référence : ${payment.reference || payment.id}`,
-                                `Type      : ${payment.type}`,
-                                `Opérateur : ${payment.operator}`,
-                                `Montant   : ${Number(payment.amount).toLocaleString("fr-CD")} ${payment.currency}`,
-                                `Statut    : ${payment.status}`,
-                                `Date      : ${payment.createdAt ? new Date(payment.createdAt).toLocaleString("fr-CD") : "—"}`,
-                                "=".repeat(40),
-                                "Paiement vérifié et confirmé par ISC Mbujimayi",
-                              ].join("\n");
-                              const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href = url;
-                              a.download = `recu-${payment.reference || payment.id}.txt`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }}
+                            onClick={() => handleDownloadReceipt(payment)}
                           >
                             <Receipt className="h-4 w-4 text-green-600" />
                           </Button>

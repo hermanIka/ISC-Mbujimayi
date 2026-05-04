@@ -1,19 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useGetTeacherAnalytics,
   useListCourses,
+  useListEvaluations,
   useUpdateCourse,
   getListCoursesQueryKey,
 } from "@workspace/api-client-react";
-import type { Course } from "@workspace/api-client-react";
+import type { Course, Evaluation } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Users, BookOpen, Star, FileText, Plus, Eye, Edit, Send, Archive,
   CheckCircle, Clock, BarChart2, TrendingUp
@@ -46,6 +46,67 @@ const STATUS_COLORS: Record<string, string> = {
   ARCHIVED: "bg-orange-100 text-orange-700 border-orange-300",
 };
 
+function CourseEvaluationsSection({
+  courseId,
+  courseTitle,
+  onLoaded,
+}: {
+  courseId: string;
+  courseTitle: string;
+  onLoaded?: (count: number) => void;
+}) {
+  const { data, isLoading } = useListEvaluations(courseId);
+  const evaluations: Evaluation[] = Array.isArray(data) ? data : [];
+
+  useEffect(() => {
+    if (!isLoading) {
+      onLoaded?.(evaluations.length);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
+  if (isLoading) {
+    return (
+      <TableRow>
+        <TableCell colSpan={6}>
+          <Skeleton className="h-6 w-full" />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  if (evaluations.length === 0) return null;
+
+  return (
+    <>
+      {evaluations.map((ev) => (
+        <TableRow key={ev.id}>
+          <TableCell className="font-medium">{ev.title}</TableCell>
+          <TableCell>
+            <Badge variant="outline" className="text-xs">{ev.type}</Badge>
+          </TableCell>
+          <TableCell>{ev.passMark}%</TableCell>
+          <TableCell className="text-sm text-muted-foreground">
+            {ev.questionCount ?? 0}
+          </TableCell>
+          <TableCell className="text-xs text-muted-foreground truncate max-w-[120px]" title={courseTitle}>
+            {courseTitle}
+          </TableCell>
+          <TableCell>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" asChild>
+                <Link href={`/evaluations/${ev.id}`}>
+                  <Eye className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function TeacherDashboard() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -53,13 +114,21 @@ export default function TeacherDashboard() {
   const analytics = rawAnalytics as unknown as TeacherAnalyticsData | undefined;
   const { data: coursesRaw, isLoading: coursesLoading } = useListCourses();
   const courses: Course[] = Array.isArray(coursesRaw) ? coursesRaw : (coursesRaw as { courses?: Course[] })?.courses ?? [];
-  const evaluations: { id: string; title: string; type: string; passMark: number; duration: number; questionCount: number }[] = (analytics?.courseEngagement ?? []).flatMap((c) =>
-    c.enrolledStudents > 0
-      ? [{ id: `eval-${c.courseId}`, title: c.courseTitle, type: "QCM", passMark: 60, duration: 30, questionCount: c.enrolledStudents }]
-      : []
-  );
   const updateCourse = useUpdateCourse();
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [evSectionsReported, setEvSectionsReported] = useState(0);
+  const [evTotalFound, setEvTotalFound] = useState(0);
+
+  const courseEngagementLength = (rawAnalytics as unknown as TeacherAnalyticsData | undefined)?.courseEngagement?.length ?? 0;
+  useEffect(() => {
+    setEvSectionsReported(0);
+    setEvTotalFound(0);
+  }, [courseEngagementLength]);
+
+  const handleSectionLoaded = useCallback((count: number) => {
+    setEvSectionsReported((prev) => prev + 1);
+    setEvTotalFound((prev) => prev + count);
+  }, []);
 
   const kpis = [
     { label: t("teacher.my_courses"), value: analytics?.totalCourses ?? 0, icon: BookOpen },
@@ -85,6 +154,8 @@ export default function TeacherDashboard() {
     progression: c.averageProgress,
     termines: c.completedStudents,
   }));
+
+  const courseEngagement = analytics?.courseEngagement ?? [];
 
   return (
     <AppLayout>
@@ -172,7 +243,7 @@ export default function TeacherDashboard() {
                 <CardTitle>{t("teacher.course_engagement_table")}</CardTitle>
               </CardHeader>
               <CardContent>
-                {(analytics?.courseEngagement ?? []).length === 0 ? (
+                {courseEngagement.length === 0 ? (
                   <p className="text-center text-muted-foreground py-6">{t("teacher.no_courses_yet")}</p>
                 ) : (
                   <Table>
@@ -185,7 +256,7 @@ export default function TeacherDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {analytics!.courseEngagement.map((c) => (
+                      {courseEngagement.map((c) => (
                         <TableRow key={c.courseId}>
                           <TableCell className="font-medium">{c.courseTitle}</TableCell>
                           <TableCell className="text-right">{c.enrolledStudents}</TableCell>
@@ -240,7 +311,9 @@ export default function TeacherDashboard() {
                               {t(`teacher.status_${course.status.toLowerCase()}` as Parameters<typeof t>[0]) as string || course.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{course.filiereId ?? "—"}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {course.filiere?.name ?? (course.filiereId ? course.filiereId.slice(0, 8) + "…" : "—")}
+                          </TableCell>
                           <TableCell>
                             <div className="flex gap-1 flex-wrap">
                               <Button variant="ghost" size="icon" asChild title={t("teacher.view")}>
@@ -306,45 +379,45 @@ export default function TeacherDashboard() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {evaluations.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">{t("teacher.no_evaluations_yet")}</p>
+                {coursesLoading || isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+                  </div>
+                ) : courseEngagement.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="mx-auto h-10 w-10 opacity-20 mb-3" />
+                    <p>{t("teacher.no_evaluations_yet")}</p>
+                  </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("teacher.col_title")}</TableHead>
-                        <TableHead>{t("teacher.col_type")}</TableHead>
-                        <TableHead>{t("teacher.col_pass_mark")}</TableHead>
-                        <TableHead>{t("teacher.col_questions")}</TableHead>
-                        <TableHead>{t("teacher.col_actions")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {evaluations.map((ev) => (
-                        <TableRow key={ev.id}>
-                          <TableCell className="font-medium">{ev.title}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {ev.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{ev.passMark}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {ev.questionCount}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/evaluations/${ev.id}`}>
-                                  <Eye className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                            </div>
-                          </TableCell>
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("teacher.col_title")}</TableHead>
+                          <TableHead>{t("teacher.col_type")}</TableHead>
+                          <TableHead>{t("teacher.col_pass_mark")}</TableHead>
+                          <TableHead>{t("teacher.col_questions")}</TableHead>
+                          <TableHead>{t("teacher.col_course")}</TableHead>
+                          <TableHead>{t("teacher.col_actions")}</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {courseEngagement.map((c) => (
+                          <CourseEvaluationsSection
+                            key={c.courseId}
+                            courseId={c.courseId}
+                            courseTitle={c.courseTitle}
+                            onLoaded={handleSectionLoaded}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {evSectionsReported === courseEngagement.length && evTotalFound === 0 && (
+                      <div className="text-center py-8 text-muted-foreground border-t">
+                        <p>{t("teacher.no_evaluations_yet")}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

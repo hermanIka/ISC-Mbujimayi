@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetFinancialAnalytics } from "@workspace/api-client-react";
+import { useGetFinancialAnalytics, useListPayments } from "@workspace/api-client-react";
+import type { Payment } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download } from "lucide-react";
-import { Link } from "@/lib/router";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
 
 interface FinancialAnalyticsData {
@@ -32,11 +34,33 @@ const OPERATOR_COLORS: Record<string, string> = {
 
 const PIE_COLORS = ["hsl(var(--primary))", "#22c55e", "#f59e0b", "#6366f1"];
 
+const STATUS_COLORS: Record<string, string> = {
+  CONFIRMED: "bg-green-500/10 text-green-700 border-green-200",
+  FAILED: "bg-red-500/10 text-red-700 border-red-200",
+  CANCELLED: "bg-gray-500/10 text-gray-700 border-gray-200",
+  PENDING: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
+};
+
+async function downloadApiPdf(url: string, filename: string): Promise<void> {
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export default function FinancialDashboard() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
   const { data: rawAnalytics, isLoading } = useGetFinancialAnalytics({ period });
   const analytics = rawAnalytics as unknown as FinancialAnalyticsData | undefined;
+  const { data: paymentsRaw, isLoading: paymentsLoading } = useListPayments({ pageSize: 50 } as Parameters<typeof useListPayments>[0]);
+  const payments: Payment[] = (paymentsRaw as { payments?: Payment[] })?.payments ?? [];
 
   const kpis = [
     {
@@ -101,6 +125,15 @@ export default function FinancialDashboard() {
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadReceipt = async (payment: Payment) => {
+    try {
+      await downloadApiPdf(`/api/payments/${payment.id}/receipt`, `recu-${payment.reference || payment.id}.pdf`);
+      toast({ title: t("payments.download_receipt"), description: t("payments.confirm_phone") });
+    } catch {
+      toast({ title: t("common.error"), description: t("payments.initiate_error"), variant: "destructive" });
+    }
+  };
+
   return (
     <AppLayout>
       <div className="p-8 space-y-8 max-w-7xl mx-auto">
@@ -124,9 +157,6 @@ export default function FinancialDashboard() {
             <Button variant="outline" size="sm" onClick={handleExport} disabled={!analytics}>
               <Download className="mr-1.5 h-4 w-4" />
               {t("financial.export")}
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/payments">{t("financial.manage_payments")}</Link>
             </Button>
           </div>
         </div>
@@ -275,6 +305,71 @@ export default function FinancialDashboard() {
                   ))}
                 </div>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              {t("financial.payment_records")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {paymentsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+              </div>
+            ) : payments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CreditCard className="mx-auto h-10 w-10 opacity-20 mb-3" />
+                <p>{t("payments.no_transactions")}</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("payments.col_reference")}</TableHead>
+                    <TableHead>{t("payments.col_type")}</TableHead>
+                    <TableHead>{t("payments.col_operator")}</TableHead>
+                    <TableHead>{t("payments.col_amount")}</TableHead>
+                    <TableHead>{t("payments.col_status")}</TableHead>
+                    <TableHead>{t("payments.col_receipt")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payments.map((payment: Payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-mono text-xs">{payment.reference || payment.id.slice(0, 8) + "…"}</TableCell>
+                      <TableCell className="text-sm">
+                        {t(`payments.type_${payment.type.toLowerCase().replace(/_fee$/, "")}` as Parameters<typeof t>[0]) as string || payment.type}
+                      </TableCell>
+                      <TableCell className="text-sm">{payment.operator}</TableCell>
+                      <TableCell className="font-medium text-sm">
+                        {Number(payment.amount).toLocaleString("fr-CD")} {payment.currency}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={STATUS_COLORS[payment.status] ?? ""}>
+                          {t(`payments.status.${payment.status.toLowerCase()}` as Parameters<typeof t>[0]) as string || payment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {payment.status === "CONFIRMED" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("payments.download_receipt")}
+                            onClick={() => handleDownloadReceipt(payment)}
+                          >
+                            <Receipt className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
