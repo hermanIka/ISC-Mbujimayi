@@ -29,9 +29,9 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const PAYMENT_OPERATOR_LABELS: Record<string, string> = {
-  ORANGE_MONEY: "Orange Money",
+  MTN_MONEY: "MTN Mobile Money",
   AIRTEL_MONEY: "Airtel Money",
-  MPESA: "M-Pesa",
+  ORANGE_MONEY: "Orange Money",
 };
 
 export default function PaymentsPage() {
@@ -46,7 +46,7 @@ export default function PaymentsPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<InitiatePaymentBodyType>("INSCRIPTION_FEE");
-  const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("ORANGE_MONEY");
+  const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("MTN_MONEY");
   const [phoneNumber, setPhoneNumber] = useState("");
 
   const getStatusColor = (status: string) => {
@@ -138,9 +138,9 @@ export default function PaymentsPage() {
                       <SelectValue placeholder="Sélectionner l'opérateur" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ORANGE_MONEY">Orange Money</SelectItem>
+                      <SelectItem value="MTN_MONEY">MTN Mobile Money</SelectItem>
                       <SelectItem value="AIRTEL_MONEY">Airtel Money</SelectItem>
-                      <SelectItem value="MPESA">M-Pesa</SelectItem>
+                      <SelectItem value="ORANGE_MONEY">Orange Money</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

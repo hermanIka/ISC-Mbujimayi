@@ -217,7 +217,21 @@
     "next": "Next",
     "have_account": "Already registered?",
     "create_account_title": "Create your ISC account",
-    "create_account_subtitle": "Hello {{name}}! Create your account now to access the platform."
+    "create_account_subtitle": "Hello {{name}}! Create your account now to access the platform.",
+    "step_documents": "Documents",
+    "step_review": "Summary",
+    "step_account": "Account",
+    "upload_docs": "Upload your documents",
+    "upload_docs_desc": "Please provide the required documents for your registration.",
+    "doc_diplome": "State Diploma",
+    "doc_cni": "National Identity Card",
+    "doc_photo": "Recent identity photo",
+    "drop_file": "Click to select a file",
+    "file_formats": "PDF, JPG, PNG accepted",
+    "review_title": "Registration summary",
+    "review_desc": "Review your information before creating your account.",
+    "docs_uploaded": "documents uploaded",
+    "create_account": "Create my account"
   },
   "footer": {
     "tagline": "Digital platform of the Institut Supérieur de Commerce de Mbujimayi — training tomorrow's professionals.",

@@ -453,7 +453,7 @@ export type PaymentOperator =
 export const PaymentOperator = {
   ORANGE_MONEY: "ORANGE_MONEY",
   AIRTEL_MONEY: "AIRTEL_MONEY",
-  MPESA: "MPESA",
+  MTN_MONEY: "MTN_MONEY",
 } as const;
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
@@ -506,7 +506,7 @@ export type InitiatePaymentBodyOperator =
 export const InitiatePaymentBodyOperator = {
   ORANGE_MONEY: "ORANGE_MONEY",
   AIRTEL_MONEY: "AIRTEL_MONEY",
-  MPESA: "MPESA",
+  MTN_MONEY: "MTN_MONEY",
 } as const;
 
 export interface InitiatePaymentBody {

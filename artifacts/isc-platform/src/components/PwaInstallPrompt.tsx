@@ -4,9 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+declare global {
+  interface Window {
+    __pwaInstallEvent: Event & {
+      prompt: () => Promise<void>;
+      userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+    } | null;
+  }
 }
 
 const VISIT_COUNT_KEY = "isc_pwa_visit_count";
@@ -15,7 +19,7 @@ const VISITS_REQUIRED = 3;
 
 export function PwaInstallPrompt() {
   const { t } = useTranslation();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<Window["__pwaInstallEvent"]>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
@@ -24,16 +28,31 @@ export function PwaInstallPrompt() {
     const count = Number(localStorage.getItem(VISIT_COUNT_KEY) ?? 0) + 1;
     localStorage.setItem(VISIT_COUNT_KEY, String(count));
 
-    if (count < VISITS_REQUIRED) return;
+    if (count < VISITS_REQUIRED) {
+      const handleLate = (e: Event) => {
+        e.preventDefault();
+        window.__pwaInstallEvent = e as Window["__pwaInstallEvent"];
+        setDeferredPrompt(e as Window["__pwaInstallEvent"]);
+        setShowPrompt(true);
+      };
+      window.addEventListener("beforeinstallprompt", handleLate);
+      return () => window.removeEventListener("beforeinstallprompt", handleLate);
+    }
 
-    const handleBeforeInstall = (e: Event) => {
+    if (window.__pwaInstallEvent) {
+      setDeferredPrompt(window.__pwaInstallEvent);
+      setShowPrompt(true);
+      return;
+    }
+
+    const handleInstallReady = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      window.__pwaInstallEvent = e as Window["__pwaInstallEvent"];
+      setDeferredPrompt(e as Window["__pwaInstallEvent"]);
       setShowPrompt(true);
     };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("beforeinstallprompt", handleInstallReady);
+    return () => window.removeEventListener("beforeinstallprompt", handleInstallReady);
   }, []);
 
   const handleInstall = async () => {
@@ -44,6 +63,7 @@ export function PwaInstallPrompt() {
       localStorage.setItem(DISMISSED_KEY, "1");
       setShowPrompt(false);
     }
+    window.__pwaInstallEvent = null;
     setDeferredPrompt(null);
   };
 

@@ -1284,7 +1284,7 @@ export const ListPaymentsResponse = zod.object({
       amount: zod.string(),
       currency: zod.string(),
       type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
-      operator: zod.enum(["ORANGE_MONEY", "AIRTEL_MONEY", "MPESA"]),
+      operator: zod.enum(["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"]),
       phoneNumber: zod.string(),
       status: zod.enum([
         "INITIATED",
@@ -1312,7 +1312,7 @@ export const InitiatePaymentBody = zod.object({
   studentId: zod.string(),
   amount: zod.string(),
   type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
-  operator: zod.enum(["ORANGE_MONEY", "AIRTEL_MONEY", "MPESA"]),
+  operator: zod.enum(["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"]),
   phoneNumber: zod.string(),
 });
 
@@ -1342,7 +1342,7 @@ export const GetPaymentByIdResponse = zod.object({
   amount: zod.string(),
   currency: zod.string(),
   type: zod.enum(["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "OTHER"]),
-  operator: zod.enum(["ORANGE_MONEY", "AIRTEL_MONEY", "MPESA"]),
+  operator: zod.enum(["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"]),
   phoneNumber: zod.string(),
   status: zod.enum([
     "INITIATED",
