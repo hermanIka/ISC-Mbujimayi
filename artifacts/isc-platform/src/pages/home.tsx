@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, GraduationCap, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
+  const { t } = useTranslation();
   const { data: coursesData, isLoading: coursesLoading } = useListCourses({ status: "PUBLISHED", pageSize: 3 });
   const { data: filieresData, isLoading: filieresLoading } = useListFilieres();
 
@@ -19,18 +21,17 @@ export default function Home() {
     <AppLayout>
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center bg-muted/20 border-b">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground max-w-3xl mb-6">
-          L'Excellence Académique à l'Ère du Numérique
+          {t("home.hero_title")}
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-          Bienvenue sur la plateforme digitale de l'Institut Supérieur de Commerce Mbujimayi. 
-          Gérez votre parcours, accédez à vos cours et effectuez vos paiements en toute simplicité.
+          {t("home.hero_subtitle")}
         </p>
         <div className="flex gap-4">
           <Button asChild size="lg">
-            <Link href="/courses">Explorer les programmes</Link>
+            <Link href="/courses">{t("home.explore_programs")}</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href="/sign-up">S'inscrire maintenant</Link>
+            <Link href="/sign-up">{t("home.register_now")}</Link>
           </Button>
         </div>
       </div>
@@ -39,11 +40,11 @@ export default function Home() {
         <section className="space-y-8">
           <div className="flex justify-between items-end">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">Nos Filières</h2>
-              <p className="text-muted-foreground">Découvrez nos domaines d'expertise</p>
+              <h2 className="text-3xl font-bold tracking-tight">{t("home.our_filieres")}</h2>
+              <p className="text-muted-foreground">{t("home.filieres_subtitle")}</p>
             </div>
             <Button variant="ghost" asChild>
-              <Link href="/sign-up">S'inscrire</Link>
+              <Link href="/sign-up">{t("nav.register")}</Link>
             </Button>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -64,8 +65,8 @@ export default function Home() {
                   <CardContent>
                     <p className="text-sm text-muted-foreground line-clamp-2">{filiere.description}</p>
                     <div className="flex justify-between items-center mt-4 text-xs text-muted-foreground font-medium">
-                      <span>{filiere.duration} ans</span>
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3"/> {filiere.studentCount} inscrits</span>
+                      <span>{filiere.duration} {t("programs.duration").split(" ")[0] === "3" ? "ans" : "yrs"}</span>
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3"/> {filiere.studentCount} {t("programs.students")}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -77,11 +78,11 @@ export default function Home() {
         <section className="space-y-8">
           <div className="flex justify-between items-end">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">Cours Récents</h2>
-              <p className="text-muted-foreground">Commencez à apprendre dès aujourd'hui</p>
+              <h2 className="text-3xl font-bold tracking-tight">{t("home.featured_courses")}</h2>
+              <p className="text-muted-foreground">{t("home.courses_subtitle")}</p>
             </div>
             <Button variant="ghost" asChild>
-              <Link href="/courses">Voir tout</Link>
+              <Link href="/courses">{t("home.view_all_courses")}</Link>
             </Button>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -99,7 +100,7 @@ export default function Home() {
               ))
             ) : courses.length === 0 ? (
               <div className="col-span-full py-12 text-center text-muted-foreground">
-                Aucun cours disponible pour le moment.
+                {t("courses.no_courses")}
               </div>
             ) : (
               courses.map((course: Course) => (
@@ -125,12 +126,12 @@ export default function Home() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {course.description || "Aucune description."}
+                      {course.description || t("courses.no_courses")}
                     </p>
                   </CardContent>
                   <CardFooter className="mt-auto pt-4">
                     <Button asChild className="w-full">
-                      <Link href={`/courses/${course.id}`}>Voir les détails</Link>
+                      <Link href={`/courses/${course.id}`}>{t("home.view_details")}</Link>
                     </Button>
                   </CardFooter>
                 </Card>

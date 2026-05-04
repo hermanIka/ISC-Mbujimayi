@@ -16,6 +16,7 @@ import News from "@/pages/news";
 import DashboardRouter from "@/pages/dashboard/index";
 import NotFound from "@/pages/not-found";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { ChatbotWidget } from "@/components/ChatbotWidget";
 
 const StudentDashboard = lazy(() => import("@/pages/dashboard/student"));
 const TeacherDashboard = lazy(() => import("@/pages/dashboard/teacher"));
@@ -265,6 +266,7 @@ function ClerkProviderWithRoutes() {
           </Suspense>
           <Toaster />
           <PwaInstallPrompt />
+          <ChatbotWidget />
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>
