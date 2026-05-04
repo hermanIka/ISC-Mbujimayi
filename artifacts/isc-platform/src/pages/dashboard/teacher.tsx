@@ -119,11 +119,11 @@ export default function TeacherDashboard() {
   const [evSectionsReported, setEvSectionsReported] = useState(0);
   const [evTotalFound, setEvTotalFound] = useState(0);
 
-  const courseEngagementLength = (rawAnalytics as unknown as TeacherAnalyticsData | undefined)?.courseEngagement?.length ?? 0;
+  const evaluationCoursesKey = courseEngagement.length > 0 ? courseEngagement.length : courses.length;
   useEffect(() => {
     setEvSectionsReported(0);
     setEvTotalFound(0);
-  }, [courseEngagementLength]);
+  }, [evaluationCoursesKey]);
 
   const handleSectionLoaded = useCallback((count: number) => {
     setEvSectionsReported((prev) => prev + 1);
@@ -156,6 +156,10 @@ export default function TeacherDashboard() {
   }));
 
   const courseEngagement = analytics?.courseEngagement ?? [];
+
+  const evaluationCourses = courseEngagement.length > 0
+    ? courseEngagement
+    : courses.map((c) => ({ courseId: c.id, courseTitle: c.title }));
 
   return (
     <AppLayout>
@@ -383,7 +387,7 @@ export default function TeacherDashboard() {
                   <div className="space-y-3">
                     {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
                   </div>
-                ) : courseEngagement.length === 0 ? (
+                ) : evaluationCourses.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <FileText className="mx-auto h-10 w-10 opacity-20 mb-3" />
                     <p>{t("teacher.no_evaluations_yet")}</p>
@@ -402,7 +406,7 @@ export default function TeacherDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {courseEngagement.map((c) => (
+                        {evaluationCourses.map((c) => (
                           <CourseEvaluationsSection
                             key={c.courseId}
                             courseId={c.courseId}
@@ -412,7 +416,7 @@ export default function TeacherDashboard() {
                         ))}
                       </TableBody>
                     </Table>
-                    {evSectionsReported === courseEngagement.length && evTotalFound === 0 && (
+                    {evSectionsReported === evaluationCourses.length && evTotalFound === 0 && (
                       <div className="text-center py-8 text-muted-foreground border-t">
                         <p>{t("teacher.no_evaluations_yet")}</p>
                       </div>
