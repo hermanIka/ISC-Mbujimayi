@@ -16,14 +16,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Plus, Receipt } from "lucide-react";
+import { CreditCard, Plus, Receipt, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@clerk/react";
 
-async function downloadApiPdf(url: string, filename: string): Promise<void> {
-  const response = await fetch(url, { credentials: "include" });
+async function downloadApiPdf(url: string, filename: string, getToken: () => Promise<string | null>): Promise<void> {
+  const token = await getToken();
+  const headers: HeadersInit = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const response = await fetch(url, { credentials: "include", headers });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const blob = await response.blob();
   const objectUrl = URL.createObjectURL(blob);
@@ -36,6 +40,7 @@ async function downloadApiPdf(url: string, filename: string): Promise<void> {
 
 export default function PaymentsPage() {
   const { t } = useTranslation();
+  const { getToken } = useAuth();
   const { data, isLoading } = useListPayments();
   const { data: currentUser } = useGetCurrentUser({
     query: { queryKey: getGetCurrentUserQueryKey() },
@@ -49,6 +54,7 @@ export default function PaymentsPage() {
   const [type, setType] = useState<InitiatePaymentBodyType>("INSCRIPTION_FEE");
   const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("MTN_MONEY");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -94,14 +100,19 @@ export default function PaymentsPage() {
   };
 
   const handleDownloadReceipt = async (payment: Payment) => {
+    if (downloadingIds.has(payment.id)) return;
+    setDownloadingIds((prev) => new Set(prev).add(payment.id));
     try {
       await downloadApiPdf(
         `/api/payments/${payment.id}/receipt`,
-        `recu-${payment.reference || payment.id}.pdf`
+        `recu-${payment.reference || payment.id}.pdf`,
+        getToken,
       );
       toast({ title: t("payments.download_receipt") });
     } catch {
       toast({ title: t("common.error"), description: t("payments.initiate_error"), variant: "destructive" });
+    } finally {
+      setDownloadingIds((prev) => { const next = new Set(prev); next.delete(payment.id); return next; });
     }
   };
 
@@ -236,8 +247,14 @@ export default function PaymentsPage() {
                             size="icon"
                             title={t("payments.download_receipt")}
                             onClick={() => handleDownloadReceipt(payment)}
+                            disabled={downloadingIds.has(payment.id)}
+                            data-testid={`btn-download-receipt-${payment.id}`}
                           >
-                            <Receipt className="h-4 w-4 text-green-600" />
+                            {downloadingIds.has(payment.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                            ) : (
+                              <Receipt className="h-4 w-4 text-green-600" />
+                            )}
                           </Button>
                         )}
                       </TableCell>

@@ -532,6 +532,8 @@
     "verified_text": "Certificate authenticated and issued by ISC Mbujimayi",
     "download_started": "Download started",
     "download_desc": "Your certificate has been downloaded.",
+    "downloading": "Downloading...",
+    "download_error": "Download failed",
     "share_title": "ISC Mbujimayi Certificate",
     "link_copied": "Link copied to clipboard"
   },

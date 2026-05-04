@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt } from "lucide-react";
+import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@clerk/react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -41,8 +42,11 @@ const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
 };
 
-async function downloadApiPdf(url: string, filename: string): Promise<void> {
-  const response = await fetch(url, { credentials: "include" });
+async function downloadApiPdf(url: string, filename: string, getToken: () => Promise<string | null>): Promise<void> {
+  const token = await getToken();
+  const headers: HeadersInit = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const response = await fetch(url, { credentials: "include", headers });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const blob = await response.blob();
   const objectUrl = URL.createObjectURL(blob);
@@ -56,11 +60,13 @@ async function downloadApiPdf(url: string, filename: string): Promise<void> {
 export default function FinancialDashboard() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { getToken } = useAuth();
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
   const { data: rawAnalytics, isLoading } = useGetFinancialAnalytics({ period });
   const analytics = rawAnalytics as unknown as FinancialAnalyticsData | undefined;
   const { data: paymentsRaw, isLoading: paymentsLoading } = useListPayments({ pageSize: 50 } as Parameters<typeof useListPayments>[0]);
   const payments: Payment[] = (paymentsRaw as { payments?: Payment[] })?.payments ?? [];
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
   const kpis = [
     {
@@ -126,11 +132,19 @@ export default function FinancialDashboard() {
   };
 
   const handleDownloadReceipt = async (payment: Payment) => {
+    if (downloadingIds.has(payment.id)) return;
+    setDownloadingIds((prev) => new Set(prev).add(payment.id));
     try {
-      await downloadApiPdf(`/api/payments/${payment.id}/receipt`, `recu-${payment.reference || payment.id}.pdf`);
+      await downloadApiPdf(
+        `/api/payments/${payment.id}/receipt`,
+        `recu-${payment.reference || payment.id}.pdf`,
+        getToken,
+      );
       toast({ title: t("payments.download_receipt"), description: t("payments.confirm_phone") });
     } catch {
       toast({ title: t("common.error"), description: t("payments.initiate_error"), variant: "destructive" });
+    } finally {
+      setDownloadingIds((prev) => { const next = new Set(prev); next.delete(payment.id); return next; });
     }
   };
 
@@ -361,8 +375,14 @@ export default function FinancialDashboard() {
                             size="icon"
                             title={t("payments.download_receipt")}
                             onClick={() => handleDownloadReceipt(payment)}
+                            disabled={downloadingIds.has(payment.id)}
+                            data-testid={`btn-download-receipt-fin-${payment.id}`}
                           >
-                            <Receipt className="h-4 w-4 text-green-600" />
+                            {downloadingIds.has(payment.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                            ) : (
+                              <Receipt className="h-4 w-4 text-green-600" />
+                            )}
                           </Button>
                         )}
                       </TableCell>
