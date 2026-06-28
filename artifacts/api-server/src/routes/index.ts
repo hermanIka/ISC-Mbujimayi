@@ -17,6 +17,7 @@ import analyticsRouter from "./analytics";
 import preRegisterRouter from "./preRegister";
 import registrationsRouter from "./registrations";
 import materialsRouter from "./materials";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(analyticsRouter);
 router.use(preRegisterRouter);
 router.use(registrationsRouter);
 router.use(materialsRouter);
+router.use(storageRouter);
 
 export default router;

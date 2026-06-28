@@ -512,6 +512,7 @@ router.get("/courses/:id/students-progress", requireTeacher, async (req, res): P
       .select()
       .from(chapterProgressTable)
       .where(and(eq(chapterProgressTable.enrollmentId, enrollment.id), isNotNull(chapterProgressTable.completedAt)));
+    const completedChapIds = new Set(completedChaps.map((c) => c.chapterId));
 
     const evalResults = courseEvalIds.length > 0
       ? await db
@@ -523,6 +524,19 @@ router.get("/courses/:id/students-progress", requireTeacher, async (req, res): P
           ))
       : [];
 
+    const moduleProgress = modules.map((m, idx) => {
+      const modChapters = allChaptersArrays[idx] ?? [];
+      const completedInMod = modChapters.filter((ch) => completedChapIds.has(ch.id)).length;
+      const totalInMod = modChapters.length;
+      return {
+        moduleId: m.id,
+        moduleTitle: m.title,
+        completedChapters: completedInMod,
+        totalChapters: totalInMod,
+        progressPercent: totalInMod > 0 ? Math.round((completedInMod / totalInMod) * 100) : 0,
+      };
+    });
+
     return {
       enrollmentId: enrollment.id,
       studentId: enrollment.studentId,
@@ -533,6 +547,7 @@ router.get("/courses/:id/students-progress", requireTeacher, async (req, res): P
       completedChapters: completedChaps.length,
       totalChapters,
       progressPercent: totalChapters > 0 ? Math.round((completedChaps.length / totalChapters) * 100) : 0,
+      moduleProgress,
       evaluationResults: evalResults.map((r) => ({
         evaluationId: r.evaluationId,
         score: r.score,

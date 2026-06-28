@@ -644,16 +644,40 @@ function CourseSupportsDialog({ courseId, onClose }: { courseId: string | null; 
   const handleUpload = async (chapterId: string, file: File) => {
     setUploading(chapterId);
     setUploadError(null);
-    const formData = new FormData();
-    formData.append("file", file);
     try {
-      const res = await fetch(`/api/chapters/${chapterId}/materials`, { method: "POST", body: formData });
-      if (res.ok) {
-        const mat = await res.json() as ChapterMaterial;
+      const urlRes = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Demo-User-Id": localStorage.getItem("isc_demo_user_id") ?? "" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) {
+        const body = await urlRes.json().catch(() => ({})) as { error?: string };
+        setUploadError(body.error ?? "Impossible d'obtenir l'URL d'upload.");
+        return;
+      }
+      const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
+
+      const gcsRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!gcsRes.ok) {
+        setUploadError("Échec de l'envoi du fichier vers le stockage.");
+        return;
+      }
+
+      const metaRes = await fetch(`/api/chapters/${chapterId}/materials`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Demo-User-Id": localStorage.getItem("isc_demo_user_id") ?? "" },
+        body: JSON.stringify({ objectPath, fileName: file.name, fileSize: file.size, contentType: file.type }),
+      });
+      if (metaRes.ok) {
+        const mat = await metaRes.json() as ChapterMaterial;
         setMaterials(prev => ({ ...prev, [chapterId]: [...(prev[chapterId] ?? []), mat] }));
       } else {
-        const body = await res.json().catch(() => ({})) as { error?: string };
-        setUploadError(body.error ?? "Erreur lors de l'upload du fichier.");
+        const body = await metaRes.json().catch(() => ({})) as { error?: string };
+        setUploadError(body.error ?? "Erreur lors de l'enregistrement du support.");
       }
     } catch {
       setUploadError("Impossible de contacter le serveur. Vérifiez votre connexion.");
