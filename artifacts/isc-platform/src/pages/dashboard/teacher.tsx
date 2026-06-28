@@ -615,6 +615,7 @@ function CourseSupportsDialog({ courseId, onClose }: { courseId: string | null; 
   const [materials, setMaterials] = useState<Record<string, ChapterMaterial[]>>({});
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!courseId) return;
@@ -641,6 +642,7 @@ function CourseSupportsDialog({ courseId, onClose }: { courseId: string | null; 
 
   const handleUpload = async (chapterId: string, file: File) => {
     setUploading(chapterId);
+    setUploadError(null);
     const formData = new FormData();
     formData.append("file", file);
     try {
@@ -648,7 +650,12 @@ function CourseSupportsDialog({ courseId, onClose }: { courseId: string | null; 
       if (res.ok) {
         const mat = await res.json() as ChapterMaterial;
         setMaterials(prev => ({ ...prev, [chapterId]: [...(prev[chapterId] ?? []), mat] }));
+      } else {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        setUploadError(body.error ?? "Erreur lors de l'upload du fichier.");
       }
+    } catch {
+      setUploadError("Impossible de contacter le serveur. Vérifiez votre connexion.");
     } finally {
       setUploading(null);
     }
@@ -672,6 +679,13 @@ function CourseSupportsDialog({ courseId, onClose }: { courseId: string | null; 
             Supports pédagogiques
           </DialogTitle>
         </DialogHeader>
+        {uploadError && (
+          <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <span className="shrink-0">⚠️</span>
+            <span>{uploadError}</span>
+            <button className="ml-auto text-red-400 hover:text-red-600" onClick={() => setUploadError(null)}>✕</button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin mr-2" /> Chargement...
