@@ -115,14 +115,38 @@ router.post("/chapters/:chapterId/materials", requireTeacher, async (req, res): 
   const authorized = await assertChapterCourseOwner(req, chapterId, res);
   if (!authorized) return;
 
-  const matType = getMaterialType(contentType);
+  let actualContentType: string;
+  let actualSize: number;
+  try {
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+    const [metadata] = await objectFile.getMetadata();
+    actualContentType = (metadata.contentType as string) || contentType;
+    actualSize = Number(metadata.size ?? fileSize);
+  } catch (err) {
+    logger.warn({ err, objectPath }, "⚠️ [MATERIALS] Impossible de lire les métadonnées GCS");
+    res.status(400).json({ error: "Objet introuvable dans le stockage. Veuillez ré-uploader le fichier." });
+    return;
+  }
+
+  if (!ALLOWED_CONTENT_TYPES.includes(actualContentType)) {
+    res.status(400).json({ error: `Type de fichier réel non autorisé (${actualContentType}). Types acceptés : vidéo MP4/WebM/Ogg, PDF, DOC/DOCX.` });
+    return;
+  }
+  const actualMaxBytes = actualContentType.startsWith("video/") ? VIDEO_MAX_BYTES : DOC_MAX_BYTES;
+  if (actualSize > actualMaxBytes) {
+    const maxMB = actualMaxBytes / (1024 * 1024);
+    res.status(400).json({ error: `Fichier réel trop volumineux (${(actualSize / (1024 * 1024)).toFixed(1)} Mo). Maximum : ${maxMB} Mo.` });
+    return;
+  }
+
+  const matType = getMaterialType(actualContentType);
   const id = nanoid();
   const [material] = await db
     .insert(courseMaterialsTable)
-    .values({ id, chapterId, type: matType, url: objectPath, fileName, fileSize })
+    .values({ id, chapterId, type: matType, url: objectPath, fileName, fileSize: actualSize })
     .returning();
 
-  logger.info({ chapterId, type: matType, fileName }, "✅ [MATERIALS] Support ajouté (object storage)");
+  logger.info({ chapterId, type: matType, fileName, actualContentType, actualSize }, "✅ [MATERIALS] Support ajouté (object storage)");
   res.status(201).json(withDownloadUrl(material));
 });
 
