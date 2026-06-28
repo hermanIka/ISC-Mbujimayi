@@ -2,13 +2,22 @@ import { Resend } from "resend";
 import { logger } from "./logger";
 
 const ISC_NAME = "Institut Supérieur de Commerce de Mbujimayi";
-const ISC_FROM = process.env.RESEND_FROM_ADDRESS ?? "ISC Mbujimayi <onboarding@resend.dev>";
+const RESEND_FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS;
+if (!RESEND_FROM_ADDRESS) {
+  logger.warn(
+    "⚠️ [EMAIL] RESEND_FROM_ADDRESS is not set — emails will use Resend's sandbox sender (onboarding@resend.dev). " +
+    "Set RESEND_FROM_ADDRESS to a verified domain address (e.g. 'ISC Mbujimayi <noreply@isc-mbujimayi.ac.cd>') " +
+    "to ensure emails reach recipients' inboxes instead of being flagged as spam.",
+  );
+}
+const ISC_FROM = RESEND_FROM_ADDRESS ?? "ISC Mbujimayi <onboarding@resend.dev>";
 const PRIMARY_COLOR = "#1a3a6b";
 const ACCENT_COLOR = "#f59e0b";
 
 function getResendClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
+    logger.warn("⚠️ [EMAIL] RESEND_API_KEY is not set — emails will not be sent.");
     return null;
   }
   return new Resend(apiKey);
