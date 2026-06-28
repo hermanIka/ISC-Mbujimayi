@@ -177,6 +177,20 @@ router.get("/courses/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Course not found" });
     return;
   }
+  // Non-staff can only see published courses (or their own if teacher)
+  const callerUser = await getCallerDbUser(req);
+  const isStaff = callerUser && ["ADMIN", "DIRECTOR"].includes(callerUser.role);
+  if (!isStaff && course.status !== "PUBLISHED") {
+    let isOwner = false;
+    if (callerUser?.role === "TEACHER") {
+      const [t] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+      isOwner = !!t && t.id === course.teacherId;
+    }
+    if (!isOwner) {
+      res.status(404).json({ error: "Course not found" });
+      return;
+    }
+  }
   const enriched = await enrichCourse(course);
   const modules = await db.select().from(modulesTable).where(eq(modulesTable.courseId, course.id));
   const modulesWithChapters = await Promise.all(

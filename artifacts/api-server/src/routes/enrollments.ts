@@ -187,6 +187,10 @@ router.post("/enrollments", requireAuth, async (req, res): Promise<void> => {
     res.status(404).json({ error: "Course not found" });
     return;
   }
+  if (course.status !== "PUBLISHED") {
+    res.status(403).json({ error: "Ce cours n'est pas encore publié. L'inscription n'est pas possible." });
+    return;
+  }
   const [enrollment] = await db
     .insert(enrollmentsTable)
     .values({ id: nanoid(), studentId: student.id, courseId: parsed.data.courseId })
