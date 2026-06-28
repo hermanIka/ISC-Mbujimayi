@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { setDemoUserId } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,13 +70,13 @@ export function DemoPersonaSwitcher() {
   const [currentId, setCurrentId] = useState<string>(() => {
     return localStorage.getItem(DEMO_STORAGE_KEY) ?? PERSONAS[0].id;
   });
+  const navigate = useNavigate();
 
   const switchTo = (persona: typeof PERSONAS[0]) => {
     localStorage.setItem(DEMO_STORAGE_KEY, persona.id);
     setDemoUserId(persona.id);
     setCurrentId(persona.id);
-    const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-    window.location.href = `${basePath}${persona.dashboard}`;
+    navigate(persona.dashboard);
   };
 
   const current = PERSONAS.find((p) => p.id === currentId) ?? PERSONAS[0];
