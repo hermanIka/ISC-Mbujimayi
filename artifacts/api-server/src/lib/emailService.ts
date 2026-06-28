@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import { logger } from "./logger";
 
 const ISC_NAME = "Institut Supérieur de Commerce de Mbujimayi";
-const ISC_FROM = "ISC Mbujimayi <onboarding@resend.dev>";
+const ISC_FROM = process.env.RESEND_FROM_ADDRESS ?? "ISC Mbujimayi <onboarding@resend.dev>";
 const PRIMARY_COLOR = "#1a3a6b";
 const ACCENT_COLOR = "#f59e0b";
 

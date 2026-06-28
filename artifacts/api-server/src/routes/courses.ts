@@ -420,7 +420,7 @@ router.put("/courses/:id/approve", requireAdmin, async (req, res): Promise<void>
         await sendEmail({ to: user.email, ...emailData });
       }
     }
-  } catch { logger.warn("Failed to send course approved email"); }
+  } catch (err) { logger.warn({ err, courseId: id }, "📧 [COURSES] Failed to send course approved email"); }
   logger.info({ id }, "✅ [COURSES] Cours approuvé");
   res.json(await enrichCourse(updated));
 });
@@ -447,7 +447,7 @@ router.put("/courses/:id/reject", requireAdmin, async (req, res): Promise<void> 
         await sendEmail({ to: user.email, ...emailData });
       }
     }
-  } catch { logger.warn("Failed to send course rejected email"); }
+  } catch (err) { logger.warn({ err, courseId: id }, "📧 [COURSES] Failed to send course rejected email"); }
   logger.info({ id, notes: body.notes }, "❌ [COURSES] Cours rejeté");
   res.json(await enrichCourse(updated));
 });
