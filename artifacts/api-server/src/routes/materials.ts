@@ -3,8 +3,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { eq } from "drizzle-orm";
-import { db, courseMaterialsTable, chaptersTable } from "@workspace/db";
-import { requireTeacher } from "../middlewares/auth";
+import { db, courseMaterialsTable, chaptersTable, modulesTable, coursesTable, teachersTable } from "@workspace/db";
+import { requireTeacher, getCallerDbUser } from "../middlewares/auth";
 import { nanoid } from "nanoid";
 import { logger } from "../lib/logger";
 
@@ -50,6 +50,41 @@ function getMaterialType(mimetype: string): "VIDEO" | "PDF" | "DOC" {
   return "DOC";
 }
 
+async function assertChapterCourseOwner(
+  req: import("express").Request,
+  chapterId: string,
+  res: import("express").Response,
+  uploadedFilePath?: string
+): Promise<boolean> {
+  const [chapter] = await db.select().from(chaptersTable).where(eq(chaptersTable.id, chapterId));
+  if (!chapter) {
+    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath);
+    res.status(404).json({ error: "Chapitre non trouvé" });
+    return false;
+  }
+  const [mod] = await db.select().from(modulesTable).where(eq(modulesTable.id, chapter.moduleId));
+  if (!mod) {
+    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath);
+    res.status(404).json({ error: "Module non trouvé" });
+    return false;
+  }
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) {
+    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath);
+    res.status(401).json({ error: "Non authentifié" });
+    return false;
+  }
+  if (["ADMIN", "DIRECTOR"].includes(callerUser.role)) return true;
+  const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+  const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, mod.courseId));
+  if (!teacher || !course || course.teacherId !== teacher.id) {
+    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath);
+    res.status(403).json({ error: "Accès refusé : vous n'êtes pas l'auteur de ce cours" });
+    return false;
+  }
+  return true;
+}
+
 router.get("/chapters/:chapterId/materials", async (req, res): Promise<void> => {
   const { chapterId } = req.params;
   const materials = await db
@@ -64,7 +99,7 @@ router.post("/chapters/:chapterId/materials", requireTeacher, (req, res): void =
 
   upload.single("file")(req, res, async (err) => {
     if (err) {
-      res.status(400).json({ error: err instanceof Error ? err.message : "Upload error" });
+      res.status(400).json({ error: err instanceof Error ? err.message : "Erreur d'upload" });
       return;
     }
     if (!req.file) {
@@ -79,16 +114,8 @@ router.post("/chapters/:chapterId/materials", requireTeacher, (req, res): void =
       return;
     }
 
-    const [chapter] = await db
-      .select()
-      .from(chaptersTable)
-      .where(eq(chaptersTable.id, chapterId));
-
-    if (!chapter) {
-      fs.unlinkSync(req.file.path);
-      res.status(404).json({ error: "Chapitre non trouvé" });
-      return;
-    }
+    const authorized = await assertChapterCourseOwner(req, chapterId, res, req.file.path);
+    if (!authorized) return;
 
     const url = `/api/uploads/${req.file.filename}`;
     const [material] = await db
@@ -119,6 +146,9 @@ router.delete("/materials/:id", requireTeacher, async (req, res): Promise<void> 
     res.status(404).json({ error: "Support introuvable" });
     return;
   }
+
+  const authorized = await assertChapterCourseOwner(req, material.chapterId, res);
+  if (!authorized) return;
 
   const filename = material.url.split("/").pop();
   if (filename) {

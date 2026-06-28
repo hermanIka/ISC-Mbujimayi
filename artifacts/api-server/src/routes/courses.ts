@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and, isNotNull } from "drizzle-orm";
-import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, chapterProgressTable, studentsTable, usersTable, evaluationResultsTable, courseStatusEnum, type Course } from "@workspace/db";
+import { eq, count, and, isNotNull, inArray } from "drizzle-orm";
+import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, chapterProgressTable, studentsTable, usersTable, evaluationResultsTable, evaluationsTable, courseStatusEnum, type Course } from "@workspace/db";
 import { requireAuth, requireTeacher, requireAdmin, getCallerDbUser } from "../middlewares/auth";
 import { logger } from "../lib/logger";
 import { sendEmail, buildCourseApprovedEmail, buildCourseRejectedEmail } from "../lib/emailService";
@@ -440,6 +440,12 @@ router.get("/courses/:id/students-progress", requireTeacher, async (req, res): P
   );
   const totalChapters = allChaptersArrays.flat().length;
 
+  const courseEvaluations = await db
+    .select({ id: evaluationsTable.id })
+    .from(evaluationsTable)
+    .where(eq(evaluationsTable.courseId, id));
+  const courseEvalIds = courseEvaluations.map((e) => e.id);
+
   const enrollments = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.courseId, id));
 
   const progress = await Promise.all(enrollments.map(async (enrollment) => {
@@ -451,10 +457,16 @@ router.get("/courses/:id/students-progress", requireTeacher, async (req, res): P
       .select()
       .from(chapterProgressTable)
       .where(and(eq(chapterProgressTable.enrollmentId, enrollment.id), isNotNull(chapterProgressTable.completedAt)));
-    const evalResults = await db
-      .select()
-      .from(evaluationResultsTable)
-      .where(eq(evaluationResultsTable.studentId, enrollment.studentId));
+
+    const evalResults = courseEvalIds.length > 0
+      ? await db
+          .select()
+          .from(evaluationResultsTable)
+          .where(and(
+            eq(evaluationResultsTable.studentId, enrollment.studentId),
+            inArray(evaluationResultsTable.evaluationId, courseEvalIds)
+          ))
+      : [];
 
     return {
       enrollmentId: enrollment.id,

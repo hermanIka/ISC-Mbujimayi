@@ -733,7 +733,7 @@ export const ListCoursesQueryParams = zod.object({
   "pageSize": zod.coerce.number().default(listCoursesQueryPageSizeDefault),
   "filiereId": zod.coerce.string().optional(),
   "teacherId": zod.coerce.string().optional(),
-  "status": zod.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  "status": zod.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED']).optional(),
   "level": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional()
 })
