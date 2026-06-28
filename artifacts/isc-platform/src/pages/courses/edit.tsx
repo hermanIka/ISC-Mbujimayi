@@ -36,6 +36,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { ChapterFileUpload } from "@/components/ChapterFileUpload";
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
@@ -528,12 +529,10 @@ export default function CourseEditPage() {
                                         </div>
                                       </div>
                                       <div className="space-y-2">
-                                        <Label>{t("course_edit.chapter_content_url")}</Label>
-                                        <Input
-                                          value={nc.content}
-                                          onChange={(e) => setNewChapterState((p) => ({ ...p, [mod.id]: { ...nc, content: e.target.value } }))}
-                                          placeholder="https://..."
-                                          data-testid="input-chapter-content"
+                                        <Label>Contenu du chapitre</Label>
+                                        <ChapterFileUpload
+                                          currentUrl={nc.content || null}
+                                          onUploaded={(objectPath) => setNewChapterState((p) => ({ ...p, [mod.id]: { ...nc, content: objectPath } }))}
                                         />
                                       </div>
                                     </div>
@@ -603,11 +602,10 @@ export default function CourseEditPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>{t("course_edit.chapter_content_url")}</Label>
-                <Input
-                  value={editingChapter.chapter.content ?? ""}
-                  onChange={(e) => setEditingChapter((p) => p ? { ...p, chapter: { ...p.chapter, content: e.target.value } } : null)}
-                  placeholder="https://..."
+                <Label>Contenu du chapitre</Label>
+                <ChapterFileUpload
+                  currentUrl={editingChapter.chapter.content ?? null}
+                  onUploaded={(objectPath) => setEditingChapter((p) => p ? { ...p, chapter: { ...p.chapter, content: objectPath } } : null)}
                 />
               </div>
             </div>

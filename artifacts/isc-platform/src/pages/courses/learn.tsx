@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, Link, useLocation } from "@/lib/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   ArrowLeft, PlayCircle, FileText, CheckCircle2, MessageSquare,
-  ClipboardList, BookOpen, AlertCircle, Download, Video, Award, Trophy
+  ClipboardList, BookOpen, AlertCircle, Download, Video, Award, Trophy, Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,6 +62,39 @@ interface CertificateData {
   issuedAt: string | null;
 }
 
+function useObjectUrl(objectPath: string | null): string | null {
+  const blobUrlRef = useRef<string | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!objectPath?.startsWith("/objects/")) {
+      setBlobUrl(null);
+      return;
+    }
+    let cancelled = false;
+    const prev = blobUrlRef.current;
+    if (prev) { URL.revokeObjectURL(prev); blobUrlRef.current = null; }
+
+    fetch(`/api/storage/chapter-content?path=${encodeURIComponent(objectPath)}`, {
+      headers: { "X-Demo-User-Id": localStorage.getItem("isc_demo_user_id") ?? "" },
+    })
+      .then((r) => r.ok ? r.blob() : Promise.reject(r.status))
+      .then((blob) => {
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
+        setBlobUrl(url);
+      })
+      .catch(() => { if (!cancelled) setBlobUrl(null); });
+
+    return () => { cancelled = true; };
+  }, [objectPath]);
+
+  useEffect(() => () => { if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current); }, []);
+
+  return blobUrl;
+}
+
 export default function CourseLearnPage() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
@@ -90,6 +123,10 @@ export default function CourseLearnPage() {
   const allChapters: CourseChapter[] = allModules.flatMap((m) => m.chapters ?? []);
   const activeChapter: CourseChapter | null =
     allChapters.find((c) => c.id === activeChapterId) ?? allChapters[0] ?? null;
+
+  const isStoredContent = activeChapter?.content?.startsWith("/objects/") ?? false;
+  const objectBlobUrl = useObjectUrl(isStoredContent ? (activeChapter?.content ?? null) : null);
+  const resolvedContent = isStoredContent ? objectBlobUrl : (activeChapter?.content ?? null);
 
   useEffect(() => {
     if (!activeChapter) { setChapterMaterials([]); return; }
@@ -333,11 +370,28 @@ export default function CourseLearnPage() {
             <div className="p-6 md:p-12 max-w-4xl mx-auto space-y-8">
               {activeChapter ? (
                 <>
-                  {activeChapter.type === "VIDEO" && activeChapter.content && (
+                  {activeChapter.type === "VIDEO" && (resolvedContent || isStoredContent) && (
                     <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-lg">
-                      {typeof ReactPlayer.canPlay === "function" && ReactPlayer.canPlay(activeChapter.content) ? (
+                      {isStoredContent ? (
+                        resolvedContent ? (
+                          <video
+                            src={resolvedContent}
+                            className="w-full h-full"
+                            controls
+                            onEnded={() => {
+                              if (enrollmentId && !completedChapters.has(activeChapter.id)) {
+                                void handleMarkComplete(activeChapter.id);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-white opacity-50">
+                            <Loader2 className="h-10 w-10 animate-spin" />
+                          </div>
+                        )
+                      ) : resolvedContent && typeof ReactPlayer.canPlay === "function" && ReactPlayer.canPlay(resolvedContent) ? (
                         <ReactPlayer
-                          src={activeChapter.content}
+                          src={resolvedContent}
                           width="100%"
                           height="100%"
                           controls
@@ -349,7 +403,7 @@ export default function CourseLearnPage() {
                         />
                       ) : (
                         <iframe
-                          src={activeChapter.content}
+                          src={resolvedContent ?? ""}
                           className="w-full h-full"
                           allowFullScreen
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -371,27 +425,51 @@ export default function CourseLearnPage() {
                       <FileText className="h-16 w-16 mx-auto text-primary" />
                       <p className="text-muted-foreground">{t("learn.pdf_available")}</p>
                       {activeChapter.content && (
-                        <>
-                          <Button asChild variant="outline">
-                            <a href={activeChapter.content} target="_blank" rel="noopener noreferrer">
-                              {t("learn.open_document")}
-                            </a>
-                          </Button>
-                          <div className="mt-4 border rounded-lg overflow-hidden" style={{ height: 480 }}>
-                            <iframe
-                              src={`${activeChapter.content}#toolbar=0`}
-                              className="w-full h-full"
-                              title={activeChapter.title}
-                            />
-                          </div>
-                        </>
+                        isStoredContent ? (
+                          resolvedContent ? (
+                            <>
+                              <Button asChild variant="outline">
+                                <a href={resolvedContent} download>
+                                  {t("learn.open_document")}
+                                </a>
+                              </Button>
+                              <div className="mt-4 border rounded-lg overflow-hidden" style={{ height: 480 }}>
+                                <iframe
+                                  src={`${resolvedContent}#toolbar=0`}
+                                  className="w-full h-full"
+                                  title={activeChapter.title}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                              <span>Chargement du document…</span>
+                            </div>
+                          )
+                        ) : (
+                          <>
+                            <Button asChild variant="outline">
+                              <a href={resolvedContent ?? ""} target="_blank" rel="noopener noreferrer">
+                                {t("learn.open_document")}
+                              </a>
+                            </Button>
+                            <div className="mt-4 border rounded-lg overflow-hidden" style={{ height: 480 }}>
+                              <iframe
+                                src={`${resolvedContent}#toolbar=0`}
+                                className="w-full h-full"
+                                title={activeChapter.title}
+                              />
+                            </div>
+                          </>
+                        )
                       )}
                     </div>
                   )}
                   {activeChapter.type === "PRESENTATION" && activeChapter.content && (
                     <div className="border rounded-xl overflow-hidden" style={{ height: 480 }}>
                       <iframe
-                        src={activeChapter.content}
+                        src={resolvedContent ?? ""}
                         className="w-full h-full"
                         title={activeChapter.title}
                         allowFullScreen

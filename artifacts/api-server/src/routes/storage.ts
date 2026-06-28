@@ -51,6 +51,33 @@ router.post("/storage/uploads/request-url", requireAuth, async (req: Request, re
   }
 });
 
+router.get("/storage/chapter-content", requireAuth, async (req: Request, res: Response) => {
+  const rawPath = req.query.path;
+  if (typeof rawPath !== "string" || !rawPath.startsWith("/objects/")) {
+    res.status(400).json({ error: "Paramètre 'path' invalide ou manquant" });
+    return;
+  }
+  try {
+    const objectFile = await objectStorageService.getObjectEntityFile(rawPath);
+    const response = await objectStorageService.downloadObject(objectFile, 0);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (err) {
+    if (err instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Fichier non trouvé dans le stockage" });
+    } else {
+      req.log.error({ err }, "Erreur service chapter-content");
+      res.status(500).json({ error: "Erreur lors du téléchargement" });
+    }
+  }
+});
+
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
   try {
     const raw = req.params.filePath;
