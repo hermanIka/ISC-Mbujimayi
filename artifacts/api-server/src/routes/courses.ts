@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and, isNotNull, inArray } from "drizzle-orm";
+import { eq, count, and, or, isNotNull, inArray } from "drizzle-orm";
 import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, chapterProgressTable, studentsTable, usersTable, evaluationResultsTable, evaluationsTable, courseStatusEnum, type Course } from "@workspace/db";
 import { requireAuth, requireTeacher, requireAdmin, getCallerDbUser } from "../middlewares/auth";
 import { logger } from "../lib/logger";
@@ -122,9 +122,9 @@ router.get("/courses", async (req, res): Promise<void> => {
     ].filter((c): c is NonNullable<typeof c> => c != null);
     whereClause = extraConds.length > 0 ? and(ownerOrPublished, ...extraConds) : ownerOrPublished;
   } else {
-    // Students / guests: published only
+    // Students / guests: always PUBLISHED only — ignore any requested status
     const conds = [
-      eq(coursesTable.status, (status as StatusEnum) ?? "PUBLISHED"),
+      eq(coursesTable.status, "PUBLISHED" as StatusEnum),
       filiereId ? eq(coursesTable.filiereId, filiereId) : undefined,
       teacherId ? eq(coursesTable.teacherId, teacherId) : undefined,
     ].filter((c): c is NonNullable<typeof c> => c != null);
