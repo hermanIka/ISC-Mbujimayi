@@ -5,10 +5,10 @@ generated = []
 id = "n_rcflxklUxzcVIia5Ppy"
 uri = "file://.local/outputs/ISC-Mbujimayi-Soutenance-de-Jury.pptx"
 type = "slides"
-title = "ISC Mbujimayi — Soutenance de Jury (PPTX)"
+title = "Soutenance ISC Mbujimayi (PowerPoint)"
 
 [[outputs]]
 id = "UcjEjAiNumKsxJCIoqANS"
 uri = "file://.local/outputs/ISC-Mbujimayi-Soutenance-de-Jury.pdf"
 type = "pdf"
-title = "ISC Mbujimayi — Soutenance de Jury (PDF)"
+title = "Soutenance ISC Mbujimayi (PDF)"
