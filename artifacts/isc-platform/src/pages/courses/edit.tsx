@@ -31,7 +31,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft, Plus, Trash2, Loader2, BookOpen, FileText,
-  PlayCircle, Presentation, Edit2, ChevronDown, ChevronUp,
+  PlayCircle, Presentation, Edit2, ChevronDown, ChevronUp, Send,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -114,6 +114,24 @@ export default function CourseEditPage() {
       setCourseFormDirty(true);
     }
   }, [course, courseFormDirty]);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [, navigate] = useLocation();
+
+  const handleSubmitForReview = async () => {
+    setSubmitting(true);
+    try {
+      await fetch(`/api/courses/${courseId}/submit`, { method: "PUT",
+        headers: { "X-Demo-User-Id": localStorage.getItem("isc_demo_user_id") ?? "" },
+      });
+      await invCourse();
+      toast({ title: "Cours soumis pour validation !", description: "L'administrateur va examiner votre cours." });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de soumettre le cours.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -338,10 +356,26 @@ export default function CourseEditPage() {
                       data-testid="input-edit-thumbnail"
                     />
                   </div>
-                  <Button type="submit" disabled={updateCourse.isPending} data-testid="button-save-course">
-                    {updateCourse.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {updateCourse.isPending ? t("common.saving") : t("common.save")}
-                  </Button>
+                  <div className="flex gap-3 flex-wrap">
+                    <Button type="submit" disabled={updateCourse.isPending} data-testid="button-save-course">
+                      {updateCourse.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {updateCourse.isPending ? t("common.saving") : t("common.save")}
+                    </Button>
+                    {(course?.status === "DRAFT" || course?.status === "REJECTED") && (
+                      <Button
+                        type="button"
+                        variant="default"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        disabled={submitting}
+                        onClick={handleSubmitForReview}
+                      >
+                        {submitting
+                          ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          : <Send className="mr-2 h-4 w-4" />}
+                        Soumettre pour validation
+                      </Button>
+                    )}
+                  </div>
                 </form>
               </CardContent>
             </Card>
