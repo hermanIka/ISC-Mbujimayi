@@ -99,16 +99,38 @@ router.get("/courses", async (req, res): Promise<void> => {
     callerTeacherId = t?.id ?? null;
   }
 
-  const effectiveStatus = status ?? (isStaff ? undefined : "PUBLISHED");
+  type StatusEnum = typeof courseStatusEnum.enumValues[number];
 
-  const conditions = [
-    effectiveStatus
-      ? eq(coursesTable.status, effectiveStatus as typeof courseStatusEnum.enumValues[number])
-      : undefined,
-    filiereId ? eq(coursesTable.filiereId, filiereId) : undefined,
-    teacherId ? eq(coursesTable.teacherId, teacherId) : undefined,
-  ].filter((c): c is NonNullable<typeof c> => c != null);
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  let whereClause;
+  if (isStaff) {
+    const conds = [
+      status ? eq(coursesTable.status, status as StatusEnum) : undefined,
+      filiereId ? eq(coursesTable.filiereId, filiereId) : undefined,
+      teacherId ? eq(coursesTable.teacherId, teacherId) : undefined,
+    ].filter((c): c is NonNullable<typeof c> => c != null);
+    whereClause = conds.length > 0 ? and(...conds) : undefined;
+  } else if (callerTeacherId) {
+    // Teacher: own courses (all statuses) + published from others
+    const ownerOrPublished = or(
+      eq(coursesTable.teacherId, callerTeacherId),
+      eq(coursesTable.status, "PUBLISHED" as StatusEnum),
+    );
+    const extraConds = [
+      status ? eq(coursesTable.status, status as StatusEnum) : undefined,
+      filiereId ? eq(coursesTable.filiereId, filiereId) : undefined,
+      teacherId ? eq(coursesTable.teacherId, teacherId) : undefined,
+    ].filter((c): c is NonNullable<typeof c> => c != null);
+    whereClause = extraConds.length > 0 ? and(ownerOrPublished, ...extraConds) : ownerOrPublished;
+  } else {
+    // Students / guests: published only
+    const conds = [
+      eq(coursesTable.status, (status as StatusEnum) ?? "PUBLISHED"),
+      filiereId ? eq(coursesTable.filiereId, filiereId) : undefined,
+      teacherId ? eq(coursesTable.teacherId, teacherId) : undefined,
+    ].filter((c): c is NonNullable<typeof c> => c != null);
+    whereClause = and(...conds);
+  }
+
   const courses = await db
     .select()
     .from(coursesTable)
@@ -117,16 +139,7 @@ router.get("/courses", async (req, res): Promise<void> => {
     .offset((page - 1) * pageSize);
   const [totalRow] = await db.select({ count: count() }).from(coursesTable).where(whereClause);
   const total = Number(totalRow?.count ?? 0);
-
-  const filtered = isStaff || status
-    ? courses
-    : courses.filter(
-        (c) =>
-          c.status === "PUBLISHED" ||
-          (callerTeacherId && c.teacherId === callerTeacherId)
-      );
-
-  const enriched = await Promise.all(filtered.map(enrichCourse));
+  const enriched = await Promise.all(courses.map(enrichCourse));
   res.json({ courses: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 
