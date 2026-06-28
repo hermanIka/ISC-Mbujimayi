@@ -1,0 +1,138 @@
+[
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000001",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide01Cover.tsx",
+    "title": "ISC Mbujimayi — Plateforme Digitale",
+    "description": "Page de couverture — soutenance de jury Juin 2026",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0002-4000-8000-000000000002",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide02Probleme.tsx",
+    "title": "Les trois défis structurels de l'ISC",
+    "description": "Contexte et problématique initiale",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0003-4000-8000-000000000003",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide03Solution.tsx",
+    "title": "La solution — vue d'ensemble",
+    "description": "Les quatre piliers de la plateforme",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0004-4000-8000-000000000004",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide04Architecture.tsx",
+    "title": "Architecture technique",
+    "description": "React + Express + PostgreSQL sur cloud",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0005-4000-8000-000000000005",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide05BaseDeDonnees.tsx",
+    "title": "Base de données — 18 entités, 5 domaines",
+    "description": "Structure du schéma Drizzle ORM",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0006-4000-8000-000000000006",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide06Flux.tsx",
+    "title": "Flux de données — 3 parcours",
+    "description": "Inscription, cours, paiement",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0007-4000-8000-000000000007",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide07InscriptionEtape1.tsx",
+    "title": "Inscription — Étape 1 : choix du profil",
+    "description": "Formulaire multi-étapes avec capture d'écran",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0008-4000-8000-000000000008",
+    "position": 8,
+    "filepath": "src/pages/slides/Slide08InscriptionEtapes2a4.tsx",
+    "title": "Inscription — Étapes 2 à 4",
+    "description": "Informations, documents, filière",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0009-4000-8000-000000000009",
+    "position": 9,
+    "filepath": "src/pages/slides/Slide09Paiement.tsx",
+    "title": "Inscription — Étape 5 : paiement mobile",
+    "description": "M-Pesa, Airtel Money, Orange Money",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0010-4000-8000-000000000010",
+    "position": 10,
+    "filepath": "src/pages/slides/Slide10Catalogue.tsx",
+    "title": "Catalogue de cours",
+    "description": "Accès public et détail des cours",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0011-4000-8000-000000000011",
+    "position": 11,
+    "filepath": "src/pages/slides/Slide11Apprentissage.tsx",
+    "title": "Interface d'apprentissage",
+    "description": "Navigation par chapitres et progression",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0012-4000-8000-000000000012",
+    "position": 12,
+    "filepath": "src/pages/slides/Slide12Enseignants.tsx",
+    "title": "Éditeur de cours — portail enseignant",
+    "description": "Cycle de vie DRAFT → PUBLISHED",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0013-4000-8000-000000000013",
+    "position": 13,
+    "filepath": "src/pages/slides/Slide13ServiceAcademique.tsx",
+    "title": "Service académique — validation des dossiers",
+    "description": "Tableau de bord et statuts d'inscription",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0014-4000-8000-000000000014",
+    "position": 14,
+    "filepath": "src/pages/slides/Slide14Paiements.tsx",
+    "title": "Traçabilité des paiements",
+    "description": "Types, statuts et données enregistrées",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0015-4000-8000-000000000015",
+    "position": 15,
+    "filepath": "src/pages/slides/Slide15Evaluations.tsx",
+    "title": "Évaluations et certificats",
+    "description": "Quiz, examens et certification automatique",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0016-4000-8000-000000000016",
+    "position": 16,
+    "filepath": "src/pages/slides/Slide16Deploiement.tsx",
+    "title": "Déploiement en production",
+    "description": "Infrastructure, emails, personas de démo",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0017-4000-8000-000000000017",
+    "position": 17,
+    "filepath": "src/pages/slides/Slide17Conclusion.tsx",
+    "title": "Conclusion et perspectives",
+    "description": "Synthèse et prochaines étapes",
+    "speakerNotes": ""
+  }
+]

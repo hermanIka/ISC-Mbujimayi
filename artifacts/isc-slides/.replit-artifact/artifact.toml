@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/isc-slides/"
+title = "ISC Mbujimayi — Soutenance de Jury"
+version = "1.0.0"
+id = "artifacts/isc-slides"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/isc-slides/" ]
+localPort = 26073
+
+[services.development]
+run = "pnpm --filter @workspace/isc-slides run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/isc-slides", "run", "build" ]
+publicDir = "artifacts/isc-slides/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26073"
+BASE_PATH = "/isc-slides/"
