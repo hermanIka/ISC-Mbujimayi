@@ -15,6 +15,7 @@ import forumRouter from "./forum";
 import chatbotRouter from "./chatbot";
 import analyticsRouter from "./analytics";
 import preRegisterRouter from "./preRegister";
+import registrationsRouter from "./registrations";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(forumRouter);
 router.use(chatbotRouter);
 router.use(analyticsRouter);
 router.use(preRegisterRouter);
+router.use(registrationsRouter);
 
 export default router;

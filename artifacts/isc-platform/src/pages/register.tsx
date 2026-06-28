@@ -7,16 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   GraduationCap, BookOpen, Users,
   ChevronRight, ChevronLeft, Check,
   Upload, FileText, Trash2, Eye,
-  Smartphone, Loader2, CheckCircle2, XCircle, AlertCircle,
+  Smartphone, Loader2, CheckCircle2, XCircle, AlertCircle, Briefcase,
 } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useListFilieres } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
-
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -24,6 +24,15 @@ const ROLES = [
   { id: "STUDENT", icon: GraduationCap, labelKey: "register.role_student", descKey: "register.role_student_desc" },
   { id: "TEACHER", icon: BookOpen, labelKey: "register.role_teacher", descKey: "register.role_teacher_desc" },
   { id: "STAFF", icon: Users, labelKey: "register.role_staff", descKey: "register.role_staff_desc" },
+];
+
+const STAFF_ROLES = [
+  "Chef de section",
+  "Secrétaire",
+  "Comptable",
+  "Bibliothécaire",
+  "Agent administratif",
+  "Autre",
 ];
 
 type MobileOperator = "MTN_MONEY" | "AIRTEL_MONEY" | "ORANGE_MONEY";
@@ -80,13 +89,8 @@ const DOC_FIELDS: { key: string; label: string; required: boolean }[] = [
 ];
 
 const INITIAL_DOCS: Record<string, UploadedFile | null> = {
-  diplome: null,
-  cni: null,
-  photo: null,
-  aptitude: null,
-  bonneVie: null,
-  bulletin5: null,
-  bulletin6: null,
+  diplome: null, cni: null, photo: null, aptitude: null,
+  bonneVie: null, bulletin5: null, bulletin6: null,
 };
 
 export default function RegisterPage() {
@@ -96,17 +100,23 @@ export default function RegisterPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [selectedFiliere, setSelectedFiliere] = useState<string | null>(null);
+  const [selectedFiliereId, setSelectedFiliereId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Record<string, UploadedFile | null>>(INITIAL_DOCS);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const [readyForClerk, setReadyForClerk] = useState(false);
 
-  const [email, setEmail] = useState("");
+  const [matricule, setMatricule] = useState("");
+  const [emailUniversitaire, setEmailUniversitaire] = useState("");
+  const [staffRole, setStaffRole] = useState("");
+
+  const [readyForClerk, setReadyForClerk] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
+
   const [operator, setOperator] = useState<MobileOperator>("MTN_MONEY");
   const [paymentPhone, setPaymentPhone] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const [operatorRef, setOperatorRef] = useState<string | null>(null);
-  const [selectedFiliereId, setSelectedFiliereId] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -114,6 +124,9 @@ export default function RegisterPage() {
   const filieres = Array.isArray(filieresRaw) ? filieresRaw : [];
 
   const isStudentRole = selectedRole === "STUDENT";
+  const isTeacherRole = selectedRole === "TEACHER";
+  const isStaffRole = selectedRole === "STAFF";
+  const isProfessionalRole = isTeacherRole || isStaffRole;
 
   const STEPS = isStudentRole
     ? [
@@ -124,15 +137,22 @@ export default function RegisterPage() {
         t("register.step_review"),
         "Paiement",
       ]
+    : isProfessionalRole
+    ? [t("register.step_role"), t("register.step_info"), "Infos professionnelles", t("register.step_review")]
     : [t("register.step_role"), t("register.step_info"), t("register.step_review")];
 
   const totalSteps = STEPS.length;
-  const isReviewStep = (isStudentRole && step === 4) || (!isStudentRole && step === 2);
+  const isReviewStep = (isStudentRole && step === 4) || (isProfessionalRole && step === 3) || (!isStudentRole && !isProfessionalRole && step === 2);
   const isPaymentStep = isStudentRole && step === 5;
+  const isProfessionalExtraStep = isProfessionalRole && step === 2;
 
   const canAdvanceStep = () => {
     if (step === 0) return !!selectedRole;
     if (step === 1) return firstName.trim().length > 1 && lastName.trim().length > 1 && email.trim().includes("@");
+    if (step === 2 && isProfessionalRole) {
+      const baseOk = matricule.trim().length > 1 && emailUniversitaire.trim().includes("@");
+      return isTeacherRole ? baseOk : baseOk && !!staffRole;
+    }
     if (step === 3 && isStudentRole) return !!selectedFiliere;
     return true;
   };
@@ -146,6 +166,38 @@ export default function RegisterPage() {
     const info = { role: selectedRole, firstName, lastName, phone, filiere: selectedFiliere };
     localStorage.setItem("isc_registration_info", JSON.stringify(info));
     setReadyForClerk(true);
+  };
+
+  const handleProfessionalSubmit = async () => {
+    setIsSubmitting(true);
+    setApiError(null);
+    try {
+      const endpoint = isTeacherRole ? "/api/register/teacher" : "/api/register/staff";
+      const body: Record<string, string | undefined> = {
+        firstName,
+        lastName,
+        email,
+        phone: phone.trim() || undefined,
+        matricule,
+        emailUniversitaire,
+        ...(isStaffRole ? { roleStaff: staffRole } : {}),
+      };
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json() as { error?: string; id?: string };
+      if (!res.ok) {
+        setApiError(data.error ?? "Erreur lors de l'envoi de votre demande.");
+        return;
+      }
+      setRegistrationComplete(true);
+    } catch {
+      setApiError("Impossible de contacter le serveur. Veuillez réessayer.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePayment = async () => {
@@ -178,21 +230,16 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          phone,
+          firstName, lastName, email, phone,
           filiereId: selectedFiliereId ?? undefined,
-          operator,
-          operatorRef: ref,
-          paymentPhone,
-          documents: docsPayload,
+          operator, operatorRef: ref,
+          paymentPhone, documents: docsPayload,
         }),
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setApiError((body as { error?: string }).error ?? "Erreur lors de l'enregistrement du dossier.");
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        setApiError(body.error ?? "Erreur lors de l'enregistrement du dossier.");
       }
     } catch {
       setApiError("Impossible de contacter le serveur. Votre paiement est confirmé, veuillez réessayer.");
@@ -204,6 +251,63 @@ export default function RegisterPage() {
   };
 
   const progressPct = totalSteps > 1 ? (step / (totalSteps - 1)) * 100 : 0;
+
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="border-b px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <img src={`${basePath}/images/logo-isc.png`} alt="ISC" className="h-8 w-8 object-contain" />
+            <span className="font-bold text-primary">{t("nav.brand")}</span>
+          </Link>
+        </div>
+        <div className="w-full bg-primary h-1.5" />
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-8 pb-6 flex flex-col items-center gap-5 text-center">
+              <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="h-12 w-12 text-green-500" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Demande soumise !</h1>
+                <p className="text-muted-foreground text-sm mt-2">
+                  Votre demande d'inscription en tant que{" "}
+                  <strong>{isTeacherRole ? "enseignant(e)" : "personnel administratif"}</strong>{" "}
+                  a bien été reçue. L'administration examinera votre dossier et vous contactera par email.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 w-full text-left text-sm space-y-2 border">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Nom</span>
+                  <span className="font-medium">{firstName} {lastName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="font-medium">{email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Matricule</span>
+                  <span className="font-medium">{matricule}</span>
+                </div>
+                {isStaffRole && staffRole && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fonction</span>
+                    <span className="font-medium">{staffRole}</span>
+                  </div>
+                )}
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-blue-800 text-xs text-left w-full">
+                Un email de confirmation a été envoyé à <strong>{email}</strong>. Vous serez notifié(e) de la décision de l'administration.
+              </div>
+              <Button asChild className="w-full">
+                <Link href="/">Retour à l'accueil</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (readyForClerk) {
     return (
@@ -344,6 +448,64 @@ export default function RegisterPage() {
             </Card>
           )}
 
+          {isProfessionalExtraStep && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5" />
+                  Informations professionnelles
+                </CardTitle>
+                <CardDescription>
+                  Renseignez vos coordonnées institutionnelles à l'ISC Mbujimayi.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="matricule">
+                    Matricule <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="matricule"
+                    value={matricule}
+                    onChange={(e) => setMatricule(e.target.value)}
+                    placeholder="Ex: ISC-ENS-2024-001"
+                  />
+                  <p className="text-xs text-muted-foreground">Votre numéro de matricule attribué par l'institution.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="emailUniv">
+                    Email universitaire <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="emailUniv"
+                    type="email"
+                    value={emailUniversitaire}
+                    onChange={(e) => setEmailUniversitaire(e.target.value)}
+                    placeholder="prenom.nom@isc-mbujimayi.ac.cd"
+                  />
+                  <p className="text-xs text-muted-foreground">Votre email institutionnel officiel (domaine @isc-mbujimayi.ac.cd).</p>
+                </div>
+                {isStaffRole && (
+                  <div className="space-y-2">
+                    <Label>
+                      Fonction <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={staffRole} onValueChange={setStaffRole}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez votre fonction" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STAFF_ROLES.map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {step === 2 && isStudentRole && (
             <Card>
               <CardHeader>
@@ -470,6 +632,24 @@ export default function RegisterPage() {
                       <span className="font-medium">{phone}</span>
                     </div>
                   )}
+                  {isProfessionalRole && matricule && (
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-muted-foreground">Matricule</span>
+                      <span className="font-medium">{matricule}</span>
+                    </div>
+                  )}
+                  {isProfessionalRole && emailUniversitaire && (
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-muted-foreground">Email universitaire</span>
+                      <span className="font-medium">{emailUniversitaire}</span>
+                    </div>
+                  )}
+                  {isStaffRole && staffRole && (
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-muted-foreground">Fonction</span>
+                      <span className="font-medium">{staffRole}</span>
+                    </div>
+                  )}
                   {selectedFiliere && (
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-muted-foreground">{t("register.step_program")}</span>
@@ -491,9 +671,18 @@ export default function RegisterPage() {
                     </div>
                   )}
                 </div>
-                {!isStudentRole && (
-                  <Button className="w-full" onClick={handleProceedToClerk}>
-                    {t("register.create_account")}
+
+                {apiError && (
+                  <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{apiError}</span>
+                  </div>
+                )}
+
+                {isProfessionalRole && (
+                  <Button className="w-full" onClick={handleProfessionalSubmit} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Soumettre ma demande d'inscription
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 )}
@@ -524,7 +713,6 @@ export default function RegisterPage() {
                         {INSCRIPTION_FEE_CDF.toLocaleString("fr-FR")} <span className="text-lg font-semibold">CDF</span>
                       </p>
                     </div>
-
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold">Choisissez votre opérateur</Label>
                       <RadioGroup value={operator} onValueChange={(v) => setOperator(v as MobileOperator)} className="grid grid-cols-3 gap-2">
@@ -547,7 +735,6 @@ export default function RegisterPage() {
                         ))}
                       </RadioGroup>
                     </div>
-
                     <div className="space-y-2">
                       <Label>Numéro de téléphone Mobile Money *</Label>
                       <Input

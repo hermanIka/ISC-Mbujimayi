@@ -336,6 +336,145 @@ export function buildInscriptionReceivedEmail(params: {
   return { subject, html: htmlWrapper(bodyContent) };
 }
 
+export function buildTeacherRegReceivedEmail(params: {
+  name: string;
+  matricule: string;
+  emailUniversitaire: string;
+}): { subject: string; html: string } {
+  const { name, matricule, emailUniversitaire } = params;
+  const subject = `[ISC Mbujimayi] 📋 Votre demande d'inscription enseignant a bien été reçue`;
+
+  const rows: [string, string][] = [
+    ["Nom complet:", name],
+    ["Matricule:", matricule],
+    ["Email universitaire:", emailUniversitaire],
+    ["Statut:", "📋 En attente de validation"],
+  ];
+
+  const bodyContent = `
+    ${greeting(name)}
+    <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+      Nous avons bien reçu votre demande d'inscription en tant qu'<strong>enseignant</strong> à l'<strong>${ISC_NAME}</strong>.
+      Votre dossier est en cours d'examen par la direction. Vous serez notifié(e) par email dès qu'une décision sera prise.
+    </p>
+    ${alertBox("Votre dossier est en cours d'examen par l'administration. La validation peut prendre quelques jours ouvrables.", "info")}
+    ${infoTable(rows)}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Pour toute question, contactez l'administration à <a href="mailto:admin@isc-mbujimayi.ac.cd" style="color:${PRIMARY_COLOR};">admin@isc-mbujimayi.ac.cd</a>.<br/>
+      Cordialement,<br/><strong>Direction — ISC Mbujimayi</strong>
+    </p>
+  `;
+
+  return { subject, html: htmlWrapper(bodyContent) };
+}
+
+export function buildTeacherRegStatusEmail(params: {
+  name: string;
+  status: "APPROVED" | "REJECTED";
+  notes?: string | null;
+}): { subject: string; html: string } {
+  const { name, status, notes } = params;
+  const isApproved = status === "APPROVED";
+
+  const subject = isApproved
+    ? `[ISC Mbujimayi] ✅ Votre inscription enseignant a été approuvée`
+    : `[ISC Mbujimayi] ❌ Votre inscription enseignant a été rejetée`;
+
+  const statusBadge = isApproved
+    ? `<span style="display:inline-block;background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;">✅ APPROUVÉE</span>`
+    : `<span style="display:inline-block;background:#fee2e2;color:#dc2626;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;">❌ REJETÉE</span>`;
+
+  const bodyContent = `
+    ${greeting(name)}
+    <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+      Voici la décision concernant votre demande d'inscription en tant qu'enseignant à l'${ISC_NAME} :
+    </p>
+    <div style="text-align:center;margin:20px 0;">${statusBadge}</div>
+    ${isApproved
+      ? `${alertBox("Félicitations ! Votre dossier a été approuvé. Vous serez contacté(e) prochainement pour finaliser votre intégration.", "success")}
+         ${actionButton("Accéder à la plateforme", "https://www.isc-mbujimayi.ac.cd/dashboard")}`
+      : `${alertBox("Votre dossier n'a pas pu être approuvé en l'état. Veuillez contacter l'administration pour plus d'informations.", "danger")}`
+    }
+    ${notes ? `<div style="margin:20px 0;"><p style="margin:0 0 8px;color:#475569;font-size:13px;font-weight:bold;">Commentaire :</p><div style="background:#f8fafc;border-left:4px solid ${PRIMARY_COLOR};padding:12px 16px;border-radius:0 6px 6px 0;"><p style="margin:0;color:#374151;font-size:13px;line-height:1.6;">${notes}</p></div></div>` : ""}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Cordialement,<br/><strong>Direction — ISC Mbujimayi</strong>
+    </p>
+  `;
+
+  return { subject, html: htmlWrapper(bodyContent) };
+}
+
+export function buildStaffRegReceivedEmail(params: {
+  name: string;
+  matricule: string;
+  emailUniversitaire: string;
+  roleStaff: string;
+}): { subject: string; html: string } {
+  const { name, matricule, emailUniversitaire, roleStaff } = params;
+  const subject = `[ISC Mbujimayi] 📋 Votre demande d'inscription personnel a bien été reçue`;
+
+  const rows: [string, string][] = [
+    ["Nom complet:", name],
+    ["Matricule:", matricule],
+    ["Email universitaire:", emailUniversitaire],
+    ["Fonction:", roleStaff],
+    ["Statut:", "📋 En attente de validation"],
+  ];
+
+  const bodyContent = `
+    ${greeting(name)}
+    <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+      Nous avons bien reçu votre demande d'inscription en tant que <strong>personnel administratif</strong> à l'<strong>${ISC_NAME}</strong>.
+      Votre dossier est en cours d'examen par la direction.
+    </p>
+    ${alertBox("Votre dossier est en cours d'examen par la direction. La validation peut prendre quelques jours ouvrables.", "info")}
+    ${infoTable(rows)}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Pour toute question, contactez la direction à <a href="mailto:direction@isc-mbujimayi.ac.cd" style="color:${PRIMARY_COLOR};">direction@isc-mbujimayi.ac.cd</a>.<br/>
+      Cordialement,<br/><strong>Direction — ISC Mbujimayi</strong>
+    </p>
+  `;
+
+  return { subject, html: htmlWrapper(bodyContent) };
+}
+
+export function buildStaffRegStatusEmail(params: {
+  name: string;
+  status: "APPROVED" | "REJECTED";
+  roleStaff: string;
+  notes?: string | null;
+}): { subject: string; html: string } {
+  const { name, status, roleStaff, notes } = params;
+  const isApproved = status === "APPROVED";
+
+  const subject = isApproved
+    ? `[ISC Mbujimayi] ✅ Votre inscription personnel administratif a été approuvée`
+    : `[ISC Mbujimayi] ❌ Votre inscription personnel administratif a été rejetée`;
+
+  const statusBadge = isApproved
+    ? `<span style="display:inline-block;background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;">✅ APPROUVÉE</span>`
+    : `<span style="display:inline-block;background:#fee2e2;color:#dc2626;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;">❌ REJETÉE</span>`;
+
+  const bodyContent = `
+    ${greeting(name)}
+    <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+      Voici la décision concernant votre demande d'inscription en tant que <strong>${roleStaff}</strong> à l'${ISC_NAME} :
+    </p>
+    <div style="text-align:center;margin:20px 0;">${statusBadge}</div>
+    ${isApproved
+      ? `${alertBox("Félicitations ! Votre dossier a été approuvé. Vous serez contacté(e) prochainement pour finaliser votre intégration.", "success")}
+         ${actionButton("Accéder à la plateforme", "https://www.isc-mbujimayi.ac.cd/dashboard")}`
+      : `${alertBox("Votre dossier n'a pas pu être approuvé en l'état. Veuillez contacter la direction pour plus d'informations.", "danger")}`
+    }
+    ${notes ? `<div style="margin:20px 0;"><p style="margin:0 0 8px;color:#475569;font-size:13px;font-weight:bold;">Commentaire :</p><div style="background:#f8fafc;border-left:4px solid ${PRIMARY_COLOR};padding:12px 16px;border-radius:0 6px 6px 0;"><p style="margin:0;color:#374151;font-size:13px;line-height:1.6;">${notes}</p></div></div>` : ""}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Cordialement,<br/><strong>Direction — ISC Mbujimayi</strong>
+    </p>
+  `;
+
+  return { subject, html: htmlWrapper(bodyContent) };
+}
+
 export function buildCertificateIssuedEmail(params: {
   studentName: string;
   courseTitle: string;

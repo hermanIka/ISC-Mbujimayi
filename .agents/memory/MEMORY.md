@@ -1,0 +1,4 @@
+- [Auth bypass pattern](auth-bypass.md) — clerkEnabled=false in auth.ts, getCallerDbUser returns first ADMIN; all dashboards accessible by URL.
+- [DB push command](db-commands.md) — use `pnpm --filter @workspace/db run push` (not db:push); rebuild lib/db with `cd lib/db && npx tsc -p tsconfig.json`.
+- [API base path for fetch](api-fetch-path.md) — frontend calls `/api/<route>` which proxies to backend route `/<route>` (no /api prefix on backend).
+- [Registration tables](registration-tables.md) — teacher_registrations and staff_registrations added for pre-account professional registration flow; routes under /register/*.
