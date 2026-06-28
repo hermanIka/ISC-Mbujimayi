@@ -56,6 +56,7 @@ export default function CourseLearnPage() {
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set());
   const [chapterMaterials, setChapterMaterials] = useState<ChapterMaterial[]>([]);
+  const [chaptersWithMaterials, setChaptersWithMaterials] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { data: course, isLoading: courseLoading } = useGetCourseById(courseId, {
@@ -79,9 +80,30 @@ export default function CourseLearnPage() {
     if (!activeChapter) { setChapterMaterials([]); return; }
     fetch(`/api/chapters/${activeChapter.id}/materials`)
       .then((r) => r.ok ? r.json() : [])
-      .then((mats: ChapterMaterial[]) => setChapterMaterials(mats))
+      .then((mats: ChapterMaterial[]) => {
+        setChapterMaterials(mats);
+        if (mats.length > 0) {
+          setChaptersWithMaterials((prev) => new Set([...prev, activeChapter.id]));
+        }
+      })
       .catch(() => setChapterMaterials([]));
   }, [activeChapter?.id]);
+
+  useEffect(() => {
+    if (allChapters.length === 0) return;
+    Promise.all(
+      allChapters.map((ch) =>
+        fetch(`/api/chapters/${ch.id}/materials`)
+          .then((r) => r.ok ? r.json() : [])
+          .then((mats: ChapterMaterial[]) => ({ id: ch.id, has: (mats as ChapterMaterial[]).length > 0 }))
+          .catch(() => ({ id: ch.id, has: false }))
+      )
+    ).then((results) => {
+      const ids = results.filter((r) => r.has).map((r) => r.id);
+      if (ids.length > 0) setChaptersWithMaterials(new Set(ids));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allChapters.length, courseId]);
 
   const totalChapters = allChapters.length;
   const completedCount = completedChapters.size;
@@ -194,6 +216,14 @@ export default function CourseLearnPage() {
                               <FileText className="h-4 w-4 shrink-0" />
                             )}
                             <span className="line-clamp-2 flex-1">{chapter.title}</span>
+                            {chaptersWithMaterials.has(chapter.id) && (
+                              <span
+                                title="Ce chapitre contient des supports pédagogiques"
+                                className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-200 rounded px-1 py-0 shrink-0"
+                              >
+                                <Download className="h-2.5 w-2.5" />
+                              </span>
+                            )}
                             {chapter.type !== "TEXT" && (
                               <Badge variant="outline" className="text-xs px-1 py-0 shrink-0">
                                 {chapter.type}
@@ -314,27 +344,54 @@ export default function CourseLearnPage() {
                   )}
 
                   {chapterMaterials.length > 0 && (
-                    <div className="border rounded-xl p-5 bg-muted/20 space-y-3">
+                    <div className="border rounded-xl p-5 bg-muted/20 space-y-4">
                       <h3 className="font-semibold text-sm flex items-center gap-2">
                         <FileText className="h-4 w-4 text-primary" />
                         Supports pédagogiques ({chapterMaterials.length})
                       </h3>
-                      <ul className="space-y-2">
+                      <ul className="space-y-4">
                         {chapterMaterials.map((mat) => (
-                          <li key={mat.id} className="flex items-center justify-between bg-background border rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {mat.type === "VIDEO"
-                                ? <Video className="h-4 w-4 text-blue-500 shrink-0" />
-                                : <FileText className="h-4 w-4 text-orange-500 shrink-0" />}
-                              <span className="text-sm font-medium truncate">{mat.fileName}</span>
-                              <Badge variant="outline" className="text-xs shrink-0">{mat.type}</Badge>
-                            </div>
-                            <Button size="sm" variant="outline" className="h-7 text-xs shrink-0 ml-2" asChild>
-                              <a href={mat.url} download={mat.fileName}>
-                                <Download className="h-3.5 w-3.5 mr-1" />
-                                Télécharger
-                              </a>
-                            </Button>
+                          <li key={mat.id} className="bg-background border rounded-xl overflow-hidden">
+                            {mat.type === "VIDEO" ? (
+                              <div className="space-y-0">
+                                <div className="aspect-video bg-black">
+                                  <video
+                                    src={mat.url}
+                                    controls
+                                    className="w-full h-full"
+                                    preload="metadata"
+                                    data-testid={`video-player-${mat.id}`}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between px-3 py-2 border-t">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Video className="h-4 w-4 text-blue-500 shrink-0" />
+                                    <span className="text-sm font-medium truncate">{mat.fileName}</span>
+                                    <Badge variant="outline" className="text-xs shrink-0">VIDEO</Badge>
+                                  </div>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs shrink-0 ml-2" asChild>
+                                    <a href={mat.url} download={mat.fileName}>
+                                      <Download className="h-3.5 w-3.5 mr-1" />
+                                      Télécharger
+                                    </a>
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between px-3 py-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <FileText className="h-4 w-4 text-orange-500 shrink-0" />
+                                  <span className="text-sm font-medium truncate">{mat.fileName}</span>
+                                  <Badge variant="outline" className="text-xs shrink-0">{mat.type}</Badge>
+                                </div>
+                                <Button size="sm" variant="outline" className="h-7 text-xs shrink-0 ml-2" asChild>
+                                  <a href={mat.url} download={mat.fileName}>
+                                    <Download className="h-3.5 w-3.5 mr-1" />
+                                    Télécharger
+                                  </a>
+                                </Button>
+                              </div>
+                            )}
                           </li>
                         ))}
                       </ul>
