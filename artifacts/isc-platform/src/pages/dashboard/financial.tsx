@@ -431,17 +431,28 @@ export default function FinancialDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("payments.col_reference")}</TableHead>
+                      <TableHead>Étudiant</TableHead>
                       <TableHead>{t("payments.col_type")}</TableHead>
                       <TableHead>{t("payments.col_operator")}</TableHead>
                       <TableHead>{t("payments.col_amount")}</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>{t("payments.col_status")}</TableHead>
                       <TableHead>{t("payments.col_receipt")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payments.map((payment: Payment) => (
+                    {payments.map((payment: Payment) => {
+                      const p = payment as Payment & { studentFirstName?: string; studentLastName?: string; createdAt?: string };
+                      const studentName = p.studentFirstName && p.studentLastName
+                        ? `${p.studentFirstName} ${p.studentLastName}`
+                        : "—";
+                      const paymentDate = p.createdAt
+                        ? new Date(p.createdAt).toLocaleString("fr-CD", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                        : "—";
+                      return (
                       <TableRow key={payment.id}>
                         <TableCell className="font-mono text-xs">{payment.reference || payment.id.slice(0, 8) + "…"}</TableCell>
+                        <TableCell className="text-sm font-medium">{studentName}</TableCell>
                         <TableCell className="text-sm">
                           {t(`payments.type_${payment.type.toLowerCase().replace(/_fee$/, "")}` as Parameters<typeof t>[0]) as string || payment.type}
                         </TableCell>
@@ -449,6 +460,7 @@ export default function FinancialDashboard() {
                         <TableCell className="font-medium text-sm">
                           {Number(payment.amount).toLocaleString("fr-CD")} {payment.currency}
                         </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{paymentDate}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={STATUS_COLORS[payment.status] ?? ""}>
                             {t(`payments.status.${payment.status.toLowerCase()}` as Parameters<typeof t>[0]) as string || payment.status}
@@ -473,7 +485,8 @@ export default function FinancialDashboard() {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
 

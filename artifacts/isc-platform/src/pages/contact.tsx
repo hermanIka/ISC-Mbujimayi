@@ -27,7 +27,7 @@ export default function ContactPage() {
     {
       icon: Phone,
       label: t("contact.phone_label"),
-      lines: ["+243 99 000 0000", "+243 81 000 0000"],
+      lines: ["+243 99 4676705"],
     },
     {
       icon: Mail,

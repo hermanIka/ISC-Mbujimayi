@@ -14,6 +14,7 @@ import evaluationsRouter from "./evaluations";
 import forumRouter from "./forum";
 import chatbotRouter from "./chatbot";
 import analyticsRouter from "./analytics";
+import preRegisterRouter from "./preRegister";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(evaluationsRouter);
 router.use(forumRouter);
 router.use(chatbotRouter);
 router.use(analyticsRouter);
+router.use(preRegisterRouter);
 
 export default router;

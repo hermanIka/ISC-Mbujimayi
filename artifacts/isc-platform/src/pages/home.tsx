@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router";
 import { useListCourses, useListFilieres } from "@workspace/api-client-react";
-import type { Course } from "@workspace/api-client-react";
+import type { Course, Filiere } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,7 +59,7 @@ export default function Home() {
   const { data: filieresData, isLoading: filieresLoading } = useListFilieres();
 
   const courses = coursesData?.courses || [];
-  const filieres = filieresData || [];
+  const filieres: Filiere[] = Array.isArray(filieresData) ? filieresData : [];
 
   const TESTIMONIALS = [
     {
@@ -87,23 +87,27 @@ export default function Home() {
 
   return (
     <AppLayout>
-      <div className="relative flex flex-col items-center justify-center min-h-[65vh] px-4 text-center bg-gradient-to-br from-primary/5 via-background to-primary/10 border-b overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-primary/8 rounded-full blur-2xl animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="relative flex flex-col items-center justify-center min-h-[70vh] px-4 text-center border-b overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="/images/hero-campus.png"
+            alt="Campus ISC Mbujimayi"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
         </div>
-        <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground max-w-3xl mb-6 leading-tight">
+        <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700 z-10">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white max-w-3xl mb-6 leading-tight drop-shadow-lg">
             {t("home.hero_title")}
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mb-8">
+          <p className="text-lg text-white/85 max-w-2xl mb-8 drop-shadow">
             {t("home.hero_subtitle")}
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button asChild size="lg" className="shadow-lg hover:shadow-primary/25 hover:shadow-xl transition-shadow">
+            <Button asChild size="lg" className="shadow-lg bg-white text-primary hover:bg-white/90 font-semibold">
               <Link href="/courses">{t("home.explore_programs")}</Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white/15 backdrop-blur-sm">
               <Link href="/sign-up">{t("home.register_now")}</Link>
             </Button>
           </div>
@@ -112,8 +116,8 @@ export default function Home() {
 
       <div className="py-12 border-b bg-card">
         <div className="max-w-4xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <AnimatedStat value={30} suffix="+" label={t("about.stat_years")} />
-          <AnimatedStat value={5000} suffix="+" label={t("about.stat_graduates")} />
+          <AnimatedStat value={9} suffix="+" label={t("about.stat_years")} />
+          <AnimatedStat value={1500} suffix="+" label={t("about.stat_graduates")} />
           <AnimatedStat value={5} suffix="" label={t("about.stat_programs")} />
           <AnimatedStat value={50} suffix="+" label={t("about.stat_teachers")} />
         </div>
@@ -133,46 +137,48 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filieresLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full rounded-xl" />
-              ))
-            ) : filieres.length === 0 ? (
-              [
-                { name: "Comptabilité", code: "COMPTA", icon: Award },
-                { name: "Marketing", code: "MKTG", icon: Globe },
-                { name: "Informatique de Gestion", code: "INFO", icon: BookOpen },
-              ].map((f) => (
-                <Card key={f.code} className="hover-elevate">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <f.icon className="h-8 w-8 text-primary mb-2" />
-                      <Badge variant="secondary">{f.code}</Badge>
-                    </div>
-                    <CardTitle>{f.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{t("home.program_default_desc")}</p>
-                  </CardContent>
-                </Card>
+                <Skeleton key={i} className="h-52 w-full rounded-xl" />
               ))
             ) : (
-              filieres.slice(0, 6).map((filiere) => (
-                <Card key={filiere.id} className="hover-elevate">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <GraduationCap className="h-8 w-8 text-primary mb-2" />
-                      <Badge variant="secondary">{filiere.code}</Badge>
+              (filieres.length > 0 ? filieres : [
+                { id: "c", name: "Comptabilité", code: "COMPTA", description: "Formation en comptabilité et finance d'entreprise selon les normes OHADA.", duration: 4, studentCount: 0 },
+                { id: "m", name: "Marketing", code: "MKT", description: "Formation en stratégie commerciale et marketing digital.", duration: 4, studentCount: 0 },
+                { id: "i", name: "Informatique de Gestion", code: "INFO", description: "Formation en développement logiciel et systèmes d'information.", duration: 4, studentCount: 0 },
+              ] as typeof filieres).slice(0, 6).map((filiere) => {
+                const FILIERE_IMAGES: Record<string, string> = {
+                  COMPTA: "/images/filiere-compta.png",
+                  FISC:   "/images/filiere-fisc.png",
+                  MKT:    "/images/filiere-mkt.png",
+                  INFO:   "/images/filiere-info.png",
+                  SECDIR: "/images/filiere-secdir.png",
+                };
+                const img = FILIERE_IMAGES[filiere.code] ?? "/images/about-campus.png";
+                return (
+                  <Card key={filiere.id} className="hover-elevate overflow-hidden group cursor-pointer">
+                    <div className="aspect-video w-full overflow-hidden">
+                      <img
+                        src={img}
+                        alt={filiere.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
                     </div>
-                    <CardTitle>{filiere.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{filiere.description}</p>
-                    <div className="flex justify-between items-center mt-4 text-xs text-muted-foreground font-medium">
-                      <span>{filiere.duration} {t("home.years")}</span>
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3"/> {filiere.studentCount} {t("programs.students")}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-base leading-tight">{filiere.name}</CardTitle>
+                        <Badge variant="secondary" className="ml-2 flex-shrink-0">{filiere.code}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{filiere.description}</p>
+                      <div className="flex justify-between items-center mt-3 text-xs text-muted-foreground font-medium">
+                        <span className="flex items-center gap-1"><GraduationCap className="h-3 w-3"/>{filiere.duration} {t("home.years")}</span>
+                        <span className="flex items-center gap-1"><Users className="h-3 w-3"/> {filiere.studentCount} {t("programs.students")}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
         </section>
@@ -204,13 +210,11 @@ export default function Home() {
               courses.map((course: Course) => (
                 <Card key={course.id} className="flex flex-col hover-elevate transition-all duration-200">
                   <div className="aspect-video w-full overflow-hidden rounded-t-xl bg-muted">
-                    {course.thumbnail ? (
-                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
-                        <BookOpen className="h-12 w-12 opacity-50" />
-                      </div>
-                    )}
+                    <img
+                      src={course.thumbnail || "/images/course-default.png"}
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <CardHeader>
                     <div className="flex items-center gap-2 mb-2">

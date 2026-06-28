@@ -85,7 +85,7 @@ export default function EvaluationNewPage() {
         courseId: form.courseId,
         data: {
           title: form.title.trim(),
-          type: form.type as "QCM" | "TRUE_FALSE" | "SHORT_ANSWER" | "ESSAY" | "MIXED",
+          type: form.type as "QUIZ" | "ASSIGNMENT" | "EXAM",
           duration: Number(form.duration),
           passMark: Number(form.passMark),
         },

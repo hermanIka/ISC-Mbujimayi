@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import { logger } from "./logger";
 
 const ISC_NAME = "Institut Supérieur de Commerce de Mbujimayi";
-const ISC_FROM = "ISC Mbujimayi <notifications@isc-mbujimayi.ac.cd>";
+const ISC_FROM = "ISC Mbujimayi <onboarding@resend.dev>";
 const PRIMARY_COLOR = "#1a3a6b";
 const ACCENT_COLOR = "#f59e0b";
 
@@ -114,10 +114,21 @@ export async function sendEmail(options: SendEmailOptions): Promise<void> {
     return;
   }
 
+  // In dev/test mode, Resend only allows sending to the account owner's email.
+  // Set RESEND_TEST_TO to your Resend account email to receive all test emails.
+  const testOverride = process.env.RESEND_TEST_TO;
+  const effectiveTo = testOverride ?? options.to;
+  if (testOverride) {
+    logger.info(
+      { originalTo: options.to, overrideTo: testOverride },
+      "📧 [EMAIL] Dev mode — redirecting email to RESEND_TEST_TO",
+    );
+  }
+
   try {
     const payload: Parameters<typeof client.emails.send>[0] = {
       from: ISC_FROM,
-      to: options.to,
+      to: effectiveTo,
       subject: options.subject,
       html: options.html,
     };
@@ -194,7 +205,7 @@ export function buildInscriptionStatusEmail(params: {
 }
 
 const OPERATOR_LABELS: Record<string, string> = {
-  MTN_MONEY: "MTN Mobile Money",
+  VODACOM_MONEY: "Vodacom Money",
   AIRTEL_MONEY: "Airtel Money",
   ORANGE_MONEY: "Orange Money",
 };
@@ -246,6 +257,79 @@ export function buildPaymentConfirmedEmail(params: {
     <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
       Pour toute question, contactez le service financier à <a href="mailto:finances@isc-mbujimayi.ac.cd" style="color:${PRIMARY_COLOR};">finances@isc-mbujimayi.ac.cd</a>.<br/>
       Cordialement,<br/><strong>Service Financier — ISC Mbujimayi</strong>
+    </p>
+  `;
+
+  return { subject, html: htmlWrapper(bodyContent) };
+}
+
+export function buildInscriptionSubmittedEmail(params: {
+  studentName: string;
+  filiereName?: string | null;
+}): { subject: string; html: string } {
+  const { studentName, filiereName } = params;
+  const subject = `[ISC Mbujimayi] 📋 Votre dossier d'inscription a bien été soumis`;
+
+  const rows: [string, string][] = [
+    ["Statut:", "📋 Soumis — en attente de traitement"],
+    ...(filiereName ? [["Filière:", filiereName] as [string, string]] : []),
+  ];
+
+  const bodyContent = `
+    ${greeting(studentName)}
+    <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+      Nous avons bien reçu votre dossier de candidature à l'<strong>${ISC_NAME}</strong>.
+      Notre équipe va examiner votre demande et vous informera de la suite donnée.
+    </p>
+    ${alertBox("Votre dossier est en cours d'examen par le service académique. Vous serez notifié(e) par email dès qu'une décision sera prise.", "info")}
+    ${infoTable(rows)}
+    ${actionButton("Suivre ma candidature", "https://www.isc-mbujimayi.ac.cd/inscriptions")}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Pour toute question, contactez le service académique à <a href="mailto:academique@isc-mbujimayi.ac.cd" style="color:${PRIMARY_COLOR};">academique@isc-mbujimayi.ac.cd</a>.<br/>
+      Cordialement,<br/><strong>Service des Inscriptions — ISC Mbujimayi</strong>
+    </p>
+  `;
+
+  return { subject, html: htmlWrapper(bodyContent) };
+}
+
+export function buildInscriptionReceivedEmail(params: {
+  studentName: string;
+  filiereName?: string | null;
+  reference: string;
+  operatorRef: string;
+  amount: string;
+  currency: string;
+  operator: string;
+}): { subject: string; html: string } {
+  const { studentName, filiereName, reference, operatorRef, amount, currency, operator } = params;
+  const subject = `[ISC Mbujimayi] 📋 Votre dossier d'inscription a bien été reçu`;
+  const amountFormatted = Number(amount).toLocaleString("fr-CD");
+
+  const rows: [string, string][] = [
+    ["Référence:", reference],
+    ["Montant payé:", `${amountFormatted} ${currency}`],
+    ["Opérateur:", OPERATOR_LABELS[operator] ?? operator],
+    ["Réf. opérateur:", operatorRef],
+    ...(filiereName ? [["Filière:", filiereName] as [string, string]] : []),
+    ["Statut dossier:", "📋 En cours d'examen"],
+  ];
+
+  const bodyContent = `
+    ${greeting(studentName)}
+    <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+      Nous avons bien reçu votre dossier de candidature à l'<strong>${ISC_NAME}</strong>.
+      Votre paiement des frais d'inscription a été confirmé et votre dossier a été transmis au service académique pour examen.
+    </p>
+    ${alertBox("Votre candidature est en cours d'examen par le service académique. Vous serez notifié(e) par email dès qu'une décision sera prise.", "info")}
+    ${infoTable(rows)}
+    <p style="margin:20px 0;color:#374151;font-size:14px;line-height:1.6;">
+      Le service académique traitera votre dossier dans les meilleurs délais. En attendant, vous pouvez vous connecter à la plateforme pour suivre l'état de votre candidature.
+    </p>
+    ${actionButton("Suivre ma candidature", "https://www.isc-mbujimayi.ac.cd/inscriptions")}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Pour toute question, contactez le service académique à <a href="mailto:academique@isc-mbujimayi.ac.cd" style="color:${PRIMARY_COLOR};">academique@isc-mbujimayi.ac.cd</a>.<br/>
+      Cordialement,<br/><strong>Service des Inscriptions — ISC Mbujimayi</strong>
     </p>
   `;
 

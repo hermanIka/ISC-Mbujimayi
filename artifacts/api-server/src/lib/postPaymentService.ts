@@ -2,7 +2,7 @@ import { db, paymentsTable, studentsTable, usersTable, enrollmentsTable, courses
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { logger } from "./logger";
-import { sendEmail, buildPaymentConfirmedEmail } from "./emailService";
+import { sendEmail, buildPaymentConfirmedEmail, buildInscriptionReceivedEmail } from "./emailService";
 import { generatePaymentReceiptPDFBuffer } from "./pdfService";
 import type { PaymentReceiptData } from "./pdfService";
 
@@ -21,7 +21,7 @@ export interface ConfirmedPaymentPayload {
 }
 
 const OPERATOR_LABELS: Record<string, string> = {
-  MTN_MONEY: "MTN Mobile Money",
+  VODACOM_MONEY: "Vodacom Money",
   AIRTEL_MONEY: "Airtel Money",
   ORANGE_MONEY: "Orange Money",
 };
@@ -165,11 +165,25 @@ export async function handlePaymentConfirmed(payload: ConfirmedPaymentPayload): 
       }
     }
 
-    if (payload.type === "INSCRIPTION_FEE") {
+    if (payload.type === "INSCRIPTION_FEE" && studentInfo) {
       logger.info(
         { paymentId: payload.paymentId, studentId: payload.studentId },
-        "📋 [INSCRIPTION] Frais d'inscription confirmés — dossier éligible pour traitement par le service académique",
+        "📋 [INSCRIPTION] Frais d'inscription confirmés — envoi email dossier reçu",
       );
+      try {
+        const { subject, html } = buildInscriptionReceivedEmail({
+          studentName: studentInfo.name,
+          filiereName: studentInfo.filiereName,
+          reference: payload.reference,
+          operatorRef: payload.operatorRef ?? "N/A",
+          amount: payload.amount,
+          currency: payload.currency,
+          operator: payload.operator,
+        });
+        await sendEmail({ to: studentInfo.email, subject, html });
+      } catch (err) {
+        logger.error({ err, paymentId: payload.paymentId }, "📧 [EMAIL] Failed to send inscription received email");
+      }
     }
   } catch (err) {
     logger.error({ err, paymentId: payload.paymentId }, "postPaymentService: unhandled error");

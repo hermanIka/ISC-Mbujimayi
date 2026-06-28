@@ -99,7 +99,7 @@
     "operators": {
       "ORANGE_MONEY": "Orange Money",
       "AIRTEL_MONEY": "Airtel Money",
-      "MTN_MONEY": "MTN Mobile Money"
+      "VODACOM_MONEY": "Vodacom Money"
     },
     "status": {
       "confirmed": "Confirmé",
@@ -118,10 +118,18 @@
   },
   "chatbot": {
     "title": "Assistant ISC",
-    "greeting": "Bonjour ! Comment puis-je vous aider ?",
+    "greeting": "Bonjour ! Je suis l'assistant virtuel de l'ISC Mbujimayi. Posez-moi vos questions sur les inscriptions, les filières, les frais ou la vie académique.",
     "loading": "Chargement...",
     "placeholder": "Votre question...",
     "typing": "L'assistant répond...",
+    "quick_replies_label": "Questions fréquentes :",
+    "quick_replies": [
+      "Comment s'inscrire à l'ISC Mbujimayi ?",
+      "Quelles sont les filières disponibles ?",
+      "Quels sont les frais académiques ?",
+      "Comment payer le minerval ?",
+      "Comment accéder aux cours en ligne ?"
+    ],
     "escalate_prompt": "Je n'ai pas trouvé de réponse précise dans notre base de connaissances. Voulez-vous que je transmette votre question à notre conseiller IA ?",
     "escalate_confirm": "Oui, transmettre",
     "escalate_cancel": "Non merci",
@@ -130,7 +138,7 @@
   },
   "about": {
     "title": "Institut Supérieur de Commerce de Mbujimayi",
-    "subtitle": "Depuis plus de 30 ans, l'ISC Mbujimayi forme les cadres et professionnels qui façonnent l'économie du Kasaï-Oriental et de la République Démocratique du Congo.",
+    "subtitle": "Depuis presque 9 ans, l'ISC Mbujimayi forme les cadres et professionnels qui façonnent l'économie du Kasaï-Oriental et de la République Démocratique du Congo.",
     "mission": "Notre Mission",
     "mission_p1": "L'Institut Supérieur de Commerce de Mbujimayi (ISC Mbujimayi) est un établissement d'enseignement supérieur public situé à Mbujimayi, chef-lieu de la province du Kasaï-Oriental, en République Démocratique du Congo.",
     "mission_p2": "Notre mission est de former des professionnels hautement qualifiés dans les domaines du commerce, de la gestion, de l'informatique et des finances, capables de contribuer activement au développement socio-économique du pays.",
@@ -191,8 +199,8 @@
     "location_title": "Notre emplacement",
     "map_credit": "Carte ©",
     "address_label": "Adresse",
-    "address_line1": "Avenue Bakwa Dianga",
-    "address_line2": "Mbujimayi, Kasaï-Oriental",
+    "address_line1": "54 Avenue INGA, Quartier Bonzola 1",
+    "address_line2": "Commune DIBINDI, Mbujimayi, Kasaï-Oriental",
     "address_line3": "République Démocratique du Congo",
     "phone_label": "Téléphone",
     "email_label": "Email",

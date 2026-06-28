@@ -55,7 +55,7 @@ export default function AcademicDashboard() {
   const dateLocale = i18n.language === "fr" ? fr : enUS;
   const { data: rawAnalytics, isLoading } = useGetAcademicAnalytics();
   const analytics = rawAnalytics as unknown as AcademicAnalyticsData | undefined;
-  const { data: inscriptionsRaw } = useListInscriptions();
+  const { data: inscriptionsRaw } = useListInscriptions({ pageSize: 200 } as Parameters<typeof useListInscriptions>[0]);
   const allInscriptions: Inscription[] = Array.isArray(inscriptionsRaw)
     ? inscriptionsRaw
     : (inscriptionsRaw as { inscriptions?: Inscription[] })?.inscriptions ?? [];
@@ -196,12 +196,12 @@ export default function AcademicDashboard() {
         </div>
 
         <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
+          <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>{t("academic.dossier_review")}</DialogTitle>
             </DialogHeader>
             {selected && (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4 overflow-y-auto pr-1 flex-1 min-h-0">
                 <div className="bg-muted/30 rounded-lg p-4 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t("academic.student_id")}</span>
@@ -223,6 +223,42 @@ export default function AcademicDashboard() {
                     <span className="text-muted-foreground">{t("academic.documents")}</span>
                     <span>{(selected.documents ?? []).length} {t("academic.files")}</span>
                   </div>
+                  {(selected.documents ?? []).length > 0 && (
+                    <div className="pt-2 border-t space-y-2">
+                      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">Documents soumis</p>
+                      {(selected.documents as Array<{ type: string; url: string; name: string; uploadedAt: string }> ?? []).map((doc, i) => {
+                        const isRealUrl = doc.url && doc.url.startsWith("http");
+                        const uploadDate = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : null;
+                        return (
+                          <div key={i} className="border rounded-lg p-3 bg-background space-y-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-lg flex-shrink-0">📄</span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium leading-tight break-all">{doc.name || doc.type}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{doc.type}{uploadDate ? ` · ${uploadDate}` : ""}</p>
+                                </div>
+                              </div>
+                              {isRealUrl ? (
+                                <a
+                                  href={doc.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-shrink-0 inline-flex items-center gap-1 text-xs bg-primary text-primary-foreground rounded px-2 py-1 hover:opacity-90"
+                                >
+                                  Ouvrir
+                                </a>
+                              ) : (
+                                <span className="flex-shrink-0 text-xs text-muted-foreground bg-muted rounded px-2 py-1">
+                                  Fichier local
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   {selected.notes && (
                     <div className="pt-2 border-t">
                       <p className="text-muted-foreground mb-1">{t("academic.previous_notes")}</p>

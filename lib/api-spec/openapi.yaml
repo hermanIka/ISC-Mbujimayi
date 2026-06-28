@@ -1550,6 +1550,16 @@ components:
         verification, published course listing, health check) do not require
         this header.
   schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
     HealthStatus:
       type: object
       properties:
@@ -1721,6 +1731,8 @@ components:
     CreateStudentBody:
       type: object
       properties:
+        userId:
+          type: string
         firstName:
           type: string
         lastName:
@@ -1734,7 +1746,7 @@ components:
           type: string
         filiereId:
           type: string
-      required: [firstName, lastName]
+      required: [userId, firstName, lastName]
 
     UpdateStudentBody:
       type: object
@@ -1789,6 +1801,8 @@ components:
     CreateTeacherBody:
       type: object
       properties:
+        userId:
+          type: string
         firstName:
           type: string
         lastName:
@@ -1797,7 +1811,7 @@ components:
           type: string
         grade:
           type: string
-      required: [firstName, lastName]
+      required: [userId, firstName, lastName]
 
     # Inscriptions
     Inscription:
@@ -2338,7 +2352,7 @@ components:
           type: string
         type:
           type: string
-          enum: [QCM, TRUE_FALSE, SHORT_ANSWER, ESSAY, MIXED]
+          enum: [QUIZ, ASSIGNMENT, EXAM]
         duration:
           type: integer
         passMark:

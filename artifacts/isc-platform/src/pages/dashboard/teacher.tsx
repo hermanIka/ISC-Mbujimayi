@@ -119,6 +119,8 @@ export default function TeacherDashboard() {
   const [evSectionsReported, setEvSectionsReported] = useState(0);
   const [evTotalFound, setEvTotalFound] = useState(0);
 
+  const courseEngagement = analytics?.courseEngagement ?? [];
+
   const evaluationCoursesKey = courseEngagement.length > 0 ? courseEngagement.length : courses.length;
   useEffect(() => {
     setEvSectionsReported(0);
@@ -148,14 +150,12 @@ export default function TeacherDashboard() {
     } catch {}
   };
 
-  const engagementData = (analytics?.courseEngagement ?? []).map((c) => ({
+  const engagementData = courseEngagement.map((c) => ({
     name: c.courseTitle.length > 15 ? c.courseTitle.slice(0, 15) + "…" : c.courseTitle,
     inscrits: c.enrolledStudents,
     progression: c.averageProgress,
     termines: c.completedStudents,
   }));
-
-  const courseEngagement = analytics?.courseEngagement ?? [];
 
   const evaluationCourses = courseEngagement.length > 0
     ? courseEngagement

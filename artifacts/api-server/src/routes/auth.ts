@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and, like } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { getAuth, clerkClient } from "@clerk/express";
 import { requireAuth } from "../middlewares/auth";
@@ -14,6 +14,29 @@ async function getOrCreateUser(clerkId: string, email: string) {
     .from(usersTable)
     .where(eq(usersTable.clerkId, clerkId));
   if (existing) return existing;
+
+  // Check if there's a pre-registered user with the same email (clerkId starts with PREREG_)
+  if (email && email.trim() !== "") {
+    const [preReg] = await db
+      .select()
+      .from(usersTable)
+      .where(
+        and(
+          eq(usersTable.email, email.trim()),
+          like(usersTable.clerkId, "PREREG_%")
+        )
+      );
+    if (preReg) {
+      // Link the real Clerk ID to the pre-registered user
+      const [linked] = await db
+        .update(usersTable)
+        .set({ clerkId })
+        .where(eq(usersTable.id, preReg.id))
+        .returning();
+      return linked ?? preReg;
+    }
+  }
+
   const resolvedEmail =
     email && email.trim() !== "" ? email : `clerk_${clerkId}@placeholder.test`;
   const [created] = await db

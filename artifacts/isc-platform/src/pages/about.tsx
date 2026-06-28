@@ -99,26 +99,30 @@ export default function AboutPage() {
   ];
 
   const stats = [
-    { label: t("about.stat_years"), value: "30+" },
-    { label: t("about.stat_graduates"), value: "5 000+" },
+    { label: t("about.stat_years"), value: "9+" },
+    { label: t("about.stat_graduates"), value: "1 500+" },
     { label: t("about.stat_programs"), value: "5" },
     { label: t("about.stat_teachers"), value: "50+" },
   ];
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto px-6 py-12 space-y-16">
-        <section className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-primary/10 mx-auto mb-4">
-            <GraduationCap className="h-10 w-10 text-primary" />
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight">
+      <div className="relative h-72 md:h-96 overflow-hidden">
+        <img
+          src="/images/about-campus.png"
+          alt="Campus ISC Mbujimayi"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70 flex flex-col items-center justify-center text-center px-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-3">
             {t("about.title")}
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-white/85 max-w-2xl drop-shadow">
             {t("about.subtitle")}
           </p>
-        </section>
+        </div>
+      </div>
+      <div className="max-w-5xl mx-auto px-6 py-12 space-y-16">
 
         <section className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat) => (
@@ -133,10 +137,19 @@ export default function AboutPage() {
 
         <section className="space-y-6">
           <h2 className="text-2xl font-bold">{t("about.mission")}</h2>
-          <div className="prose prose-lg text-muted-foreground max-w-none space-y-4">
-            <p>{t("about.mission_p1")}</p>
-            <p>{t("about.mission_p2")}</p>
-            <p>{t("about.mission_p3")}</p>
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="prose prose-lg text-muted-foreground max-w-none space-y-4">
+              <p>{t("about.mission_p1")}</p>
+              <p>{t("about.mission_p2")}</p>
+              <p>{t("about.mission_p3")}</p>
+            </div>
+            <div className="rounded-xl overflow-hidden shadow-md">
+              <img
+                src="/images/students-campus.png"
+                alt="Étudiants ISC Mbujimayi"
+                className="w-full h-64 object-cover"
+              />
+            </div>
           </div>
         </section>
 
@@ -189,7 +202,7 @@ export default function AboutPage() {
                 <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium">{t("about.phone_label")}</p>
-                  <p className="text-sm text-muted-foreground">+243 99 000 0000</p>
+                  <p className="text-sm text-muted-foreground">+243 99 4676705</p>
                 </div>
               </CardContent>
             </Card>

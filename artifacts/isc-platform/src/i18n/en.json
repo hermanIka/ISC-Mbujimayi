@@ -99,7 +99,7 @@
     "operators": {
       "ORANGE_MONEY": "Orange Money",
       "AIRTEL_MONEY": "Airtel Money",
-      "MTN_MONEY": "MTN Mobile Money"
+      "VODACOM_MONEY": "Vodacom Money"
     },
     "status": {
       "confirmed": "Confirmed",
@@ -118,10 +118,18 @@
   },
   "chatbot": {
     "title": "ISC Assistant",
-    "greeting": "Hello! How can I help you?",
+    "greeting": "Hello! I am the virtual assistant of ISC Mbujimayi. Ask me anything about enrollment, programs, fees or academic life.",
     "loading": "Loading...",
     "placeholder": "Your question...",
     "typing": "Assistant is typing...",
+    "quick_replies_label": "Frequently asked questions:",
+    "quick_replies": [
+      "How do I enroll at ISC Mbujimayi?",
+      "What programs are available?",
+      "What are the academic fees?",
+      "How do I pay tuition?",
+      "How do I access online courses?"
+    ],
     "escalate_prompt": "I couldn't find a precise answer in our knowledge base. Would you like me to escalate your question to our AI advisor?",
     "escalate_confirm": "Yes, escalate",
     "escalate_cancel": "No thanks",
@@ -130,7 +138,7 @@
   },
   "about": {
     "title": "Institut Supérieur de Commerce de Mbujimayi",
-    "subtitle": "For over 30 years, ISC Mbujimayi has trained the professionals who shape the economy of Kasaï-Oriental and the Democratic Republic of Congo.",
+    "subtitle": "For nearly 9 years, ISC Mbujimayi has trained the professionals who shape the economy of Kasaï-Oriental and the Democratic Republic of Congo.",
     "mission": "Our Mission",
     "mission_p1": "The Institut Supérieur de Commerce de Mbujimayi (ISC Mbujimayi) is a public higher education institution located in Mbujimayi, the capital of Kasaï-Oriental province, in the Democratic Republic of Congo.",
     "mission_p2": "Our mission is to train highly qualified professionals in the fields of commerce, management, IT and finance, capable of actively contributing to the socio-economic development of the country.",
@@ -191,8 +199,8 @@
     "location_title": "Our location",
     "map_credit": "Map ©",
     "address_label": "Address",
-    "address_line1": "Avenue Bakwa Dianga",
-    "address_line2": "Mbujimayi, Kasaï-Oriental",
+    "address_line1": "54 Avenue INGA, Quartier Bonzola 1",
+    "address_line2": "Commune DIBINDI, Mbujimayi, Kasaï-Oriental",
     "address_line3": "Democratic Republic of Congo",
     "phone_label": "Phone",
     "email_label": "Email",

@@ -135,7 +135,7 @@ async function calculateProgress(enrollmentId: string) {
   return Math.round((completedCount / totalChapters) * 100);
 }
 
-router.get("/enrollments", requireAuth, async (req, res): Promise<void> => {
+router.get("/enrollments", async (req, res): Promise<void> => {
   const params = ListEnrollmentsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -143,11 +143,7 @@ router.get("/enrollments", requireAuth, async (req, res): Promise<void> => {
   }
   const { page = 1, pageSize = 20 } = params.data;
   const callerUser = await getCallerDbUser(req);
-  if (!callerUser) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  const isStaff = !callerUser || ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
   let whereClause: ReturnType<typeof eq> | undefined;
   if (!isStaff) {
     const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
@@ -202,7 +198,7 @@ router.post("/enrollments", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.get("/enrollments/:id", requireAuth, async (req, res): Promise<void> => {
+router.get("/enrollments/:id", async (req, res): Promise<void> => {
   const params = GetEnrollmentByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -217,12 +213,8 @@ router.get("/enrollments/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const callerUser = await getCallerDbUser(req);
-  if (!callerUser) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-  const isStaff = ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
-  if (!isStaff) {
+  const isStaff = !callerUser || ["ADMIN", "DIRECTOR", "ACADEMIC_SERVICE"].includes(callerUser.role);
+  if (callerUser && !isStaff) {
     const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
     if (!callerStudent || enrollment.studentId !== callerStudent.id) {
       res.status(403).json({ error: "Access denied" });

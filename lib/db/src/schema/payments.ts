@@ -17,7 +17,7 @@ export const paymentTypeEnum = pgEnum("payment_type", [
   "OTHER",
 ]);
 export const mobileOperatorEnum = pgEnum("mobile_operator", [
-  "MTN_MONEY",
+  "VODACOM_MONEY",
   "AIRTEL_MONEY",
   "ORANGE_MONEY",
 ]);

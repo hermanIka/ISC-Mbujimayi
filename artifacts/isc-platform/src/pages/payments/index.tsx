@@ -52,7 +52,7 @@ export default function PaymentsPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<InitiatePaymentBodyType>("INSCRIPTION_FEE");
-  const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("MTN_MONEY");
+  const [operator, setOperator] = useState<InitiatePaymentBodyOperator>("VODACOM_MONEY");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 

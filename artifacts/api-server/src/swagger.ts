@@ -21,7 +21,7 @@ export const swaggerSpec = {
     { name: "Inscriptions", description: "Gestion des inscriptions académiques" },
     { name: "Courses", description: "Gestion des cours, modules et chapitres" },
     { name: "Enrollments", description: "Inscriptions aux cours et suivi de progression" },
-    { name: "Payments", description: "Paiements Mobile Money (MTN, Airtel, Orange)" },
+    { name: "Payments", description: "Paiements Mobile Money (Vodacom, Airtel, Orange)" },
     { name: "Certificates", description: "Certificats de réussite" },
     { name: "Evaluations", description: "Évaluations et examens (QCM + questions ouvertes)" },
     { name: "Forum", description: "Forum de discussion par cours" },
@@ -118,7 +118,7 @@ export const swaggerSpec = {
           },
           operator: {
             type: "string",
-            enum: ["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"],
+            enum: ["VODACOM_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"],
           },
           phoneNumber: { type: "string", example: "+243812345678" },
           status: {
@@ -274,7 +274,7 @@ export const swaggerSpec = {
       post: {
         tags: ["Payments"],
         summary: "Initier un paiement Mobile Money",
-        description: "Initie un paiement et déclenche la simulation asynchrone MTN/Airtel/Orange (délai 2–4 sec selon opérateur, taux de succès 90%).",
+        description: "Initie un paiement et déclenche la simulation asynchrone Vodacom/Airtel/Orange (délai 2–4 sec selon opérateur, taux de succès 90%).",
         requestBody: {
           required: true,
           content: {
@@ -285,7 +285,7 @@ export const swaggerSpec = {
                 properties: {
                   amount: { type: "string", example: "75000", description: "Montant en CDF" },
                   type: { type: "string", enum: ["INSCRIPTION_FEE", "COURSE_FEE", "EXAM_FEE", "LATE_FEE", "CERTIFICATE_FEE", "OTHER"] },
-                  operator: { type: "string", enum: ["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"] },
+                  operator: { type: "string", enum: ["VODACOM_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"] },
                   phoneNumber: { type: "string", example: "+243812345678" },
                   studentId: { type: "string", description: "Requis pour les agents du service financier" },
                 },
@@ -324,7 +324,7 @@ export const swaggerSpec = {
         tags: ["Payments"],
         summary: "Callback opérateur Mobile Money (Webhook)",
         description: "Endpoint appelé par les opérateurs Mobile Money pour confirmer/rejeter un paiement.",
-        parameters: [{ name: "operator", in: "path", required: true, schema: { type: "string", enum: ["MTN_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"] } }],
+        parameters: [{ name: "operator", in: "path", required: true, schema: { type: "string", enum: ["VODACOM_MONEY", "AIRTEL_MONEY", "ORANGE_MONEY"] } }],
         security: [],
         requestBody: {
           content: {

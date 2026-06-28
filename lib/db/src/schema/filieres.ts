@@ -12,6 +12,7 @@ export const filieresTable = pgTable("filieres", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
+  faculty: text("faculty"),
   description: text("description"),
   duration: integer("duration").notNull(),
   level: filiereLevelEnum("level").notNull().default("LICENCE"),

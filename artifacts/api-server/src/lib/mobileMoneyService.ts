@@ -13,11 +13,11 @@ interface OperatorConfig {
 }
 
 const OPERATOR_CONFIGS: Record<string, OperatorConfig> = {
-  MTN_MONEY: {
-    prefix: "MTN",
+  VODACOM_MONEY: {
+    prefix: "VOD",
     minDelayMs: 2000,
     maxDelayMs: 4000,
-    name: "MTN Mobile Money",
+    name: "Vodacom Money",
   },
   AIRTEL_MONEY: {
     prefix: "AIR",

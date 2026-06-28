@@ -12,7 +12,7 @@ const ISC_WEBSITE = "www.isc-mbujimayi.ac.cd";
 const LOGO_PATH = join(__dirname, "assets", "logo-isc.jpg");
 
 const OPERATOR_LABELS: Record<string, string> = {
-  MTN_MONEY: "MTN Mobile Money",
+  VODACOM_MONEY: "Vodacom Money",
   AIRTEL_MONEY: "Airtel Money",
   ORANGE_MONEY: "Orange Money",
 };

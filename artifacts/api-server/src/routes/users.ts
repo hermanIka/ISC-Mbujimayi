@@ -40,10 +40,10 @@ async function getOrCreateUser(clerkId: string, email: string) {
   return refetched;
 }
 
-router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
+router.get("/users/me", async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.json(null);
     return;
   }
   const email = (getAuth(req).sessionClaims?.email as string | undefined) ?? "";

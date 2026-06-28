@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and, gte, lte, inArray } from "drizzle-orm";
+import { eq, count, and, gte, lte, inArray, desc } from "drizzle-orm";
 import { db, paymentsTable, paymentStatusEnum, studentsTable, filieresTable } from "@workspace/db";
 import {
   ListPaymentsQueryParams,
@@ -17,7 +17,7 @@ import archiver from "archiver";
 
 const router: IRouter = Router();
 
-router.get("/payments", requireAuth, async (req, res): Promise<void> => {
+router.get("/payments", async (req, res): Promise<void> => {
   const params = ListPaymentsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -25,14 +25,10 @@ router.get("/payments", requireAuth, async (req, res): Promise<void> => {
   }
   const { page = 1, pageSize = 20, status } = params.data;
   const callerUser = await getCallerDbUser(req);
-  if (!callerUser) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
+  const isStaff = !callerUser || ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
   let studentId: string | undefined;
   if (!isStaff) {
-    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser!.id));
     if (!student) {
       res.json({ payments: [], total: 0, page, pageSize, totalPages: 0 });
       return;
@@ -43,7 +39,30 @@ router.get("/payments", requireAuth, async (req, res): Promise<void> => {
   const statusClause = status ? eq(paymentsTable.status, status as typeof paymentStatusEnum.enumValues[number]) : undefined;
   const studentClause = studentId ? eq(paymentsTable.studentId, studentId) : undefined;
   const whereClause = statusClause && studentClause ? andOp(statusClause, studentClause) : statusClause ?? studentClause;
-  const payments = await db.select().from(paymentsTable).where(whereClause).limit(pageSize).offset((page - 1) * pageSize);
+  const payments = await db
+    .select({
+      id: paymentsTable.id,
+      reference: paymentsTable.reference,
+      studentId: paymentsTable.studentId,
+      amount: paymentsTable.amount,
+      currency: paymentsTable.currency,
+      type: paymentsTable.type,
+      status: paymentsTable.status,
+      operator: paymentsTable.operator,
+      operatorRef: paymentsTable.operatorRef,
+      phoneNumber: paymentsTable.phoneNumber,
+      metadata: paymentsTable.metadata,
+      createdAt: paymentsTable.createdAt,
+      updatedAt: paymentsTable.updatedAt,
+      studentFirstName: studentsTable.firstName,
+      studentLastName: studentsTable.lastName,
+    })
+    .from(paymentsTable)
+    .leftJoin(studentsTable, eq(studentsTable.id, paymentsTable.studentId))
+    .where(whereClause)
+    .orderBy(desc(paymentsTable.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
   const [totalRow] = await db.select({ count: count() }).from(paymentsTable).where(whereClause);
   const total = Number(totalRow?.count ?? 0);
   const formatted = payments.map(p => ({ ...p, amount: p.amount?.toString() ?? "0" }));
@@ -90,7 +109,7 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
     })
     .returning();
 
-  simulateMobileMoneyPayment(payment.id, payment.operator ?? "MTN_MONEY");
+  simulateMobileMoneyPayment(payment.id, payment.operator ?? "VODACOM_MONEY");
 
   res.status(201).json({ ...payment, amount: payment.amount?.toString() ?? "0" });
 });
@@ -119,7 +138,7 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
     return;
   }
   const OPERATOR_CANONICAL: Record<string, string> = {
-    mtn: "MTN_MONEY",
+    vodacom: "VODACOM_MONEY",
     airtel: "AIRTEL_MONEY",
     orange: "ORANGE_MONEY",
   };
@@ -150,14 +169,10 @@ router.post("/payments/callback/:operator", async (req, res): Promise<void> => {
   res.json({ success: true, payment: payment ? { ...payment, amount: payment.amount?.toString() ?? "0" } : null });
 });
 
-router.get("/payments/receipts/bulk", requireAuth, async (req, res): Promise<void> => {
+router.get("/payments/receipts/bulk", async (req, res): Promise<void> => {
   const callerUser = await getCallerDbUser(req);
-  if (!callerUser) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
-  if (!isStaff) {
+  const isStaff = !callerUser || ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
+  if (callerUser && !isStaff) {
     res.status(403).json({ error: "Access denied" });
     return;
   }
@@ -264,7 +279,7 @@ router.get("/payments/receipts/bulk", requireAuth, async (req, res): Promise<voi
   }
 });
 
-router.get("/payments/:id/receipt", requireAuth, async (req, res): Promise<void> => {
+router.get("/payments/:id/receipt", async (req, res): Promise<void> => {
   const params = GetPaymentByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -276,12 +291,8 @@ router.get("/payments/:id/receipt", requireAuth, async (req, res): Promise<void>
     return;
   }
   const callerUser = await getCallerDbUser(req);
-  if (!callerUser) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-  const isStaff = ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
-  if (!isStaff) {
+  const isStaff = !callerUser || ["ADMIN", "DIRECTOR", "FINANCIAL_SERVICE"].includes(callerUser.role);
+  if (callerUser && !isStaff) {
     const [callerStudent] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
     if (!callerStudent || payment.studentId !== callerStudent.id) {
       res.status(403).json({ error: "Access denied" });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { MessageCircle, X, Send, Bot, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -233,21 +234,24 @@ export function ChatbotWidget() {
     }
   };
 
-  return (
+  const widget = (
     <>
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl z-50"
-          size="icon"
+          style={{ position: "fixed", bottom: "1.5rem", right: "1.5rem", zIndex: 9999 }}
+          className="flex items-center gap-2 px-5 h-12 rounded-full shadow-xl font-semibold text-sm transition-all duration-200 hover:scale-105 active:scale-95"
           data-testid="button-open-chat"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-5 w-5 flex-shrink-0" />
+          <span>Plus d&apos;infos</span>
         </Button>
       )}
 
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-80 shadow-2xl z-50 flex flex-col h-[500px]">
+        <Card
+          style={{ position: "fixed", bottom: "1.5rem", right: "1.5rem", zIndex: 9999 }}
+          className="w-80 shadow-2xl flex flex-col h-[500px]">
           <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary" />
@@ -266,7 +270,24 @@ export function ChatbotWidget() {
               {isSignedIn && isLoading ? (
                 <div className="text-center text-sm text-muted-foreground">{t("chatbot.loading")}</div>
               ) : displayMessages.length === 0 ? (
-                <div className="text-center text-sm text-muted-foreground">{t("chatbot.greeting")}</div>
+                <div className="space-y-4">
+                  <div className="bg-muted rounded-lg p-3 text-sm text-foreground">
+                    <p className="font-medium text-primary mb-1">🎓 Assistant ISC Mbujimayi</p>
+                    <p>{t("chatbot.greeting")}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium">{t("chatbot.quick_replies_label")}</p>
+                  <div className="flex flex-col gap-2">
+                    {(t("chatbot.quick_replies", { returnObjects: true }) as string[]).map((q: string) => (
+                      <button
+                        key={q}
+                        onClick={() => { setMessage(q); }}
+                        className="text-left text-xs rounded-lg border border-border bg-background hover:bg-muted px-3 py-2 transition-colors text-foreground"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ) : (
                 displayMessages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -337,4 +358,6 @@ export function ChatbotWidget() {
       )}
     </>
   );
+
+  return createPortal(widget, document.body);
 }

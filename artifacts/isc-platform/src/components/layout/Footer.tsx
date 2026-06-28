@@ -92,11 +92,11 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2 text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
-                <span>Avenue Bakwa Dianga, Mbujimayi, Kasaï-Oriental, RDC</span>
+                <span>54 Avenue INGA, Quartier Bonzola 1, Commune DIBINDI, Mbujimayi, Kasaï-Oriental, RDC</span>
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="h-4 w-4 flex-shrink-0 text-primary" />
-                <span>+243 99 000 0000</span>
+                <span>+243 99 4676705</span>
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <Mail className="h-4 w-4 flex-shrink-0 text-primary" />
@@ -106,7 +106,6 @@ export function Footer() {
           </div>
         </div>
       </div>
-
       <div className="border-t">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-muted-foreground">
           <p>{t("footer.copyright", { year })}</p>

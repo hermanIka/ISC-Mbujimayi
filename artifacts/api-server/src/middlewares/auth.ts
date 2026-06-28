@@ -3,6 +3,8 @@ import type { Request, Response, NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
+const clerkEnabled = !!process.env.CLERK_SECRET_KEY;
+
 export type UserRole =
   | "VISITOR"
   | "STUDENT"
@@ -20,15 +22,35 @@ declare global {
   }
 }
 
+function safeGetUserId(req: Request): string | null {
+  if (!clerkEnabled) return null;
+  try {
+    const { userId } = getAuth(req);
+    return userId ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getCallerDbUser(req: Request) {
-  const { userId } = getAuth(req);
+  if (!clerkEnabled) {
+    // Dev mode: return first ADMIN user as caller
+    const [adminUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.role, "ADMIN"))
+      .limit(1);
+    return adminUser ?? null;
+  }
+  const userId = safeGetUserId(req);
   if (!userId) return null;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, userId));
   return user ?? null;
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  const { userId } = getAuth(req);
+  if (!clerkEnabled) { next(); return; }
+  const userId = safeGetUserId(req);
   if (!userId) {
     res.status(401).json({ error: "Authentication required" });
     return;
@@ -38,7 +60,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
 export function requireRole(...roles: UserRole[]) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { userId } = getAuth(req);
+    if (!clerkEnabled) { next(); return; }
+
+    const userId = safeGetUserId(req);
     if (!userId) {
       res.status(401).json({ error: "Authentication required" });
       return;

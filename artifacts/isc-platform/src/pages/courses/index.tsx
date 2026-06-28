@@ -66,13 +66,11 @@ export default function CoursesPage() {
             filteredCourses.map((course: Course) => (
               <Card key={course.id} className="flex flex-col hover-elevate transition-all duration-200">
                 <div className="aspect-video w-full overflow-hidden rounded-t-xl bg-muted">
-                  {course.thumbnail ? (
-                    <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
-                      <span className="text-lg font-medium">{course.title.substring(0, 2)}</span>
-                    </div>
-                  )}
+                  <img
+                    src={course.thumbnail || "/images/course-default.png"}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2 mb-2">

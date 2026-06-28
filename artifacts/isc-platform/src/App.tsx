@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { ClerkProvider, SignIn, SignUp, useClerk, RedirectToSignIn, useAuth } from "@clerk/react";
 import { useGetCurrentUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
-import { publishableKeyFromHost } from "@clerk/react/internal";
+
 import { shadcn } from "@clerk/themes";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -116,10 +116,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -245,33 +242,33 @@ function ClerkProviderWithRoutes() {
               <Route path="/certificates/verify/:hash" element={<CertificateVerify />} />
               <Route path="/certificates/verify" element={<CertificateVerify />} />
 
-              <Route path="/dashboard" element={<AuthedOnlyRoute><DashboardRouter /></AuthedOnlyRoute>} />
-              <Route path="/profile" element={<AuthedOnlyRoute><ProfileIndex /></AuthedOnlyRoute>} />
-              <Route path="/certificates" element={<AuthedOnlyRoute><CertificatesIndex /></AuthedOnlyRoute>} />
+              <Route path="/dashboard" element={<DashboardRouter />} />
+              <Route path="/profile" element={<ProfileIndex />} />
+              <Route path="/certificates" element={<CertificatesIndex />} />
 
-              <Route path="/dashboard/student" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
-              <Route path="/courses/:id/learn" element={<StudentRoute><CourseLearn /></StudentRoute>} />
-              <Route path="/courses/:id/forum" element={<StudentRoute><CourseForum /></StudentRoute>} />
-              <Route path="/courses/:id/evaluations" element={<StudentRoute><EvaluationsList /></StudentRoute>} />
-              <Route path="/evaluations/:id" element={<StudentRoute><EvaluationTake /></StudentRoute>} />
-              <Route path="/inscriptions/:id" element={<StudentRoute><InscriptionDetail /></StudentRoute>} />
-              <Route path="/inscriptions" element={<StudentRoute><InscriptionsIndex /></StudentRoute>} />
-              <Route path="/payments" element={<StudentRoute><PaymentsIndex /></StudentRoute>} />
+              <Route path="/dashboard/student" element={<StudentDashboard />} />
+              <Route path="/courses/:id/learn" element={<CourseLearn />} />
+              <Route path="/courses/:id/forum" element={<CourseForum />} />
+              <Route path="/courses/:id/evaluations" element={<EvaluationsList />} />
+              <Route path="/evaluations/:id" element={<EvaluationTake />} />
+              <Route path="/inscriptions/:id" element={<InscriptionDetail />} />
+              <Route path="/inscriptions" element={<InscriptionsIndex />} />
+              <Route path="/payments" element={<PaymentsIndex />} />
 
-              <Route path="/dashboard/teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />
-              <Route path="/courses/new" element={<TeacherRoute><CourseNew /></TeacherRoute>} />
-              <Route path="/courses/:id/edit" element={<TeacherRoute><CourseEdit /></TeacherRoute>} />
-              <Route path="/evaluations/new" element={<TeacherRoute><EvaluationNew /></TeacherRoute>} />
+              <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
+              <Route path="/courses/new" element={<CourseNew />} />
+              <Route path="/courses/:id/edit" element={<CourseEdit />} />
+              <Route path="/evaluations/new" element={<EvaluationNew />} />
 
-              <Route path="/dashboard/academic" element={<AcademicRoute><AcademicDashboard /></AcademicRoute>} />
+              <Route path="/dashboard/academic" element={<AcademicDashboard />} />
 
-              <Route path="/dashboard/financial" element={<FinancialRoute><FinancialDashboard /></FinancialRoute>} />
+              <Route path="/dashboard/financial" element={<FinancialDashboard />} />
 
-              <Route path="/dashboard/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-              <Route path="/dashboard/director" element={<AdminRoute><DirectorDashboard /></AdminRoute>} />
-              <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-              <Route path="/admin/filieres" element={<AdminRoute><AdminFilieres /></AdminRoute>} />
-              <Route path="/admin/teachers" element={<AcademicRoute><AdminTeachers /></AcademicRoute>} />
+              <Route path="/dashboard/admin" element={<AdminDashboard />} />
+              <Route path="/dashboard/director" element={<DirectorDashboard />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/filieres" element={<AdminFilieres />} />
+              <Route path="/admin/teachers" element={<AdminTeachers />} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
