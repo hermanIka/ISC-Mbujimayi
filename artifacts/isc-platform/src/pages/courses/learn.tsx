@@ -62,20 +62,17 @@ interface CertificateData {
   issuedAt: string | null;
 }
 
-function useObjectUrl(objectPath: string | null): string | null {
+function useChapterBlobUrl(chapterId: string | null): string | null {
   const blobUrlRef = useRef<string | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!objectPath?.startsWith("/objects/")) {
-      setBlobUrl(null);
-      return;
-    }
+    if (!chapterId) { setBlobUrl(null); return; }
     let cancelled = false;
     const prev = blobUrlRef.current;
     if (prev) { URL.revokeObjectURL(prev); blobUrlRef.current = null; }
 
-    fetch(`/api/storage/chapter-content?path=${encodeURIComponent(objectPath)}`, {
+    fetch(`/api/chapters/${chapterId}/content`, {
       headers: { "X-Demo-User-Id": localStorage.getItem("isc_demo_user_id") ?? "" },
     })
       .then((r) => r.ok ? r.blob() : Promise.reject(r.status))
@@ -88,7 +85,7 @@ function useObjectUrl(objectPath: string | null): string | null {
       .catch(() => { if (!cancelled) setBlobUrl(null); });
 
     return () => { cancelled = true; };
-  }, [objectPath]);
+  }, [chapterId]);
 
   useEffect(() => () => { if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current); }, []);
 
@@ -125,7 +122,7 @@ export default function CourseLearnPage() {
     allChapters.find((c) => c.id === activeChapterId) ?? allChapters[0] ?? null;
 
   const isStoredContent = activeChapter?.content?.startsWith("/objects/") ?? false;
-  const objectBlobUrl = useObjectUrl(isStoredContent ? (activeChapter?.content ?? null) : null);
+  const objectBlobUrl = useChapterBlobUrl(isStoredContent ? (activeChapter?.id ?? null) : null);
   const resolvedContent = isStoredContent ? objectBlobUrl : (activeChapter?.content ?? null);
 
   useEffect(() => {

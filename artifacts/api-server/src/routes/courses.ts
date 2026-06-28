@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import { Readable } from "stream";
+import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { eq, count, and, or, isNotNull, inArray } from "drizzle-orm";
 import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, chapterProgressTable, studentsTable, usersTable, evaluationResultsTable, evaluationsTable, courseStatusEnum, type Course } from "@workspace/db";
 import { requireAuth, requireTeacher, requireAdmin, getCallerDbUser } from "../middlewares/auth";
@@ -27,6 +29,7 @@ import {
 import { nanoid } from "nanoid";
 
 const router: IRouter = Router();
+const objectStorageService = new ObjectStorageService();
 
 async function getCallerTeacherId(req: import("express").Request): Promise<string | null> {
   const callerUser = await getCallerDbUser(req);
@@ -412,6 +415,64 @@ router.delete("/chapters/:id", requireTeacher, async (req, res): Promise<void> =
   if (!await assertChapterOwner(req, params.data.id, res)) return;
   await db.delete(chaptersTable).where(eq(chaptersTable.id, params.data.id));
   res.sendStatus(204);
+});
+
+router.get("/chapters/:id/content", requireAuth, async (req, res): Promise<void> => {
+  const id = req.params.id as string;
+  const [chapter] = await db.select().from(chaptersTable).where(eq(chaptersTable.id, id));
+  if (!chapter) { res.status(404).json({ error: "Chapitre non trouvé" }); return; }
+
+  const objectPath = chapter.content;
+  if (!objectPath || !objectPath.startsWith("/objects/")) {
+    res.status(410).json({ error: "Ce chapitre n'a pas de contenu stocké" });
+    return;
+  }
+
+  const [mod] = await db.select().from(modulesTable).where(eq(modulesTable.id, chapter.moduleId));
+  if (!mod) { res.status(403).json({ error: "Accès refusé" }); return; }
+
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) { res.status(401).json({ error: "Non authentifié" }); return; }
+
+  if (!["ADMIN", "DIRECTOR"].includes(callerUser.role)) {
+    if (callerUser.role === "TEACHER") {
+      const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+      const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, mod.courseId));
+      if (!teacher || !course || course.teacherId !== teacher.id) {
+        res.status(403).json({ error: "Accès refusé : vous n'êtes pas l'auteur de ce cours" }); return;
+      }
+    } else {
+      const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+      if (!student) { res.status(403).json({ error: "Accès refusé" }); return; }
+      const enrollments = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.studentId, student.id));
+      if (!enrollments.some((e) => e.courseId === mod.courseId)) {
+        res.status(403).json({ error: "Accès refusé : inscription requise" }); return;
+      }
+    }
+  }
+
+  try {
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+    const response = await objectStorageService.downloadObject(objectFile, 0);
+    res.setHeader("Content-Disposition", "inline");
+    res.status(response.status);
+    response.headers.forEach((value, key) => {
+      if (key !== "content-disposition") res.setHeader(key, value);
+    });
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (err) {
+    if (err instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Fichier non trouvé dans le stockage" });
+    } else {
+      logger.error({ err, chapterId: id }, "Erreur téléchargement contenu chapitre");
+      res.status(500).json({ error: "Erreur lors du téléchargement" });
+    }
+  }
 });
 
 router.put("/courses/:id/submit", requireTeacher, async (req, res): Promise<void> => {
