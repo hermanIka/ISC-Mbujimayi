@@ -57,7 +57,7 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const OPERATOR_LABELS: Record<string, string> = {
-  MTN_MONEY: "MTN",
+  MTN_MONEY: "Vodacom",
   AIRTEL_MONEY: "Airtel",
   ORANGE_MONEY: "Orange",
 };

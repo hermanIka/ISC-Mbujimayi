@@ -38,7 +38,7 @@ interface DocEntry {
 }
 
 const OPERATORS: { value: MobileOperator; label: string; color: string; prefix: string }[] = [
-  { value: "MTN_MONEY", label: "MTN Mobile Money", color: "bg-yellow-400", prefix: "MTN" },
+  { value: "MTN_MONEY", label: "Vodacom Mobile Money", color: "bg-red-600 text-white border-red-700", prefix: "VOD" },
   { value: "AIRTEL_MONEY", label: "Airtel Money", color: "bg-red-500", prefix: "AIR" },
   { value: "ORANGE_MONEY", label: "Orange Money", color: "bg-orange-500", prefix: "ORA" },
 ];

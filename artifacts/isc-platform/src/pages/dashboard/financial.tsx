@@ -27,7 +27,7 @@ interface FinancialAnalyticsData {
 }
 
 const OPERATOR_COLORS: Record<string, string> = {
-  MTN_MONEY: "#FFCC00",
+  MTN_MONEY: "#E40000",
   AIRTEL_MONEY: "#E4012A",
   ORANGE_MONEY: "#FF6600",
 };

@@ -39,7 +39,7 @@ type MobileOperator = "MTN_MONEY" | "AIRTEL_MONEY" | "ORANGE_MONEY";
 type PaymentStatus = "idle" | "processing" | "success" | "failed";
 
 const OPERATORS: { value: MobileOperator; label: string; color: string }[] = [
-  { value: "MTN_MONEY", label: "MTN Money", color: "bg-yellow-400" },
+  { value: "MTN_MONEY", label: "Vodacom Mobile Money", color: "bg-red-600 text-white border-red-700" },
   { value: "AIRTEL_MONEY", label: "Airtel Money", color: "bg-red-500" },
   { value: "ORANGE_MONEY", label: "Orange Money", color: "bg-orange-500" },
 ];
@@ -57,7 +57,7 @@ function simulateDelay(operator: MobileOperator): number {
 }
 
 function generateRef(operator: MobileOperator): string {
-  const prefix = { MTN_MONEY: "MTN", AIRTEL_MONEY: "AIR", ORANGE_MONEY: "ORA" }[operator];
+  const prefix = { MTN_MONEY: "VOD", AIRTEL_MONEY: "AIR", ORANGE_MONEY: "ORA" }[operator];
   return `${prefix}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 }
 

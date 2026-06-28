@@ -156,7 +156,7 @@ export default function PaymentsPage() {
                       <SelectValue placeholder={t("payments.select_operator")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MTN_MONEY">MTN Mobile Money</SelectItem>
+                      <SelectItem value="MTN_MONEY">Vodacom Mobile Money</SelectItem>
                       <SelectItem value="AIRTEL_MONEY">Airtel Money</SelectItem>
                       <SelectItem value="ORANGE_MONEY">Orange Money</SelectItem>
                     </SelectContent>

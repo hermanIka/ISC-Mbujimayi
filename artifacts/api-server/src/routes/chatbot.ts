@@ -132,7 +132,7 @@ Accès : connectez-vous → "Mes cours". Vos cours s'affichent après approbatio
 Téléchargez vos certificats depuis : Tableau de bord → "Mes certificats".`,
   },
   {
-    keywords: ["paiement", "mobile money", "mtn", "airtel", "orange", "money", "transaction", "recharge", "virement"],
+    keywords: ["paiement", "mobile money", "vodacom", "airtel", "orange", "money", "transaction", "recharge", "virement"],
     answer: `Paiements Mobile Money disponibles sur la plateforme :
 • 📱 Vodacom Money : *400# → "M-Pesa Paiement"
 • 📱 Airtel Money : *185# → "Paiement"
