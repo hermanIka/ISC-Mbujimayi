@@ -205,12 +205,8 @@ export default function RegisterPage() {
     setPaymentStatus("processing");
     setApiError(null);
     const delay = simulateDelay(operator);
-    const willSucceed = Math.random() < 0.9;
     await new Promise(resolve => setTimeout(resolve, delay));
-    if (!willSucceed) {
-      setPaymentStatus("failed");
-      return;
-    }
+    const willSucceed = true;
     const ref = generateRef(operator);
     setOperatorRef(ref);
     setPaymentStatus("success");
