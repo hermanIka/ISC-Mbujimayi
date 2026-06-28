@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useRoute, Link } from "@/lib/router";
+import { useRoute, Link, useLocation } from "@/lib/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useGetCourseById,
@@ -13,8 +13,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft, PlayCircle, FileText, CheckCircle2, MessageSquare,
-  ClipboardList, BookOpen, AlertCircle, Download, Video
+  ClipboardList, BookOpen, AlertCircle, Download, Video, Award, Trophy
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -49,14 +56,22 @@ interface CourseWithModules {
   modules: CourseModule[];
 }
 
+interface CertificateData {
+  id: string;
+  hash: string;
+  issuedAt: string | null;
+}
+
 export default function CourseLearnPage() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const [, params] = useRoute("/courses/:id/learn");
   const courseId = params?.id || "";
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set());
   const [chapterMaterials, setChapterMaterials] = useState<ChapterMaterial[]>([]);
   const [chaptersWithMaterials, setChaptersWithMaterials] = useState<Set<string>>(new Set());
+  const [certificateModal, setCertificateModal] = useState<CertificateData | null>(null);
   const { toast } = useToast();
 
   const { data: course, isLoading: courseLoading } = useGetCourseById(courseId, {
@@ -119,16 +134,26 @@ export default function CourseLearnPage() {
       return;
     }
     try {
-      await markProgress.mutateAsync({
+      const result = await markProgress.mutateAsync({
         chapterId,
         data: { enrollmentId, completed: true },
       });
       setCompletedChapters((prev) => new Set([...prev, chapterId]));
-      toast({ title: t("learn.chapter_done") });
 
-      const idx = allChapters.findIndex((c) => c.id === chapterId);
-      if (idx !== -1 && idx < allChapters.length - 1) {
-        setActiveChapterId(allChapters[idx + 1].id);
+      const resultData = result as unknown as {
+        certificateGenerated?: boolean;
+        certificate?: CertificateData | null;
+        courseProgressPercent?: number;
+      };
+
+      if (resultData?.certificateGenerated && resultData?.certificate) {
+        setCertificateModal(resultData.certificate);
+      } else {
+        toast({ title: t("learn.chapter_done") });
+        const idx = allChapters.findIndex((c) => c.id === chapterId);
+        if (idx !== -1 && idx < allChapters.length - 1) {
+          setActiveChapterId(allChapters[idx + 1].id);
+        }
       }
     } catch {
       toast({ title: t("common.error"), description: t("learn.mark_error"), variant: "destructive" });
@@ -153,8 +178,51 @@ export default function CourseLearnPage() {
     );
   }
 
+  const handleDownloadCertificate = () => {
+    if (!certificateModal) return;
+    window.open(`/api/certificates/${certificateModal.id}/download`, "_blank");
+  };
+
   return (
     <AppLayout>
+      <Dialog open={!!certificateModal} onOpenChange={(open) => { if (!open) setCertificateModal(null); }}>
+        <DialogContent className="sm:max-w-md text-center" data-testid="certificate-modal">
+          <DialogHeader className="items-center">
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100">
+              <Trophy className="h-9 w-9 text-yellow-500" />
+            </div>
+            <DialogTitle className="text-2xl font-bold">{t("learn.course_complete_title")}</DialogTitle>
+            <DialogDescription className="text-base mt-1">
+              {t("learn.course_complete_desc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 flex items-center justify-center gap-2 rounded-lg border bg-green-50 p-3 text-green-700">
+            <Award className="h-5 w-5 shrink-0" />
+            <span className="text-sm font-medium">{t("learn.certificate_ready")}</span>
+          </div>
+          <div className="mt-4 flex flex-col gap-2">
+            <Button onClick={handleDownloadCertificate} className="w-full" data-testid="certificate-download-btn">
+              <Download className="mr-2 h-4 w-4" />
+              {t("learn.download_certificate")}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => { setCertificateModal(null); navigate("/certificates"); }}
+            >
+              {t("learn.view_certificates")}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-muted-foreground"
+              onClick={() => setCertificateModal(null)}
+            >
+              {t("learn.continue_learning")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex h-[calc(100vh-4rem)]">
         <div className="w-80 border-r bg-muted/20 flex-col hidden md:flex">
           <div className="p-4 border-b space-y-3">

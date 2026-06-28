@@ -522,7 +522,13 @@
     "mark_error": "Unable to mark this chapter.",
     "not_enrolled_title": "Not enrolled",
     "not_enrolled_desc": "You must be enrolled in this course to record your progress.",
-    "not_enrolled_warning": "Progress not saved (not enrolled)"
+    "not_enrolled_warning": "Progress not saved (not enrolled)",
+    "course_complete_title": "Congratulations!",
+    "course_complete_desc": "You have successfully completed this course. Your certificate of completion is ready.",
+    "certificate_ready": "Certificate ready",
+    "download_certificate": "Download certificate",
+    "view_certificates": "View my certificates",
+    "continue_learning": "Continue learning"
   },
   "certificates": {
     "title": "My Certificates",

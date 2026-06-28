@@ -522,7 +522,13 @@
     "mark_error": "Impossible de marquer ce chapitre.",
     "not_enrolled_title": "Non inscrit",
     "not_enrolled_desc": "Vous devez être inscrit à ce cours pour enregistrer votre progression.",
-    "not_enrolled_warning": "Progression non enregistrée (non inscrit)"
+    "not_enrolled_warning": "Progression non enregistrée (non inscrit)",
+    "course_complete_title": "Félicitations !",
+    "course_complete_desc": "Vous avez terminé ce cours avec succès. Votre certificat de réussite est prêt.",
+    "certificate_ready": "Certificat prêt",
+    "download_certificate": "Télécharger le certificat",
+    "view_certificates": "Voir mes certificats",
+    "continue_learning": "Continuer à apprendre"
   },
   "certificates": {
     "title": "Mes Certificats",

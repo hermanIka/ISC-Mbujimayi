@@ -312,6 +312,12 @@ router.post("/chapters/:chapterId/progress", requireAuth, async (req, res): Prom
         .from(certificatesTable)
         .where(andOp(eq(certificatesTable.studentId, enrollment.studentId), eq(certificatesTable.courseId, enrollment.courseId)));
       if (!existing[0]) {
+        if (!enrollment.completedAt) {
+          await db
+            .update(enrollmentsTable)
+            .set({ completedAt: new Date() })
+            .where(eq(enrollmentsTable.id, enrollmentId));
+        }
         const hash = crypto
           .createHash("sha256")
           .update(`${enrollmentId}-${enrollment.courseId}-${Date.now()}`)
