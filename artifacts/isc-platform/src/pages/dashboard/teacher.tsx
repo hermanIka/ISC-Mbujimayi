@@ -16,14 +16,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Users, BookOpen, Star, FileText, Plus, Eye, Edit, Send, Archive,
-  CheckCircle, Clock, BarChart2, TrendingUp
+  CheckCircle, Clock, BarChart2, TrendingUp, AlertTriangle, Upload, Loader2, X, Paperclip
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Link } from "@/lib/router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
+
+interface StudentProgress {
+  enrollmentId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string | null;
+  enrolledAt: string;
+  completedAt: string | null;
+  completedChapters: number;
+  totalChapters: number;
+  progressPercent: number;
+  evaluationResults: Array<{
+    evaluationId: string;
+    score: number;
+    maxScore: number;
+    percent: number;
+    passed: boolean;
+  }>;
+}
 
 interface TeacherAnalyticsData {
   totalCourses: number;
@@ -42,8 +64,18 @@ interface TeacherAnalyticsData {
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700 border-gray-300",
+  PENDING_REVIEW: "bg-blue-100 text-blue-700 border-blue-300",
   PUBLISHED: "bg-green-100 text-green-700 border-green-300",
+  REJECTED: "bg-red-100 text-red-700 border-red-300",
   ARCHIVED: "bg-orange-100 text-orange-700 border-orange-300",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Brouillon",
+  PENDING_REVIEW: "En validation",
+  PUBLISHED: "Publié",
+  REJECTED: "Rejeté",
+  ARCHIVED: "Archivé",
 };
 
 function CourseEvaluationsSection({
@@ -143,11 +175,42 @@ export default function TeacherDashboard() {
     },
   ];
 
+  const [progressCourseId, setProgressCourseId] = useState<string | null>(null);
+  const [studentsProgress, setStudentsProgress] = useState<StudentProgress[]>([]);
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [supportsDialogCourseId, setSupportsDialogCourseId] = useState<string | null>(null);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+
   const handleStatusChange = async (courseId: string, newStatus: string) => {
     try {
       await updateCourse.mutateAsync({ id: courseId, data: { status: newStatus as "DRAFT" | "PUBLISHED" | "ARCHIVED" } });
       queryClient.invalidateQueries({ queryKey: getListCoursesQueryKey() });
     } catch {}
+  };
+
+  const handleSubmitForReview = async (courseId: string) => {
+    setSubmittingId(courseId);
+    try {
+      await fetch(`/api/courses/${courseId}/submit`, { method: "PUT" });
+      queryClient.invalidateQueries({ queryKey: getListCoursesQueryKey() });
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const openStudentsProgress = async (courseId: string) => {
+    setProgressCourseId(courseId);
+    setProgressLoading(true);
+    setStudentsProgress([]);
+    try {
+      const res = await fetch(`/api/courses/${courseId}/students-progress`);
+      if (res.ok) {
+        const data = await res.json() as StudentProgress[];
+        setStudentsProgress(data);
+      }
+    } finally {
+      setProgressLoading(false);
+    }
   };
 
   const engagementData = courseEngagement.map((c) => ({
@@ -196,7 +259,7 @@ export default function TeacherDashboard() {
         </div>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
             <TabsTrigger value="overview">
               <BarChart2 className="h-4 w-4 mr-1" />
               {t("teacher.tab_overview")}
@@ -208,6 +271,10 @@ export default function TeacherDashboard() {
             <TabsTrigger value="evaluations">
               <FileText className="h-4 w-4 mr-1" />
               {t("teacher.tab_evaluations")}
+            </TabsTrigger>
+            <TabsTrigger value="students">
+              <Users className="h-4 w-4 mr-1" />
+              Étudiants
             </TabsTrigger>
           </TabsList>
 
@@ -312,7 +379,7 @@ export default function TeacherDashboard() {
                               variant="outline"
                               className={STATUS_COLORS[course.status] ?? ""}
                             >
-                              {t(`teacher.status_${course.status.toLowerCase()}` as Parameters<typeof t>[0]) as string || course.status}
+                              {STATUS_LABELS[course.status] ?? course.status}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
@@ -320,31 +387,38 @@ export default function TeacherDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1 flex-wrap">
-                              <Button variant="ghost" size="icon" asChild title={t("teacher.view")}>
-                                <Link href={`/courses/${course.id}`}>
-                                  <Eye className="h-4 w-4" />
-                                </Link>
+                              <Button variant="ghost" size="icon" asChild title="Voir">
+                                <Link href={`/courses/${course.id}`}><Eye className="h-4 w-4" /></Link>
                               </Button>
-                              <Button variant="ghost" size="icon" asChild title={t("teacher.edit")}>
-                                <Link href={`/courses/${course.id}/edit`}>
-                                  <Edit className="h-4 w-4" />
-                                </Link>
+                              <Button variant="ghost" size="icon" asChild title="Modifier">
+                                <Link href={`/courses/${course.id}/edit`}><Edit className="h-4 w-4" /></Link>
                               </Button>
-                              {course.status === "DRAFT" && (
+                              <Button variant="ghost" size="icon" title="Gérer les supports" onClick={() => setSupportsDialogCourseId(course.id)}>
+                                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                              {(course.status === "DRAFT" || course.status === "REJECTED") && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  title={t("teacher.publish")}
-                                  onClick={() => handleStatusChange(course.id, "PUBLISHED")}
+                                  title="Soumettre pour validation"
+                                  disabled={submittingId === course.id}
+                                  onClick={() => handleSubmitForReview(course.id)}
                                 >
-                                  <Send className="h-4 w-4 text-green-600" />
+                                  {submittingId === course.id
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <Send className="h-4 w-4 text-blue-600" />}
                                 </Button>
+                              )}
+                              {course.status === "PENDING_REVIEW" && (
+                                <span className="flex items-center gap-1 text-blue-500 text-xs px-2">
+                                  <Clock className="h-3.5 w-3.5" /> En attente
+                                </span>
                               )}
                               {course.status === "PUBLISHED" && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  title={t("teacher.archive")}
+                                  title="Archiver"
                                   onClick={() => handleStatusChange(course.id, "ARCHIVED")}
                                 >
                                   <Archive className="h-4 w-4 text-orange-500" />
@@ -354,11 +428,17 @@ export default function TeacherDashboard() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  title={t("teacher.restore")}
+                                  title="Restaurer en brouillon"
                                   onClick={() => handleStatusChange(course.id, "DRAFT")}
                                 >
                                   <CheckCircle className="h-4 w-4 text-blue-500" />
                                 </Button>
+                              )}
+                              {course.status === "REJECTED" && (course as { rejectionNotes?: string }).rejectionNotes && (
+                                <span className="text-xs text-red-500 max-w-[120px] truncate" title={(course as { rejectionNotes?: string }).rejectionNotes}>
+                                  <AlertTriangle className="h-3 w-3 inline mr-0.5" />
+                                  {(course as { rejectionNotes?: string }).rejectionNotes}
+                                </span>
                               )}
                             </div>
                           </TableCell>
@@ -366,6 +446,85 @@ export default function TeacherDashboard() {
                       ))}
                     </TableBody>
                   </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="students" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Progression des étudiants par cours
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {courses.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Aucun cours créé pour le moment.</p>
+                ) : (
+                  <div className="space-y-6">
+                    {courses.map((course) => (
+                      <div key={course.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{course.title}</p>
+                            <Badge variant="outline" className={`text-xs ${STATUS_COLORS[course.status]}`}>
+                              {STATUS_LABELS[course.status] ?? course.status}
+                            </Badge>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => openStudentsProgress(course.id)}>
+                            <Users className="h-3.5 w-3.5 mr-1" />
+                            Voir progression
+                          </Button>
+                        </div>
+                        {progressCourseId === course.id && (
+                          <div>
+                            {progressLoading ? (
+                              <div className="flex items-center gap-2 py-4 text-muted-foreground text-sm">
+                                <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
+                              </div>
+                            ) : studentsProgress.length === 0 ? (
+                              <p className="text-sm text-muted-foreground py-2">Aucun étudiant inscrit à ce cours.</p>
+                            ) : (
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Étudiant</TableHead>
+                                    <TableHead>Progression</TableHead>
+                                    <TableHead className="text-right">Chapitres</TableHead>
+                                    <TableHead className="text-right">Évals réussies</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {studentsProgress.map((sp) => (
+                                    <TableRow key={sp.enrollmentId}>
+                                      <TableCell>
+                                        <p className="font-medium text-sm">{sp.studentName}</p>
+                                        {sp.studentEmail && <p className="text-xs text-muted-foreground">{sp.studentEmail}</p>}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="space-y-1 min-w-[120px]">
+                                          <Progress value={sp.progressPercent} className="h-2" />
+                                          <p className="text-xs text-muted-foreground">{sp.progressPercent}%</p>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-right text-sm">
+                                        {sp.completedChapters}/{sp.totalChapters}
+                                      </TableCell>
+                                      <TableCell className="text-right text-sm">
+                                        {sp.evaluationResults.filter(e => e.passed).length}/{sp.evaluationResults.length}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -428,6 +587,146 @@ export default function TeacherDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+      <CourseSupportsDialog
+        courseId={supportsDialogCourseId}
+        onClose={() => setSupportsDialogCourseId(null)}
+      />
     </AppLayout>
+  );
+}
+
+interface ChapterMaterial {
+  id: string;
+  chapterId: string;
+  type: "VIDEO" | "PDF" | "DOC";
+  url: string;
+  fileName: string;
+  fileSize: number;
+}
+
+interface ModuleWithChapters {
+  id: string;
+  title: string;
+  chapters: Array<{ id: string; title: string }>;
+}
+
+function CourseSupportsDialog({ courseId, onClose }: { courseId: string | null; onClose: () => void }) {
+  const [modules, setModules] = useState<ModuleWithChapters[]>([]);
+  const [materials, setMaterials] = useState<Record<string, ChapterMaterial[]>>({});
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!courseId) return;
+    setLoading(true);
+    fetch(`/api/courses/${courseId}`)
+      .then(r => r.json())
+      .then((data: { modules?: ModuleWithChapters[] }) => {
+        const mods = data.modules ?? [];
+        setModules(mods);
+        const chapterIds = mods.flatMap(m => m.chapters.map(c => c.id));
+        return Promise.all(chapterIds.map(cid =>
+          fetch(`/api/chapters/${cid}/materials`)
+            .then(r => r.json())
+            .then((mats: ChapterMaterial[]) => ({ cid, mats }))
+        ));
+      })
+      .then(results => {
+        const map: Record<string, ChapterMaterial[]> = {};
+        results.forEach(({ cid, mats }) => { map[cid] = mats; });
+        setMaterials(map);
+      })
+      .finally(() => setLoading(false));
+  }, [courseId]);
+
+  const handleUpload = async (chapterId: string, file: File) => {
+    setUploading(chapterId);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch(`/api/chapters/${chapterId}/materials`, { method: "POST", body: formData });
+      if (res.ok) {
+        const mat = await res.json() as ChapterMaterial;
+        setMaterials(prev => ({ ...prev, [chapterId]: [...(prev[chapterId] ?? []), mat] }));
+      }
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleDelete = async (materialId: string, chapterId: string) => {
+    await fetch(`/api/materials/${materialId}`, { method: "DELETE" });
+    setMaterials(prev => ({ ...prev, [chapterId]: (prev[chapterId] ?? []).filter(m => m.id !== materialId) }));
+  };
+
+  const formatSize = (bytes: number) => bytes < 1024 * 1024
+    ? `${(bytes / 1024).toFixed(0)} Ko`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+
+  return (
+    <Dialog open={!!courseId} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Paperclip className="h-5 w-5 text-primary" />
+            Supports pédagogiques
+          </DialogTitle>
+        </DialogHeader>
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" /> Chargement...
+          </div>
+        ) : modules.length === 0 ? (
+          <p className="text-muted-foreground text-sm py-6 text-center">Aucun module trouvé. Créez d'abord des modules et chapitres.</p>
+        ) : (
+          <div className="space-y-5">
+            {modules.map(mod => (
+              <div key={mod.id} className="space-y-3">
+                <p className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{mod.title}</p>
+                {mod.chapters.map(chapter => (
+                  <div key={chapter.id} className="border rounded-lg p-3 space-y-2">
+                    <p className="font-medium text-sm">{chapter.title}</p>
+                    {(materials[chapter.id] ?? []).length > 0 && (
+                      <ul className="space-y-1">
+                        {(materials[chapter.id] ?? []).map(m => (
+                          <li key={m.id} className="flex items-center justify-between text-xs bg-muted/40 rounded px-2 py-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Badge variant="outline" className="text-[10px] shrink-0">{m.type}</Badge>
+                              <a href={m.url} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate max-w-[200px]">{m.fileName}</a>
+                              <span className="text-muted-foreground shrink-0">{formatSize(m.fileSize)}</span>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-600" onClick={() => handleDelete(m.id, chapter.id)}>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs text-primary hover:underline">
+                        {uploading === chapter.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        Ajouter un fichier
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="video/*,.pdf,.doc,.docx"
+                          disabled={uploading === chapter.id}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUpload(chapter.id, file);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      <span className="text-xs text-muted-foreground">Vidéo max 50 MB · PDF/DOC max 20 MB</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

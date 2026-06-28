@@ -518,3 +518,52 @@ export function buildCertificateIssuedEmail(params: {
 
   return { subject, html: htmlWrapper(bodyContent) };
 }
+
+export function buildCourseApprovedEmail(teacherName: string, courseTitle: string): { subject: string; html: string } {
+  const subject = `✅ Votre cours « ${courseTitle} » est publié — ISC Mbujimayi`;
+  const bodyContent = `
+    ${greeting(teacherName)}
+    <div style="text-align:center;margin:0 0 24px;">
+      <div style="display:inline-block;background:linear-gradient(135deg,#15803d,#22c55e);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:32px;color:#ffffff;margin-bottom:12px;">✅</div>
+      <p style="margin:0;color:#15803d;font-size:20px;font-weight:bold;">Cours approuvé et publié !</p>
+    </div>
+    <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">
+      Nous avons le plaisir de vous informer que votre cours <strong>« ${courseTitle} »</strong> a été examiné et 
+      <strong style="color:#15803d;">approuvé</strong> par l'administration. Il est maintenant visible par tous les étudiants de la plateforme.
+    </p>
+    ${infoTable([["Cours :", courseTitle], ["Statut :", "PUBLIÉ"], ["Date d'approbation :", new Date().toLocaleDateString("fr-CD", { day: "2-digit", month: "long", year: "numeric" })]])}
+    ${alertBox("Vos étudiants peuvent désormais s'inscrire et suivre ce cours en ligne.", "success")}
+    ${actionButton("Voir mon cours", "https://www.isc-mbujimayi.ac.cd/dashboard")}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Cordialement,<br/><strong>Administration — ISC Mbujimayi</strong>
+    </p>
+  `;
+  return { subject, html: htmlWrapper(bodyContent) };
+}
+
+export function buildCourseRejectedEmail(teacherName: string, courseTitle: string, rejectionNotes?: string): { subject: string; html: string } {
+  const subject = `❌ Votre cours « ${courseTitle} » n'a pas été approuvé — ISC Mbujimayi`;
+  const bodyContent = `
+    ${greeting(teacherName)}
+    <div style="text-align:center;margin:0 0 24px;">
+      <div style="display:inline-block;background:linear-gradient(135deg,#dc2626,#ef4444);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:32px;color:#ffffff;margin-bottom:12px;">❌</div>
+      <p style="margin:0;color:#dc2626;font-size:20px;font-weight:bold;">Cours non approuvé</p>
+    </div>
+    <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">
+      Après examen, votre cours <strong>« ${courseTitle} »</strong> n'a pas pu être approuvé en l'état.
+      Vous pouvez le modifier et le soumettre à nouveau pour une nouvelle évaluation.
+    </p>
+    ${rejectionNotes ? `
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:14px 18px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#dc2626;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;">Motif du rejet</p>
+      <p style="margin:0;color:#1e293b;font-size:13px;line-height:1.6;">${rejectionNotes}</p>
+    </div>` : ""}
+    ${infoTable([["Cours :", courseTitle], ["Statut :", "REJETÉ"]])}
+    ${actionButton("Modifier mon cours", "https://www.isc-mbujimayi.ac.cd/dashboard")}
+    <p style="margin:24px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
+      Si vous avez des questions, n'hésitez pas à contacter l'administration.<br/>
+      Cordialement,<br/><strong>Administration — ISC Mbujimayi</strong>
+    </p>
+  `;
+  return { subject, html: htmlWrapper(bodyContent) };
+}

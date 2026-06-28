@@ -16,6 +16,7 @@ import chatbotRouter from "./chatbot";
 import analyticsRouter from "./analytics";
 import preRegisterRouter from "./preRegister";
 import registrationsRouter from "./registrations";
+import materialsRouter from "./materials";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(chatbotRouter);
 router.use(analyticsRouter);
 router.use(preRegisterRouter);
 router.use(registrationsRouter);
+router.use(materialsRouter);
 
 export default router;

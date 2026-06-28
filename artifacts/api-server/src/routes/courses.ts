@@ -1,7 +1,9 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, count, and } from "drizzle-orm";
-import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, courseStatusEnum, type Course } from "@workspace/db";
-import { requireAuth, requireTeacher, getCallerDbUser } from "../middlewares/auth";
+import { eq, count, and, isNotNull } from "drizzle-orm";
+import { db, coursesTable, teachersTable, filieresTable, modulesTable, chaptersTable, enrollmentsTable, chapterProgressTable, studentsTable, usersTable, evaluationResultsTable, courseStatusEnum, type Course } from "@workspace/db";
+import { requireAuth, requireTeacher, requireAdmin, getCallerDbUser } from "../middlewares/auth";
+import { logger } from "../lib/logger";
+import { sendEmail, buildCourseApprovedEmail, buildCourseRejectedEmail } from "../lib/emailService";
 import {
   ListCoursesQueryParams,
   CreateCourseBody,
@@ -355,6 +357,126 @@ router.delete("/chapters/:id", requireTeacher, async (req, res): Promise<void> =
   if (!await assertChapterOwner(req, params.data.id, res)) return;
   await db.delete(chaptersTable).where(eq(chaptersTable.id, params.data.id));
   res.sendStatus(204);
+});
+
+router.put("/courses/:id/submit", requireTeacher, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  if (!await assertCourseOwner(req, id, res)) return;
+  const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, id));
+  if (!course) { res.status(404).json({ error: "Cours introuvable" }); return; }
+  if (course.status !== "DRAFT" && course.status !== "REJECTED") {
+    res.status(400).json({ error: "Seuls les cours en brouillon ou rejetés peuvent être soumis" });
+    return;
+  }
+  const [updated] = await db
+    .update(coursesTable)
+    .set({ status: "PENDING_REVIEW", rejectionNotes: null })
+    .where(eq(coursesTable.id, id))
+    .returning();
+  logger.info({ id }, "📤 [COURSES] Soumis pour validation");
+  res.json(await enrichCourse(updated));
+});
+
+router.put("/courses/:id/approve", requireAdmin, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, id));
+  if (!course) { res.status(404).json({ error: "Cours introuvable" }); return; }
+  if (course.status !== "PENDING_REVIEW") {
+    res.status(400).json({ error: "Seuls les cours en attente peuvent être approuvés" }); return;
+  }
+  const [updated] = await db
+    .update(coursesTable)
+    .set({ status: "PUBLISHED", rejectionNotes: null })
+    .where(eq(coursesTable.id, id))
+    .returning();
+  try {
+    const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, course.teacherId));
+    if (teacher?.userId) {
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, teacher.userId));
+      if (user?.email) {
+        const emailData = buildCourseApprovedEmail(`${teacher.firstName} ${teacher.lastName}`, course.title);
+        await sendEmail({ to: user.email, ...emailData });
+      }
+    }
+  } catch { logger.warn("Failed to send course approved email"); }
+  logger.info({ id }, "✅ [COURSES] Cours approuvé");
+  res.json(await enrichCourse(updated));
+});
+
+router.put("/courses/:id/reject", requireAdmin, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  const body = req.body as { notes?: string };
+  const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, id));
+  if (!course) { res.status(404).json({ error: "Cours introuvable" }); return; }
+  if (course.status !== "PENDING_REVIEW") {
+    res.status(400).json({ error: "Seuls les cours en attente peuvent être rejetés" }); return;
+  }
+  const [updated] = await db
+    .update(coursesTable)
+    .set({ status: "REJECTED", rejectionNotes: body.notes ?? null })
+    .where(eq(coursesTable.id, id))
+    .returning();
+  try {
+    const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.id, course.teacherId));
+    if (teacher?.userId) {
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, teacher.userId));
+      if (user?.email) {
+        const emailData = buildCourseRejectedEmail(`${teacher.firstName} ${teacher.lastName}`, course.title, body.notes);
+        await sendEmail({ to: user.email, ...emailData });
+      }
+    }
+  } catch { logger.warn("Failed to send course rejected email"); }
+  logger.info({ id, notes: body.notes }, "❌ [COURSES] Cours rejeté");
+  res.json(await enrichCourse(updated));
+});
+
+router.get("/courses/:id/students-progress", requireTeacher, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  if (!await assertCourseOwner(req, id, res)) return;
+
+  const modules = await db.select().from(modulesTable).where(eq(modulesTable.courseId, id));
+  const allChaptersArrays = await Promise.all(
+    modules.map((m) => db.select().from(chaptersTable).where(eq(chaptersTable.moduleId, m.id)))
+  );
+  const totalChapters = allChaptersArrays.flat().length;
+
+  const enrollments = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.courseId, id));
+
+  const progress = await Promise.all(enrollments.map(async (enrollment) => {
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, enrollment.studentId));
+    const user = student?.userId
+      ? (await db.select().from(usersTable).where(eq(usersTable.id, student.userId)))[0]
+      : null;
+    const completedChaps = await db
+      .select()
+      .from(chapterProgressTable)
+      .where(and(eq(chapterProgressTable.enrollmentId, enrollment.id), isNotNull(chapterProgressTable.completedAt)));
+    const evalResults = await db
+      .select()
+      .from(evaluationResultsTable)
+      .where(eq(evaluationResultsTable.studentId, enrollment.studentId));
+
+    return {
+      enrollmentId: enrollment.id,
+      studentId: enrollment.studentId,
+      studentName: user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : enrollment.studentId,
+      studentEmail: user?.email ?? null,
+      enrolledAt: enrollment.enrolledAt,
+      completedAt: enrollment.completedAt,
+      completedChapters: completedChaps.length,
+      totalChapters,
+      progressPercent: totalChapters > 0 ? Math.round((completedChaps.length / totalChapters) * 100) : 0,
+      evaluationResults: evalResults.map((r) => ({
+        evaluationId: r.evaluationId,
+        score: r.score,
+        maxScore: r.maxScore,
+        percent: r.maxScore > 0 ? Math.round((r.score / r.maxScore) * 100) : 0,
+        passed: r.maxScore > 0 ? (r.score / r.maxScore) * 100 >= 50 : false,
+      })),
+    };
+  }));
+
+  res.json(progress);
 });
 
 export default router;

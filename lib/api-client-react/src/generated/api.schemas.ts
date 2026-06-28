@@ -163,7 +163,9 @@ export type CourseStatus = typeof CourseStatus[keyof typeof CourseStatus];
 
 export const CourseStatus = {
   DRAFT: 'DRAFT',
+  PENDING_REVIEW: 'PENDING_REVIEW',
   PUBLISHED: 'PUBLISHED',
+  REJECTED: 'REJECTED',
   ARCHIVED: 'ARCHIVED',
 } as const;
 
@@ -867,7 +869,9 @@ export type ListCoursesStatus = typeof ListCoursesStatus[keyof typeof ListCourse
 
 export const ListCoursesStatus = {
   DRAFT: 'DRAFT',
+  PENDING_REVIEW: 'PENDING_REVIEW',
   PUBLISHED: 'PUBLISHED',
+  REJECTED: 'REJECTED',
   ARCHIVED: 'ARCHIVED',
 } as const;
 

@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   useGetStudentAnalytics,
   useListEnrollments,
   useListPayments,
+  useListCourses,
 } from "@workspace/api-client-react";
 import type { Payment } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +19,8 @@ import {
   Clock,
   XCircle,
   Receipt,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -85,10 +89,30 @@ export default function StudentDashboard() {
   const { data: rawAnalytics, isLoading: analyticsLoading } = useGetStudentAnalytics();
   const { data: enrollments, isLoading: enrollmentsLoading } = useListEnrollments();
   const { data: paymentsData, isLoading: paymentsLoading } = useListPayments();
+  const { data: publishedCoursesRaw } = useListCourses({ status: "PUBLISHED" as "PUBLISHED" });
+  const [enrollingId, setEnrollingId] = useState<string | null>(null);
 
   const analytics = rawAnalytics as unknown as StudentAnalyticsData | undefined;
   const enrollmentList = enrollments?.enrollments ?? [];
   const allPayments: Payment[] = (paymentsData as unknown as { payments?: Payment[] })?.payments ?? [];
+
+  const publishedCourses = (publishedCoursesRaw as unknown as { courses?: Array<{ id: string; title: string; description: string; filiere?: { name: string } | null; teacher?: { firstName: string; lastName: string } | null }> })?.courses ?? [];
+  const enrolledCourseIds = new Set(enrollmentList.map((e) => (e as unknown as { courseId: string }).courseId));
+  const catalogCourses = publishedCourses.filter((c) => !enrolledCourseIds.has(c.id));
+
+  const handleEnroll = async (courseId: string) => {
+    setEnrollingId(courseId);
+    try {
+      await fetch("/api/enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId }),
+      });
+      window.location.reload();
+    } finally {
+      setEnrollingId(null);
+    }
+  };
 
   const confirmedPayments = allPayments.filter((p) => p.status === "CONFIRMED");
   const pendingPayments = allPayments.filter((p) => p.status === "INITIATED" || p.status === "PENDING");
@@ -308,6 +332,55 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Catalogue des cours disponibles */}
+        {catalogCourses.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                Catalogue des cours disponibles
+              </CardTitle>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/courses">Voir tout</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {catalogCourses.slice(0, 6).map((course) => (
+                  <div key={course.id} className="border rounded-lg p-4 space-y-3 hover:shadow-sm transition-shadow">
+                    <div className="space-y-1">
+                      <p className="font-semibold text-sm leading-tight">{course.title}</p>
+                      {course.filiere && (
+                        <span className="inline-block text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                          {course.filiere.name}
+                        </span>
+                      )}
+                      {course.teacher && (
+                        <p className="text-xs text-muted-foreground">
+                          Prof. {course.teacher.firstName} {course.teacher.lastName}
+                        </p>
+                      )}
+                      {course.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{course.description}</p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full h-7 text-xs"
+                      disabled={enrollingId === course.id}
+                      onClick={() => handleEnroll(course.id)}
+                    >
+                      {enrollingId === course.id
+                        ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> Inscription...</>
+                        : <><Plus className="h-3.5 w-3.5 mr-1" /> S'inscrire</>}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Actions rapides */}
         <Card>

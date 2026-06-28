@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import swaggerUi from "swagger-ui-express";
@@ -53,6 +54,8 @@ if (process.env.CLERK_SECRET_KEY) {
 } else {
   logger.warn("CLERK_SECRET_KEY not set — Clerk auth middleware disabled. Protected routes will be open in dev mode.");
 }
+
+app.use("/api/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: "ISC Mbujimayi API Docs",

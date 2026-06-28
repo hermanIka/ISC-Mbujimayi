@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Users, ShieldAlert, GraduationCap, Server, Search,
   UserCheck, UserX, Shield, Edit3, CheckCircle, XCircle,
-  BookOpen, Clock, CheckCircle2, AlertCircle,
+  BookOpen, Clock, CheckCircle2, AlertCircle, Loader2,
 } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useTranslation } from "react-i18next";
@@ -30,6 +30,20 @@ interface AcademicAnalyticsData {
   approvedInscriptions: number;
   underReviewInscriptions: number;
   rejectedInscriptions: number;
+}
+
+interface PendingCourse {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  rejectionNotes: string | null;
+  createdAt: string;
+  teacher?: {
+    firstName: string;
+    lastName: string;
+  } | null;
+  filiere?: { name: string } | null;
 }
 
 interface TeacherRegistration {
@@ -81,13 +95,19 @@ export default function AdminDashboard() {
   const [editRole, setEditRole] = useState<UserRole>("STUDENT");
   const [editActive, setEditActive] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"users" | "teacher_regs">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "teacher_regs" | "pending_courses">("users");
 
   const [teacherRegs, setTeacherRegs] = useState<TeacherRegistration[]>([]);
   const [teacherRegsLoading, setTeacherRegsLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectDialog, setRejectDialog] = useState<TeacherRegistration | null>(null);
   const [rejectNotes, setRejectNotes] = useState("");
+
+  const [pendingCourses, setPendingCourses] = useState<PendingCourse[]>([]);
+  const [pendingCoursesLoading, setPendingCoursesLoading] = useState(false);
+  const [courseProcessingId, setCourseProcessingId] = useState<string | null>(null);
+  const [rejectCourseDialog, setRejectCourseDialog] = useState<PendingCourse | null>(null);
+  const [rejectCourseNotes, setRejectCourseNotes] = useState("");
 
   const fetchTeacherRegs = useCallback(async () => {
     setTeacherRegsLoading(true);
@@ -102,9 +122,47 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const fetchPendingCourses = useCallback(async () => {
+    setPendingCoursesLoading(true);
+    try {
+      const res = await fetch("/api/courses?status=PENDING_REVIEW&pageSize=50");
+      if (res.ok) {
+        const data = await res.json() as { courses?: PendingCourse[] };
+        setPendingCourses(data.courses ?? []);
+      }
+    } finally {
+      setPendingCoursesLoading(false);
+    }
+  }, []);
+
+  const handleCourseApprove = async (courseId: string) => {
+    setCourseProcessingId(courseId);
+    try {
+      await fetch(`/api/courses/${courseId}/approve`, { method: "PUT" });
+      await fetchPendingCourses();
+    } finally {
+      setCourseProcessingId(null);
+    }
+  };
+
+  const handleCourseReject = async (courseId: string, notes: string) => {
+    setCourseProcessingId(courseId);
+    try {
+      await fetch(`/api/courses/${courseId}/reject`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: notes || undefined }),
+      });
+      await fetchPendingCourses();
+    } finally {
+      setCourseProcessingId(null);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "teacher_regs") fetchTeacherRegs();
-  }, [activeTab, fetchTeacherRegs]);
+    if (activeTab === "pending_courses") fetchPendingCourses();
+  }, [activeTab, fetchTeacherRegs, fetchPendingCourses]);
 
   const handleStatusChange = async (id: string, status: "APPROVED" | "REJECTED", notes?: string) => {
     setProcessingId(id);
@@ -149,6 +207,7 @@ export default function AdminDashboard() {
   };
 
   const pendingCount = teacherRegs.filter(r => r.status === "PENDING").length;
+  const pendingCoursesCount = pendingCourses.length;
 
   const kpis = [
     { label: t("admin.total_users"), value: totalUsers, icon: Users, loading: usersLoading },
@@ -211,6 +270,24 @@ export default function AdminDashboard() {
               {pendingCount > 0 && (
                 <span className="bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
                   {pendingCount}
+                </span>
+              )}
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab("pending_courses")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "pending_courses"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Cours en attente
+              {pendingCoursesCount > 0 && (
+                <span className="bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                  {pendingCoursesCount}
                 </span>
               )}
             </div>
@@ -412,6 +489,88 @@ export default function AdminDashboard() {
           </Card>
         )}
 
+        {activeTab === "pending_courses" && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Cours en attente de validation
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={fetchPendingCourses} disabled={pendingCoursesLoading}>
+                  {pendingCoursesLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  Actualiser
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {pendingCoursesLoading ? (
+                <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full" />)}</div>
+              ) : pendingCourses.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <CheckCircle2 className="mx-auto h-10 w-10 opacity-20 mb-3" />
+                  <p>Aucun cours en attente de validation.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Titre du cours</TableHead>
+                      <TableHead>Enseignant</TableHead>
+                      <TableHead>Filière</TableHead>
+                      <TableHead>Date de soumission</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingCourses.map((course) => (
+                      <TableRow key={course.id}>
+                        <TableCell>
+                          <p className="font-medium">{course.title}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">{course.description}</p>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {course.teacher ? `${course.teacher.firstName} ${course.teacher.lastName}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {course.filiere?.name ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(course.createdAt).toLocaleDateString("fr-CD")}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 border-green-300 hover:bg-green-50 h-7 text-xs"
+                              disabled={courseProcessingId === course.id}
+                              onClick={() => handleCourseApprove(course.id)}
+                            >
+                              {courseProcessingId === course.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
+                              Approuver
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-300 hover:bg-red-50 h-7 text-xs"
+                              disabled={courseProcessingId === course.id}
+                              onClick={() => { setRejectCourseDialog(course); setRejectCourseNotes(""); }}
+                            >
+                              <XCircle className="h-3.5 w-3.5 mr-1" />
+                              Rejeter
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex gap-3 flex-wrap">
           <Button asChild variant="outline">
             <Link href="/admin/filieres">{t("admin.manage_filieres")}</Link>
@@ -466,6 +625,50 @@ export default function AdminDashboard() {
                   <Button variant="outline" onClick={() => setEditUser(null)}>
                     {t("common.cancel")}
                   </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!rejectCourseDialog} onOpenChange={(o) => { if (!o) setRejectCourseDialog(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-5 w-5" />
+                Rejeter le cours
+              </DialogTitle>
+            </DialogHeader>
+            {rejectCourseDialog && (
+              <div className="space-y-4">
+                <div className="bg-muted/30 rounded-lg p-3 text-sm">
+                  <p className="font-medium">{rejectCourseDialog.title}</p>
+                  <p className="text-muted-foreground">{rejectCourseDialog.teacher ? `${rejectCourseDialog.teacher.firstName} ${rejectCourseDialog.teacher.lastName}` : ""}</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Motif du rejet (optionnel)</label>
+                  <textarea
+                    className="w-full border rounded-md p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    rows={3}
+                    value={rejectCourseNotes}
+                    onChange={(e) => setRejectCourseNotes(e.target.value)}
+                    placeholder="Ex: Contenu incomplet, supports manquants, description insuffisante..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    disabled={courseProcessingId === rejectCourseDialog.id}
+                    onClick={async () => {
+                      await handleCourseReject(rejectCourseDialog.id, rejectCourseNotes);
+                      setRejectCourseDialog(null);
+                    }}
+                  >
+                    {courseProcessingId === rejectCourseDialog.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    Confirmer le rejet
+                  </Button>
+                  <Button variant="outline" onClick={() => setRejectCourseDialog(null)}>Annuler</Button>
                 </div>
               </div>
             )}

@@ -7,6 +7,7 @@ export * from "./teachers";
 export * from "./inscriptions";
 export * from "./courses";
 export * from "./enrollments";
+
 export * from "./payments";
 export * from "./certificates";
 export * from "./evaluations";

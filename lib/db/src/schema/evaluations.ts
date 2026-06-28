@@ -1,7 +1,7 @@
-import { pgTable, text, integer, json, timestamp, pgEnum, unique, index } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, json, timestamp, pgEnum, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
-import { coursesTable } from "./courses";
+import { coursesTable, modulesTable } from "./courses";
 import { studentsTable } from "./students";
 
 export const evaluationTypeEnum = pgEnum("evaluation_type", [
@@ -17,13 +17,18 @@ export const evaluationsTable = pgTable(
     courseId: text("course_id")
       .notNull()
       .references(() => coursesTable.id, { onDelete: "cascade" }),
+    moduleId: text("module_id").references(() => modulesTable.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     type: evaluationTypeEnum("type").notNull(),
     duration: integer("duration").notNull(),
     passMark: integer("pass_mark").notNull().default(50),
+    isFinalEval: boolean("is_final_eval").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("evaluations_course_id_idx").on(t.courseId)]
+  (t) => [
+    index("evaluations_course_id_idx").on(t.courseId),
+    index("evaluations_module_id_idx").on(t.moduleId),
+  ]
 );
 
 export const questionsTable = pgTable(
