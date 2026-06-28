@@ -10,14 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Clock, BookOpen, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@clerk/react";
 
 export default function CourseDetailPage() {
   const [, params] = useRoute("/courses/:id");
   const courseId = params?.id || "";
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user: clerkUser } = useUser();
   const [enrolling, setEnrollmentLoading] = useState(false);
 
   const { data: course, isLoading: courseLoading } = useGetCourseById(courseId, {
@@ -31,11 +29,6 @@ export default function CourseDetailPage() {
   const createEnrollment = useCreateEnrollment();
 
   const handleEnroll = async () => {
-    if (!clerkUser) {
-      setLocation("/sign-in");
-      return;
-    }
-    
     try {
       setEnrollmentLoading(true);
       await createEnrollment.mutateAsync({ data: { courseId } });

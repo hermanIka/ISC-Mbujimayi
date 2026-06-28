@@ -105,7 +105,10 @@ export default function StudentDashboard() {
     try {
       await fetch("/api/enrollments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Demo-User-Id": localStorage.getItem("isc_demo_user_id") ?? "",
+        },
         body: JSON.stringify({ courseId }),
       });
       window.location.reload();
@@ -334,8 +337,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Catalogue des cours disponibles */}
-        {catalogCourses.length > 0 && (
-          <Card>
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
@@ -346,41 +348,50 @@ export default function StudentDashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {catalogCourses.slice(0, 6).map((course) => (
-                  <div key={course.id} className="border rounded-lg p-4 space-y-3 hover:shadow-sm transition-shadow">
-                    <div className="space-y-1">
-                      <p className="font-semibold text-sm leading-tight">{course.title}</p>
-                      {course.filiere && (
-                        <span className="inline-block text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                          {course.filiere.name}
-                        </span>
-                      )}
-                      {course.teacher && (
-                        <p className="text-xs text-muted-foreground">
-                          Prof. {course.teacher.firstName} {course.teacher.lastName}
-                        </p>
-                      )}
-                      {course.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">{course.description}</p>
-                      )}
+              {catalogCourses.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <BookOpen className="mx-auto h-10 w-10 opacity-20 mb-2" />
+                  <p className="text-sm">Tous les cours disponibles sont déjà dans vos inscriptions.</p>
+                  <Button asChild variant="outline" size="sm" className="mt-4">
+                    <Link href="/courses">Voir le catalogue</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {catalogCourses.slice(0, 6).map((course) => (
+                    <div key={course.id} className="border rounded-lg p-4 space-y-3 hover:shadow-sm transition-shadow">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-sm leading-tight">{course.title}</p>
+                        {course.filiere && (
+                          <span className="inline-block text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                            {course.filiere.name}
+                          </span>
+                        )}
+                        {course.teacher && (
+                          <p className="text-xs text-muted-foreground">
+                            Prof. {course.teacher.firstName} {course.teacher.lastName}
+                          </p>
+                        )}
+                        {course.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{course.description}</p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="w-full h-7 text-xs"
+                        disabled={enrollingId === course.id}
+                        onClick={() => handleEnroll(course.id)}
+                      >
+                        {enrollingId === course.id
+                          ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> Inscription...</>
+                          : <><Plus className="h-3.5 w-3.5 mr-1" /> S'inscrire</>}
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      className="w-full h-7 text-xs"
-                      disabled={enrollingId === course.id}
-                      onClick={() => handleEnroll(course.id)}
-                    >
-                      {enrollingId === course.id
-                        ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> Inscription...</>
-                        : <><Plus className="h-3.5 w-3.5 mr-1" /> S'inscrire</>}
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
 
         {/* Actions rapides */}
         <Card>
