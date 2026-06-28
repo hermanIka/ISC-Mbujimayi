@@ -50,7 +50,7 @@ const PERSONAS = [
   {
     id: "Z1CUfQYRm7bsbFMbxWeDW",
     name: "André Mutombo",
-    role: "SCOLARITÉ",
+    role: "APPARITEUR",
     dashboard: "/dashboard/academic",
     icon: Building2,
     color: "bg-orange-100 text-orange-800 border-orange-300",
