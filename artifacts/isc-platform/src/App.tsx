@@ -19,6 +19,7 @@ import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { DemoPersonaSwitcher } from "@/components/DemoPersonaSwitcher";
 
 const StudentDashboard = lazy(() => import("@/pages/dashboard/student"));
 const TeacherDashboard = lazy(() => import("@/pages/dashboard/teacher"));
@@ -213,6 +214,7 @@ function ClerkProviderWithRoutes() {
           <Toaster />
           <PwaInstallPrompt />
           <ChatbotWidget />
+          <DemoPersonaSwitcher />
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>

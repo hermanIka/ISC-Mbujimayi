@@ -35,7 +35,17 @@ function safeGetUserId(req: Request): string | null {
 
 export async function getCallerDbUser(req: Request) {
   if (!clerkEnabled) {
-    // Dev mode: return first ADMIN user as caller
+    // Dev mode: honour X-Demo-User-Id header for persona switching
+    const demoId = req.headers["x-demo-user-id"];
+    if (demoId && typeof demoId === "string" && demoId.trim()) {
+      const [demoUser] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, demoId.trim()))
+        .limit(1);
+      if (demoUser) return demoUser;
+    }
+    // Fallback: first ADMIN user
     const [adminUser] = await db
       .select()
       .from(usersTable)
