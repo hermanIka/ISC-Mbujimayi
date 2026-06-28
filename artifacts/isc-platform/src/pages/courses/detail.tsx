@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getThumbnailSrc } from "@/components/ThumbnailUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetCourseById, useListModules, useCreateEnrollment, getGetCourseByIdQueryKey, getListModulesQueryKey } from "@workspace/api-client-react";
 import type { Module } from "@workspace/api-client-react";
@@ -102,7 +103,7 @@ export default function CourseDetailPage() {
             <Card className="w-full md:w-1/3 sticky top-24">
               <div className="aspect-video w-full overflow-hidden rounded-t-xl bg-muted">
                 {course.thumbnail ? (
-                  <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                  <img src={getThumbnailSrc(course.thumbnail)} alt={course.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
                     <BookOpen className="h-12 w-12 opacity-50" />

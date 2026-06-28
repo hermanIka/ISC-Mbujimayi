@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getThumbnailSrc } from "@/components/ThumbnailUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListCourses } from "@workspace/api-client-react";
 import type { Course } from "@workspace/api-client-react";
@@ -67,7 +68,7 @@ export default function CoursesPage() {
               <Card key={course.id} className="flex flex-col hover-elevate transition-all duration-200">
                 <div className="aspect-video w-full overflow-hidden rounded-t-xl bg-muted">
                   <img
-                    src={course.thumbnail || "/images/course-default.png"}
+                    src={getThumbnailSrc(course.thumbnail)}
                     alt={course.title}
                     className="w-full h-full object-cover"
                   />

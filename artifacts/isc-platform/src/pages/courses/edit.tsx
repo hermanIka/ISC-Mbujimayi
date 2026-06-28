@@ -37,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ChapterFileUpload } from "@/components/ChapterFileUpload";
+import { ThumbnailUpload } from "@/components/ThumbnailUpload";
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
@@ -349,12 +350,10 @@ export default function CourseEditPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("course_edit.thumbnail_url")}</Label>
-                    <Input
-                      value={courseForm.thumbnail}
-                      onChange={(e) => setCourseForm((p) => ({ ...p, thumbnail: e.target.value }))}
-                      placeholder="https://..."
-                      data-testid="input-edit-thumbnail"
+                    <Label>Miniature du cours</Label>
+                    <ThumbnailUpload
+                      currentUrl={courseForm.thumbnail}
+                      onUploaded={(objectPath) => setCourseForm((p) => ({ ...p, thumbnail: objectPath }))}
                     />
                   </div>
                   <div className="flex gap-3 flex-wrap">

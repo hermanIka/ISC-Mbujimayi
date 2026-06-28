@@ -9,9 +9,11 @@ const ALLOWED_CONTENT_TYPES = [
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg", "image/png", "image/webp", "image/gif",
 ];
 const VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 const DOC_MAX_BYTES = 20 * 1024 * 1024;
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 const RequestUploadUrlBody = z.object({
   name: z.string(),
@@ -31,10 +33,14 @@ router.post("/storage/uploads/request-url", requireAuth, async (req: Request, re
   const { name, size, contentType } = parsed.data;
 
   if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
-    res.status(400).json({ error: `Type de fichier non autorisé : ${contentType}. Types acceptés : vidéo MP4/WebM/Ogg, PDF, DOC/DOCX.` });
+    res.status(400).json({ error: `Type de fichier non autorisé : ${contentType}. Types acceptés : vidéo MP4/WebM/Ogg, PDF, DOC/DOCX, image JPEG/PNG/WebP.` });
     return;
   }
-  const maxBytes = contentType.startsWith("video/") ? VIDEO_MAX_BYTES : DOC_MAX_BYTES;
+  const maxBytes = contentType.startsWith("video/")
+    ? VIDEO_MAX_BYTES
+    : contentType.startsWith("image/")
+    ? IMAGE_MAX_BYTES
+    : DOC_MAX_BYTES;
   if (size > maxBytes) {
     const maxMB = maxBytes / (1024 * 1024);
     res.status(400).json({ error: `Fichier trop volumineux. Maximum : ${maxMB} Mo pour ce type.` });
@@ -51,6 +57,34 @@ router.post("/storage/uploads/request-url", requireAuth, async (req: Request, re
   }
 });
 
+
+router.get("/storage/thumbnail", async (req: Request, res: Response) => {
+  const objectPath = req.query.path as string | undefined;
+  if (!objectPath || !objectPath.startsWith("/objects/")) {
+    res.status(400).json({ error: "Paramètre path invalide" });
+    return;
+  }
+  try {
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+    const response = await objectStorageService.downloadObject(objectFile, 0);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Image non trouvée" });
+    } else {
+      req.log.error({ err: error }, "Erreur service thumbnail");
+      res.status(500).json({ error: "Impossible de servir l'image" });
+    }
+  }
+});
 
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
   try {
