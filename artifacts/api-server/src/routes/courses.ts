@@ -90,8 +90,21 @@ router.get("/courses", async (req, res): Promise<void> => {
     return;
   }
   const { page = 1, pageSize = 20, filiereId, teacherId, status } = params.data;
+
+  const callerUser = await getCallerDbUser(req);
+  const isStaff = callerUser && ["ADMIN", "DIRECTOR"].includes(callerUser.role);
+  let callerTeacherId: string | null = null;
+  if (callerUser && callerUser.role === "TEACHER") {
+    const [t] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+    callerTeacherId = t?.id ?? null;
+  }
+
+  const effectiveStatus = status ?? (isStaff ? undefined : "PUBLISHED");
+
   const conditions = [
-    status ? eq(coursesTable.status, status as typeof courseStatusEnum.enumValues[number]) : undefined,
+    effectiveStatus
+      ? eq(coursesTable.status, effectiveStatus as typeof courseStatusEnum.enumValues[number])
+      : undefined,
     filiereId ? eq(coursesTable.filiereId, filiereId) : undefined,
     teacherId ? eq(coursesTable.teacherId, teacherId) : undefined,
   ].filter((c): c is NonNullable<typeof c> => c != null);
@@ -104,7 +117,16 @@ router.get("/courses", async (req, res): Promise<void> => {
     .offset((page - 1) * pageSize);
   const [totalRow] = await db.select({ count: count() }).from(coursesTable).where(whereClause);
   const total = Number(totalRow?.count ?? 0);
-  const enriched = await Promise.all(courses.map(enrichCourse));
+
+  const filtered = isStaff || status
+    ? courses
+    : courses.filter(
+        (c) =>
+          c.status === "PUBLISHED" ||
+          (callerTeacherId && c.teacherId === callerTeacherId)
+      );
+
+  const enriched = await Promise.all(filtered.map(enrichCourse));
   res.json({ courses: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 

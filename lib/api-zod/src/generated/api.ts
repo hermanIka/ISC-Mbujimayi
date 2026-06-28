@@ -1655,7 +1655,9 @@ export const CreateEvaluationBody = zod.object({
   "title": zod.string(),
   "type": zod.enum(['QUIZ', 'ASSIGNMENT', 'EXAM']),
   "duration": zod.number(),
-  "passMark": zod.number().optional()
+  "passMark": zod.number().optional(),
+  "moduleId": zod.string().optional(),
+  "isFinalEval": zod.boolean().optional()
 })
 
 export const CreateEvaluationResponse = zod.object({
@@ -1711,7 +1713,9 @@ export const UpdateEvaluationParams = zod.object({
 export const UpdateEvaluationBody = zod.object({
   "title": zod.string().optional(),
   "duration": zod.number().optional(),
-  "passMark": zod.number().optional()
+  "passMark": zod.number().optional(),
+  "moduleId": zod.string().nullable().optional(),
+  "isFinalEval": zod.boolean().optional()
 })
 
 export const UpdateEvaluationResponse = zod.object({

@@ -3,8 +3,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { eq } from "drizzle-orm";
-import { db, courseMaterialsTable, chaptersTable, modulesTable, coursesTable, teachersTable } from "@workspace/db";
-import { requireTeacher, getCallerDbUser } from "../middlewares/auth";
+import { db, courseMaterialsTable, chaptersTable, modulesTable, coursesTable, teachersTable, enrollmentsTable, studentsTable } from "@workspace/db";
+import { requireAuth, requireTeacher, getCallerDbUser } from "../middlewares/auth";
 import { nanoid } from "nanoid";
 import { logger } from "../lib/logger";
 
@@ -36,11 +36,8 @@ const upload = multer({
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
-    if (allowed.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`));
-    }
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`));
   },
 });
 
@@ -85,8 +82,70 @@ async function assertChapterCourseOwner(
   return true;
 }
 
-router.get("/chapters/:chapterId/materials", async (req, res): Promise<void> => {
+router.get("/uploads/:filename", requireAuth, async (req, res): Promise<void> => {
+  const { filename } = req.params;
+  const filePath = path.join(UPLOADS_DIR, filename);
+
+  if (!fs.existsSync(filePath)) {
+    res.status(404).json({ error: "Fichier non trouvé" });
+    return;
+  }
+
+  const [material] = await db
+    .select()
+    .from(courseMaterialsTable)
+    .where(eq(courseMaterialsTable.url, `/api/uploads/${filename}`));
+
+  if (!material) {
+    res.status(404).json({ error: "Support introuvable" });
+    return;
+  }
+
+  const callerUser = await getCallerDbUser(req);
+  if (!callerUser) { res.status(401).json({ error: "Non authentifié" }); return; }
+
+  if (!["ADMIN", "DIRECTOR", "TEACHER"].includes(callerUser.role)) {
+    const [chapter] = await db.select().from(chaptersTable).where(eq(chaptersTable.id, material.chapterId));
+    if (!chapter) { res.status(403).json({ error: "Accès refusé" }); return; }
+    const [mod] = await db.select().from(modulesTable).where(eq(modulesTable.id, chapter.moduleId));
+    if (!mod) { res.status(403).json({ error: "Accès refusé" }); return; }
+
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!student) { res.status(403).json({ error: "Accès refusé : inscription requise" }); return; }
+
+    const [enrollment] = await db
+      .select()
+      .from(enrollmentsTable)
+      .where(eq(enrollmentsTable.studentId, student.id));
+    const isEnrolled = enrollment && (enrollment as { courseId: string }).courseId === mod.courseId;
+    if (!isEnrolled) {
+      res.status(403).json({ error: "Accès refusé : vous n'êtes pas inscrit à ce cours" });
+      return;
+    }
+  }
+
+  res.sendFile(filePath);
+});
+
+router.get("/chapters/:chapterId/materials", requireAuth, async (req, res): Promise<void> => {
   const { chapterId } = req.params;
+  const callerUser = await getCallerDbUser(req);
+
+  if (!callerUser) { res.status(401).json({ error: "Non authentifié" }); return; }
+
+  if (!["ADMIN", "DIRECTOR", "TEACHER"].includes(callerUser.role)) {
+    const [chapter] = await db.select().from(chaptersTable).where(eq(chaptersTable.id, chapterId));
+    const [mod] = chapter ? (await db.select().from(modulesTable).where(eq(modulesTable.id, chapter.moduleId))) : [null];
+    if (!chapter || !mod) { res.status(404).json({ error: "Chapitre non trouvé" }); return; }
+
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+    if (!student) { res.status(403).json({ error: "Accès refusé : inscription requise" }); return; }
+
+    const enrollments = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.studentId, student.id));
+    const enrolled = enrollments.some((e) => (e as { courseId: string }).courseId === mod.courseId);
+    if (!enrolled) { res.status(403).json({ error: "Accès refusé : vous n'êtes pas inscrit à ce cours" }); return; }
+  }
+
   const materials = await db
     .select()
     .from(courseMaterialsTable)
@@ -99,18 +158,18 @@ router.post("/chapters/:chapterId/materials", requireTeacher, (req, res): void =
 
   upload.single("file")(req, res, async (err) => {
     if (err) {
-      res.status(400).json({ error: err instanceof Error ? err.message : "Erreur d'upload" });
+      const msg = err instanceof Error && err.message.includes("File too large")
+        ? `Fichier trop volumineux (max ${VIDEO_MAX / (1024 * 1024)} MB pour vidéo, ${DOC_MAX / (1024 * 1024)} MB pour PDF/DOC)`
+        : err instanceof Error ? err.message : "Erreur d'upload";
+      res.status(400).json({ error: msg });
       return;
     }
-    if (!req.file) {
-      res.status(400).json({ error: "Aucun fichier fourni" });
-      return;
-    }
+    if (!req.file) { res.status(400).json({ error: "Aucun fichier fourni" }); return; }
 
     const matType = getMaterialType(req.file.mimetype);
     if ((matType === "PDF" || matType === "DOC") && req.file.size > DOC_MAX) {
       fs.unlinkSync(req.file.path);
-      res.status(400).json({ error: "Fichier PDF/DOC trop volumineux (max 20 MB)" });
+      res.status(400).json({ error: `Fichier PDF/DOC trop volumineux (max ${DOC_MAX / (1024 * 1024)} MB)` });
       return;
     }
 
@@ -120,14 +179,7 @@ router.post("/chapters/:chapterId/materials", requireTeacher, (req, res): void =
     const url = `/api/uploads/${req.file.filename}`;
     const [material] = await db
       .insert(courseMaterialsTable)
-      .values({
-        id: nanoid(),
-        chapterId,
-        type: matType,
-        url,
-        fileName: req.file.originalname,
-        fileSize: req.file.size,
-      })
+      .values({ id: nanoid(), chapterId, type: matType, url, fileName: req.file.originalname, fileSize: req.file.size })
       .returning();
 
     logger.info({ chapterId, type: matType, fileName: req.file.originalname }, "✅ [MATERIALS] Fichier uploadé");
@@ -137,15 +189,8 @@ router.post("/chapters/:chapterId/materials", requireTeacher, (req, res): void =
 
 router.delete("/materials/:id", requireTeacher, async (req, res): Promise<void> => {
   const { id } = req.params;
-  const [material] = await db
-    .select()
-    .from(courseMaterialsTable)
-    .where(eq(courseMaterialsTable.id, id));
-
-  if (!material) {
-    res.status(404).json({ error: "Support introuvable" });
-    return;
-  }
+  const [material] = await db.select().from(courseMaterialsTable).where(eq(courseMaterialsTable.id, id));
+  if (!material) { res.status(404).json({ error: "Support introuvable" }); return; }
 
   const authorized = await assertChapterCourseOwner(req, material.chapterId, res);
   if (!authorized) return;
@@ -153,11 +198,8 @@ router.delete("/materials/:id", requireTeacher, async (req, res): Promise<void> 
   const filename = material.url.split("/").pop();
   if (filename) {
     const filepath = path.join(UPLOADS_DIR, filename);
-    if (fs.existsSync(filepath)) {
-      fs.unlinkSync(filepath);
-    }
+    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
   }
-
   await db.delete(courseMaterialsTable).where(eq(courseMaterialsTable.id, id));
   logger.info({ id, fileName: material.fileName }, "🗑️ [MATERIALS] Support supprimé");
   res.sendStatus(204);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, Link } from "@/lib/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -14,12 +14,21 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, PlayCircle, FileText, CheckCircle2, MessageSquare,
-  ClipboardList, BookOpen, AlertCircle
+  ClipboardList, BookOpen, AlertCircle, Download, Video
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import ReactPlayer from "react-player";
+
+interface ChapterMaterial {
+  id: string;
+  chapterId: string;
+  type: "VIDEO" | "PDF" | "DOC";
+  url: string;
+  fileName: string;
+  fileSize: number;
+}
 
 interface CourseChapter {
   id: string;
@@ -46,6 +55,7 @@ export default function CourseLearnPage() {
   const courseId = params?.id || "";
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set());
+  const [chapterMaterials, setChapterMaterials] = useState<ChapterMaterial[]>([]);
   const { toast } = useToast();
 
   const { data: course, isLoading: courseLoading } = useGetCourseById(courseId, {
@@ -64,6 +74,14 @@ export default function CourseLearnPage() {
   const allChapters: CourseChapter[] = allModules.flatMap((m) => m.chapters ?? []);
   const activeChapter: CourseChapter | null =
     allChapters.find((c) => c.id === activeChapterId) ?? allChapters[0] ?? null;
+
+  useEffect(() => {
+    if (!activeChapter) { setChapterMaterials([]); return; }
+    fetch(`/api/chapters/${activeChapter.id}/materials`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((mats: ChapterMaterial[]) => setChapterMaterials(mats))
+      .catch(() => setChapterMaterials([]));
+  }, [activeChapter?.id]);
 
   const totalChapters = allChapters.length;
   const completedCount = completedChapters.size;
@@ -292,6 +310,34 @@ export default function CourseLearnPage() {
                   {activeChapter.type === "VIDEO" && activeChapter.content && (
                     <div className="prose max-w-none dark:prose-invert text-muted-foreground text-sm">
                       <p>{t("learn.multimedia_note")}</p>
+                    </div>
+                  )}
+
+                  {chapterMaterials.length > 0 && (
+                    <div className="border rounded-xl p-5 bg-muted/20 space-y-3">
+                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        Supports pédagogiques ({chapterMaterials.length})
+                      </h3>
+                      <ul className="space-y-2">
+                        {chapterMaterials.map((mat) => (
+                          <li key={mat.id} className="flex items-center justify-between bg-background border rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {mat.type === "VIDEO"
+                                ? <Video className="h-4 w-4 text-blue-500 shrink-0" />
+                                : <FileText className="h-4 w-4 text-orange-500 shrink-0" />}
+                              <span className="text-sm font-medium truncate">{mat.fileName}</span>
+                              <Badge variant="outline" className="text-xs shrink-0">{mat.type}</Badge>
+                            </div>
+                            <Button size="sm" variant="outline" className="h-7 text-xs shrink-0 ml-2" asChild>
+                              <a href={mat.url} download={mat.fileName}>
+                                <Download className="h-3.5 w-3.5 mr-1" />
+                                Télécharger
+                              </a>
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
 
