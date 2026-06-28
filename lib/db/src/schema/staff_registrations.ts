@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { usersTable } from "./users";
 
 export const staffRegStatusEnum = pgEnum("staff_reg_status", ["PENDING", "APPROVED", "REJECTED"]);
 
@@ -13,6 +14,7 @@ export const staffRegistrationsTable = pgTable("staff_registrations", {
   roleStaff: text("role_staff").notNull(),
   status: staffRegStatusEnum("status").notNull().default("PENDING"),
   notes: text("notes"),
+  userId: text("user_id").references(() => usersTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

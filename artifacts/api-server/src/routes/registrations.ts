@@ -3,6 +3,7 @@ import { db, teacherRegistrationsTable, staffRegistrationsTable } from "@workspa
 import { eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { logger } from "../lib/logger";
+import { requireAdmin } from "../middlewares/auth";
 import { sendEmail, buildTeacherRegReceivedEmail, buildTeacherRegStatusEmail, buildStaffRegReceivedEmail, buildStaffRegStatusEmail } from "../lib/emailService";
 
 const router: IRouter = Router();
@@ -85,17 +86,17 @@ router.post("/register/staff", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/register/teachers", async (_req, res): Promise<void> => {
+router.get("/register/teachers", requireAdmin, async (_req, res): Promise<void> => {
   const regs = await db.select().from(teacherRegistrationsTable).orderBy(desc(teacherRegistrationsTable.createdAt));
   res.json(regs);
 });
 
-router.get("/register/staff", async (_req, res): Promise<void> => {
+router.get("/register/staff", requireAdmin, async (_req, res): Promise<void> => {
   const regs = await db.select().from(staffRegistrationsTable).orderBy(desc(staffRegistrationsTable.createdAt));
   res.json(regs);
 });
 
-router.put("/register/teacher/:id/status", async (req, res): Promise<void> => {
+router.put("/register/teacher/:id/status", requireAdmin, async (req, res): Promise<void> => {
   const { id } = req.params;
   const body = req.body as Record<string, unknown>;
   const status = body.status as string;
@@ -125,7 +126,7 @@ router.put("/register/teacher/:id/status", async (req, res): Promise<void> => {
   res.json(reg);
 });
 
-router.put("/register/staff/:id/status", async (req, res): Promise<void> => {
+router.put("/register/staff/:id/status", requireAdmin, async (req, res): Promise<void> => {
   const { id } = req.params;
   const body = req.body as Record<string, unknown>;
   const status = body.status as string;
