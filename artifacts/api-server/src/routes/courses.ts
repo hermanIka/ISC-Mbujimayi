@@ -230,6 +230,12 @@ router.put("/courses/:id", requireTeacher, async (req, res): Promise<void> => {
       res.status(403).json({ error: "Access denied: you do not own this course" });
       return;
     }
+    // Teachers can only set status to DRAFT or ARCHIVED — never PUBLISHED/PENDING_REVIEW/REJECTED
+    const requestedStatus = parsed.data.status;
+    if (requestedStatus && !["DRAFT", "ARCHIVED"].includes(requestedStatus)) {
+      res.status(403).json({ error: "Accès refusé : vous ne pouvez pas modifier ce statut directement. Utilisez le bouton 'Soumettre pour validation'." });
+      return;
+    }
   }
   const [course] = await db
     .update(coursesTable)

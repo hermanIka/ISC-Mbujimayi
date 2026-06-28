@@ -140,17 +140,27 @@ router.get("/chapters/:chapterId/materials", requireAuth, async (req, res): Prom
 
   if (!callerUser) { res.status(401).json({ error: "Non authentifié" }); return; }
 
-  if (!["ADMIN", "DIRECTOR", "TEACHER"].includes(callerUser.role)) {
-    const [chapter] = await db.select().from(chaptersTable).where(eq(chaptersTable.id, chapterId));
-    const [mod] = chapter ? (await db.select().from(modulesTable).where(eq(modulesTable.id, chapter.moduleId))) : [null];
-    if (!chapter || !mod) { res.status(404).json({ error: "Chapitre non trouvé" }); return; }
+  const [chapter] = await db.select().from(chaptersTable).where(eq(chaptersTable.id, chapterId));
+  const [mod] = chapter ? (await db.select().from(modulesTable).where(eq(modulesTable.id, chapter.moduleId))) : [null];
+  if (!chapter || !mod) { res.status(404).json({ error: "Chapitre non trouvé" }); return; }
 
-    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
-    if (!student) { res.status(403).json({ error: "Accès refusé : inscription requise" }); return; }
-
-    const enrollments = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.studentId, student.id));
-    const enrolled = enrollments.some((e) => (e as { courseId: string }).courseId === mod.courseId);
-    if (!enrolled) { res.status(403).json({ error: "Accès refusé : vous n'êtes pas inscrit à ce cours" }); return; }
+  if (!["ADMIN", "DIRECTOR"].includes(callerUser.role)) {
+    if (callerUser.role === "TEACHER") {
+      // Teachers can only list materials from their own courses
+      const [teacher] = await db.select().from(teachersTable).where(eq(teachersTable.userId, callerUser.id));
+      const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, mod.courseId));
+      if (!teacher || !course || course.teacherId !== teacher.id) {
+        res.status(403).json({ error: "Accès refusé : vous n'êtes pas l'auteur de ce cours" });
+        return;
+      }
+    } else {
+      // Students must be enrolled
+      const [student] = await db.select().from(studentsTable).where(eq(studentsTable.userId, callerUser.id));
+      if (!student) { res.status(403).json({ error: "Accès refusé : inscription requise" }); return; }
+      const enrollments = await db.select().from(enrollmentsTable).where(eq(enrollmentsTable.studentId, student.id));
+      const enrolled = enrollments.some((e) => e.courseId === mod.courseId);
+      if (!enrolled) { res.status(403).json({ error: "Accès refusé : vous n'êtes pas inscrit à ce cours" }); return; }
+    }
   }
 
   const materials = await db
