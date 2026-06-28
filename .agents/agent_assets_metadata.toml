@@ -12,3 +12,9 @@ id = "UcjEjAiNumKsxJCIoqANS"
 uri = "file://.local/outputs/ISC-Mbujimayi-Soutenance-de-Jury.pdf"
 type = "pdf"
 title = "Soutenance ISC Mbujimayi (PDF)"
+
+[[outputs]]
+id = "jD3901m4CN7rly66tgPny"
+uri = "file://.local/outputs/ISC-Mbujimayi---Soutenance-de-Jury.pptx"
+type = "slides"
+title = "ISC Mbujimayi — Soutenance de Jury.pptx"
