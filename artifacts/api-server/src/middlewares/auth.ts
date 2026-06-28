@@ -3,7 +3,8 @@ import type { Request, Response, NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-const clerkEnabled = !!process.env.CLERK_SECRET_KEY;
+// Auth bypassed for development — Clerk will be re-enabled later
+const clerkEnabled = false;
 
 export type UserRole =
   | "VISITOR"

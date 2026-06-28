@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  GraduationCap, BookOpen, Users, Award,
+  GraduationCap, BookOpen, Users,
   ChevronRight, ChevronLeft, Check,
   Upload, FileText, Trash2, Eye,
   Smartphone, Loader2, CheckCircle2, XCircle, AlertCircle,
@@ -24,7 +24,6 @@ const ROLES = [
   { id: "STUDENT", icon: GraduationCap, labelKey: "register.role_student", descKey: "register.role_student_desc" },
   { id: "TEACHER", icon: BookOpen, labelKey: "register.role_teacher", descKey: "register.role_teacher_desc" },
   { id: "STAFF", icon: Users, labelKey: "register.role_staff", descKey: "register.role_staff_desc" },
-  { id: "VISITOR", icon: Award, labelKey: "register.role_visitor", descKey: "register.role_visitor_desc" },
 ];
 
 type MobileOperator = "MTN_MONEY" | "AIRTEL_MONEY" | "ORANGE_MONEY";

@@ -1,6 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
-import { ClerkProvider, SignIn, SignUp, useClerk, RedirectToSignIn, useAuth } from "@clerk/react";
-import { useGetCurrentUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
+import { lazy, Suspense, useEffect, useRef } from "react";
+import { ClerkProvider, SignIn, SignUp, useClerk } from "@clerk/react";
 
 import { shadcn } from "@clerk/themes";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
@@ -46,69 +45,6 @@ const CourseNew = lazy(() => import("@/pages/courses/new"));
 const CourseEdit = lazy(() => import("@/pages/courses/edit"));
 const EvaluationNew = lazy(() => import("@/pages/evaluations/new"));
 
-type UserRole =
-  | "STUDENT"
-  | "TEACHER"
-  | "ACADEMIC_SERVICE"
-  | "FINANCIAL_SERVICE"
-  | "ADMIN"
-  | "DIRECTOR"
-  | "STAFF";
-
-type ProtectedRouteProps = {
-  children: ReactNode;
-  allowedRoles?: UserRole[];
-};
-
-function useCurrentUserRole(): { isLoaded: boolean; isSignedIn: boolean; role: UserRole | null } {
-  const { isLoaded: authLoaded, isSignedIn } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useGetCurrentUser({
-    query: { queryKey: getGetCurrentUserQueryKey(), enabled: authLoaded && !!isSignedIn, retry: false },
-  });
-  return {
-    isLoaded: authLoaded && (!isSignedIn || !profileLoading),
-    isSignedIn: !!isSignedIn,
-    role: (profile?.role as UserRole | undefined) ?? null,
-  };
-}
-
-function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { isLoaded, isSignedIn, role } = useCurrentUserRole();
-  if (!isLoaded) return <PageLoader />;
-  if (!isSignedIn) return <RedirectToSignIn />;
-  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-destructive font-medium">Accès non autorisé pour ce rôle.</p>
-      </div>
-    );
-  }
-  return <>{children}</>;
-}
-
-function AuthedOnlyRoute({ children }: { children: ReactNode }) {
-  return <ProtectedRoute>{children}</ProtectedRoute>;
-}
-
-function AdminRoute({ children }: { children: ReactNode }) {
-  return <ProtectedRoute allowedRoles={["ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
-}
-
-function AcademicRoute({ children }: { children: ReactNode }) {
-  return <ProtectedRoute allowedRoles={["ACADEMIC_SERVICE", "ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
-}
-
-function FinancialRoute({ children }: { children: ReactNode }) {
-  return <ProtectedRoute allowedRoles={["FINANCIAL_SERVICE", "ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
-}
-
-function TeacherRoute({ children }: { children: ReactNode }) {
-  return <ProtectedRoute allowedRoles={["TEACHER", "ADMIN", "DIRECTOR"]}>{children}</ProtectedRoute>;
-}
-
-function StudentRoute({ children }: { children: ReactNode }) {
-  return <ProtectedRoute allowedRoles={["STUDENT"]}>{children}</ProtectedRoute>;
-}
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreditCard, DollarSign, TrendingUp, AlertCircle, Download, Receipt, Loader2, ChevronLeft, ChevronRight, FolderArchive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@clerk/react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -62,7 +61,7 @@ const PAGE_SIZE = 20;
 export default function FinancialDashboard() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { getToken } = useAuth();
+  const getToken = async () => null;
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
   const { data: rawAnalytics, isLoading } = useGetFinancialAnalytics({ period });
   const analytics = rawAnalytics as unknown as FinancialAnalyticsData | undefined;
