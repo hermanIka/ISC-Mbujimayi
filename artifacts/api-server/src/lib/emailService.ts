@@ -2,13 +2,22 @@ import { Resend } from "resend";
 import { logger } from "./logger";
 
 const ISC_NAME = "Institut Supérieur de Commerce de Mbujimayi";
-const RESEND_FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS;
+const _rawFrom = process.env.RESEND_FROM_ADDRESS;
+// Validate that the value actually looks like an email/sender (must contain '@')
+const RESEND_FROM_ADDRESS = _rawFrom && _rawFrom.includes("@") ? _rawFrom : null;
 if (!RESEND_FROM_ADDRESS) {
-  logger.warn(
-    "⚠️ [EMAIL] RESEND_FROM_ADDRESS is not set — emails will use Resend's sandbox sender (onboarding@resend.dev). " +
-    "Set RESEND_FROM_ADDRESS to a verified domain address (e.g. 'ISC Mbujimayi <noreply@isc-mbujimayi.ac.cd>') " +
-    "to ensure emails reach recipients' inboxes instead of being flagged as spam.",
-  );
+  if (_rawFrom && !_rawFrom.includes("@")) {
+    logger.warn(
+      "⚠️ [EMAIL] RESEND_FROM_ADDRESS does not appear to be a valid email address — falling back to sandbox sender. " +
+      "Set it to e.g. 'ISC Mbujimayi <noreply@isc-mbujimayi.ac.cd>'.",
+    );
+  } else {
+    logger.warn(
+      "⚠️ [EMAIL] RESEND_FROM_ADDRESS is not set — emails will use Resend's sandbox sender (onboarding@resend.dev). " +
+      "Set RESEND_FROM_ADDRESS to a verified domain address (e.g. 'ISC Mbujimayi <noreply@isc-mbujimayi.ac.cd>') " +
+      "to ensure emails reach recipients' inboxes instead of being flagged as spam.",
+    );
+  }
 }
 const ISC_FROM = RESEND_FROM_ADDRESS ?? "ISC Mbujimayi <onboarding@resend.dev>";
 const PRIMARY_COLOR = "#1a3a6b";
