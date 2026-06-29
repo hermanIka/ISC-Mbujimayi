@@ -26,6 +26,9 @@ export function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-4">
+          <Link href="/" className="hidden sm:inline text-sm font-medium transition-colors hover:text-primary">
+            {t("nav.home")}
+          </Link>
           <Link href="/courses" className="hidden sm:inline text-sm font-medium transition-colors hover:text-primary">
             {t("nav.catalogue")}
           </Link>
