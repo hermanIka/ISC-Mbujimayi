@@ -9,46 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, GraduationCap, Users, Star, Award, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useEffect, useRef, useState } from "react";
 
-function useCountUp(target: number, duration = 1500, triggered = false) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!triggered) return;
-    let start = 0;
-    const step = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [target, duration, triggered]);
-  return count;
-}
-
-function AnimatedStat({ value, suffix, label }: { value: number; suffix: string; label: string }) {
-  const [triggered, setTriggered] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const count = useCountUp(value, 1800, triggered);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setTriggered(true); observer.disconnect(); }
-    }, { threshold: 0.5 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
+function StatBox({ value, label }: { value: string; label: string }) {
   return (
-    <div ref={ref} className="text-center">
-      <div className="text-4xl font-bold text-primary">{count}{suffix}</div>
+    <div className="text-center">
+      <div className="text-4xl font-bold text-primary">{value}</div>
       <div className="text-sm text-muted-foreground mt-1">{label}</div>
     </div>
   );
@@ -117,10 +82,10 @@ export default function Home() {
 
       <div className="py-12 border-b bg-card">
         <div className="max-w-4xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <AnimatedStat value={9} suffix="+" label={t("about.stat_years")} />
-          <AnimatedStat value={1500} suffix="+" label={t("about.stat_graduates")} />
-          <AnimatedStat value={5} suffix="" label={t("about.stat_programs")} />
-          <AnimatedStat value={50} suffix="+" label={t("about.stat_teachers")} />
+          <StatBox value="9+" label={t("about.stat_years")} />
+          <StatBox value="1 500+" label={t("about.stat_graduates")} />
+          <StatBox value="5" label={t("about.stat_programs")} />
+          <StatBox value="50+" label={t("about.stat_teachers")} />
         </div>
       </div>
 
