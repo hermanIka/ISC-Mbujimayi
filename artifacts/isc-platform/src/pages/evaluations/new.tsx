@@ -4,7 +4,6 @@ import {
   useCreateEvaluation,
   useCreateQuestion,
   useListCourses,
-  getListCoursesQueryKey,
 } from "@workspace/api-client-react";
 import type { Course } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,11 +27,26 @@ interface QuestionDraft {
   id: string;
   text: string;
   points: number;
+  kind: "QCM" | "TRUE_FALSE" | "SHORT_ANSWER" | "ESSAY";
   options: { text: string; isCorrect: boolean }[];
   correctAnswer: string;
 }
 
-const EV_TYPES = ["QCM", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MIXED"] as const;
+const EV_TYPES = [
+  { value: "QUIZ", label: "Quiz" },
+  { value: "ASSIGNMENT", label: "Devoir" },
+  { value: "EXAM", label: "Examen" },
+] as const;
+
+const Q_KINDS = [
+  { value: "QCM", label: "QCM (choix multiple)" },
+  { value: "TRUE_FALSE", label: "Vrai / Faux" },
+  { value: "SHORT_ANSWER", label: "Réponse courte" },
+  { value: "ESSAY", label: "Développement" },
+] as const;
+
+type EvalType = typeof EV_TYPES[number]["value"];
+type QKind = typeof Q_KINDS[number]["value"];
 
 export default function EvaluationNewPage() {
   const { t } = useTranslation();
@@ -52,7 +66,7 @@ export default function EvaluationNewPage() {
 
   const [form, setForm] = useState({
     title: "",
-    type: "QCM" as typeof EV_TYPES[number],
+    type: "QUIZ" as EvalType,
     courseId: "",
     duration: "30",
     passMark: "60",
@@ -62,6 +76,7 @@ export default function EvaluationNewPage() {
   const [newQ, setNewQ] = useState<Omit<QuestionDraft, "id">>({
     text: "",
     points: 1,
+    kind: "QCM",
     options: [
       { text: "", isCorrect: true },
       { text: "", isCorrect: false },
@@ -85,7 +100,7 @@ export default function EvaluationNewPage() {
         courseId: form.courseId,
         data: {
           title: form.title.trim(),
-          type: form.type as "QUIZ" | "ASSIGNMENT" | "EXAM",
+          type: form.type,
           duration: Number(form.duration),
           passMark: Number(form.passMark),
         },
@@ -102,6 +117,20 @@ export default function EvaluationNewPage() {
     }
   };
 
+  const changeQKind = (kind: QKind) => {
+    setNewQ((prev) => ({
+      ...prev,
+      kind,
+      options: [
+        { text: kind === "TRUE_FALSE" ? "Vrai" : "", isCorrect: true },
+        { text: kind === "TRUE_FALSE" ? "Faux" : "", isCorrect: false },
+        { text: "", isCorrect: false },
+        { text: "", isCorrect: false },
+      ],
+      correctAnswer: "",
+    }));
+  };
+
   const addQuestion = () => {
     if (!newQ.text.trim()) {
       toast({ title: t("eval_form.question_required"), variant: "destructive" });
@@ -111,17 +140,18 @@ export default function EvaluationNewPage() {
       ...prev,
       { ...newQ, id: crypto.randomUUID() },
     ]);
-    setNewQ({
+    setNewQ((prev) => ({
       text: "",
       points: 1,
+      kind: prev.kind,
       options: [
-        { text: "", isCorrect: true },
-        { text: "", isCorrect: false },
+        { text: prev.kind === "TRUE_FALSE" ? "Vrai" : "", isCorrect: true },
+        { text: prev.kind === "TRUE_FALSE" ? "Faux" : "", isCorrect: false },
         { text: "", isCorrect: false },
         { text: "", isCorrect: false },
       ],
       correctAnswer: "",
-    });
+    }));
   };
 
   const removeQuestion = (id: string) =>
@@ -147,7 +177,7 @@ export default function EvaluationNewPage() {
     try {
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
-        const hasOptions = form.type === "QCM" || form.type === "TRUE_FALSE" || form.type === "MIXED";
+        const hasOptions = q.kind === "QCM" || q.kind === "TRUE_FALSE";
         await createQuestion.mutateAsync({
           evaluationId,
           data: {
@@ -155,7 +185,7 @@ export default function EvaluationNewPage() {
             points: q.points,
             order: i + 1,
             options: hasOptions ? q.options.filter((o) => o.text.trim()) : undefined,
-            correctAnswer: form.type === "SHORT_ANSWER" || form.type === "ESSAY"
+            correctAnswer: q.kind === "SHORT_ANSWER" || q.kind === "ESSAY"
               ? q.correctAnswer || undefined
               : undefined,
           },
@@ -170,7 +200,8 @@ export default function EvaluationNewPage() {
     }
   };
 
-  const needsOptions = form.type === "QCM" || form.type === "TRUE_FALSE" || form.type === "MIXED";
+  const needsOptions = newQ.kind === "QCM" || newQ.kind === "TRUE_FALSE";
+  const needsAnswer = newQ.kind === "SHORT_ANSWER" || newQ.kind === "ESSAY";
 
   if (step === "done") {
     return (
@@ -257,8 +288,8 @@ export default function EvaluationNewPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {EV_TYPES.map((t) => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        {EV_TYPES.map((et) => (
+                          <SelectItem key={et.value} value={et.value}>{et.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -317,6 +348,21 @@ export default function EvaluationNewPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <h3 className="font-semibold text-sm">{t("eval_form.add_question")}</h3>
+
+                  <div className="space-y-2">
+                    <Label>Type de question</Label>
+                    <Select value={newQ.kind} onValueChange={(v) => changeQKind(v as QKind)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Q_KINDS.map((qk) => (
+                          <SelectItem key={qk.value} value={qk.value}>{qk.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <Label>{t("eval_form.question_text")} *</Label>
                     <Textarea
@@ -365,7 +411,7 @@ export default function EvaluationNewPage() {
                       ))}
                     </div>
                   )}
-                  {(form.type === "SHORT_ANSWER" || form.type === "ESSAY") && (
+                  {needsAnswer && (
                     <div className="space-y-2">
                       <Label>{t("eval_form.expected_answer")}</Label>
                       <Textarea
@@ -400,7 +446,7 @@ export default function EvaluationNewPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium">{idx + 1}. {q.text}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {q.points} {q.points > 1 ? t("eval_form.points") : t("eval_form.point")}
+                            {Q_KINDS.find(k => k.value === q.kind)?.label} — {q.points} {q.points > 1 ? t("eval_form.points") : t("eval_form.point")}
                           </p>
                           {q.options.some((o) => o.text) && (
                             <div className="mt-2 space-y-1">
